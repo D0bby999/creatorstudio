@@ -1,0 +1,26 @@
+{
+  "name": "@creator-studio/canvas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./components/*": "./src/components/*.tsx",
+    "./shapes/*": "./src/shapes/*.tsx",
+    "./templates/*": "./src/templates/*.ts",
+    "./lib/*": "./src/lib/*.ts"
+  },
+  "scripts": {
+    "lint": "echo 'no lint'",
+    "build": "echo 'no build needed'"
+  },
+  "dependencies": {
+    "tldraw": "^4.3.1"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
