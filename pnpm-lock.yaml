@@ -35,6 +35,9 @@ importers:
       '@creator-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@creator-studio/video':
+        specifier: workspace:*
+        version: link:../../packages/video
       '@radix-ui/react-slot':
         specifier: ^1.1.0
         version: 1.2.4(@types/react@18.3.28)(react@18.3.1)
@@ -44,6 +47,9 @@ importers:
       '@react-router/serve':
         specifier: ^7.12.0
         version: 7.13.0(react-router@7.13.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3)
+      '@remotion/player':
+        specifier: ^4.0.0
+        version: 4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       better-auth:
         specifier: ^1.4.18
         version: 1.4.18(@prisma/client@6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3))(prisma@6.19.2(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(vitest@3.2.4(@types/node@22.19.11)(jiti@2.6.1)(lightningcss@1.30.2))
@@ -68,6 +74,9 @@ importers:
       react-router:
         specifier: ^7.12.0
         version: 7.13.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -202,6 +211,25 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/video:
+    dependencies:
+      '@remotion/player':
+        specifier: ^4.0.0
+        version: 4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       typescript:
         specifier: ^5.9.3
@@ -1386,6 +1414,12 @@ packages:
 
   '@remix-run/node-fetch-server@0.13.0':
     resolution: {integrity: sha512-1EsNo0ZpgXu/90AWoRZf/oE3RVTUS80tiTUpt+hv5pjtAkw7icN4WskDwz/KdAw5ARbJLMhZBrO1NqThmy/McA==}
+
+  '@remotion/player@4.0.421':
+    resolution: {integrity: sha512-vZrvvl3OMmxsmIk+vqUOrcbLpNUL0Q1JIWdqcgNt0d3Jn0mK6fYCDBnAHuhiltuMSqHBguUaQL4eWbceDBsm2g==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     resolution: {integrity: sha512-A6ehUVSiSaaliTxai040ZpZ2zTevHYbvu/lDoeAteHI8QnaosIzm4qwtezfRg1jOYaUmnzLX1AOD6Z+UJjtifg==}
@@ -3453,6 +3487,12 @@ packages:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
 
+  remotion@4.0.421:
+    resolution: {integrity: sha512-j64KtcwObNYpxskxBPd7zDXVOwSHxH31RIM6Vs/+rUj/NBry/LXc8cNWDwFC4fYaJweOAeM7zXY16kW/9t3X+w==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
     engines: {node: '>=4'}
@@ -5215,6 +5255,12 @@ snapshots:
   '@remirror/core-constants@3.0.0': {}
 
   '@remix-run/node-fetch-server@0.13.0': {}
+
+  '@remotion/player@4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      remotion: 4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     optional: true
@@ -7477,6 +7523,11 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       set-function-name: 2.0.2
+
+  remotion@4.0.421(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   resolve-from@4.0.0: {}
 
