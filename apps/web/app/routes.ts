@@ -5,6 +5,7 @@ export default [
   route('sign-in', 'routes/sign-in.tsx'),
   route('sign-up', 'routes/sign-up.tsx'),
   route('api/auth/*', 'routes/api.auth.$.ts'),
+  route('api/ai', 'routes/api.ai.ts'),
   layout('routes/dashboard/layout.tsx', [
     route('dashboard', 'routes/dashboard/index.tsx'),
     route('dashboard/canvas', 'routes/dashboard/canvas.tsx'),
