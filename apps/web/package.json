@@ -16,6 +16,7 @@
     "@creator-studio/auth": "workspace:*",
     "@creator-studio/canvas": "workspace:*",
     "@creator-studio/db": "workspace:*",
+    "@creator-studio/social": "workspace:*",
     "@creator-studio/ui": "workspace:*",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-router/node": "^7.12.0",

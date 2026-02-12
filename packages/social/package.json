@@ -1,0 +1,21 @@
+{
+  "name": "@creator-studio/social",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./src/lib/instagram-client.ts",
+    "./scheduler": "./src/lib/social-scheduler.ts",
+    "./analytics": "./src/lib/social-analytics.ts",
+    "./types": "./src/types/social-types.ts"
+  },
+  "scripts": {
+    "build": "echo 'no build needed'"
+  },
+  "dependencies": {
+    "@creator-studio/db": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

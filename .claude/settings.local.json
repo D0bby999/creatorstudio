@@ -32,7 +32,11 @@
       "Bash(git commit:*)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:tldraw.dev)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm --filter @creator-studio/web build:*)"
     ]
   }
 }

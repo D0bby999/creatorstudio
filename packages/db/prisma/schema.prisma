@@ -10,16 +10,17 @@ datasource db {
 // ─── Better Auth tables ───
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  projects      Project[]
+  id             String          @id
+  name           String
+  email          String
+  emailVerified  Boolean         @default(false)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  projects       Project[]
+  socialAccounts SocialAccount[]
 
   @@unique([email])
   @@map("user")
@@ -88,4 +89,63 @@ model Project {
 
   @@index([userId])
   @@map("project")
+}
+
+model SocialAccount {
+  id             String       @id @default(cuid())
+  platform       String       // instagram
+  platformUserId String
+  username       String
+  accessToken    String
+  refreshToken   String?
+  expiresAt      DateTime?
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts          SocialPost[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, platform, platformUserId])
+  @@index([userId])
+  @@map("social_account")
+}
+
+model SocialPost {
+  id             String          @id @default(cuid())
+  content        String
+  mediaUrls      String[]
+  platform       String          // instagram
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  status         String          // draft | scheduled | publishing | published | failed
+  platformPostId String?
+  socialAccountId String
+  socialAccount  SocialAccount   @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  analytics      PostAnalytics?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([socialAccountId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("social_post")
+}
+
+model PostAnalytics {
+  id             String     @id @default(cuid())
+  postId         String     @unique
+  post           SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  impressions    Int        @default(0)
+  reach          Int        @default(0)
+  likes          Int        @default(0)
+  comments       Int        @default(0)
+  shares         Int        @default(0)
+  saves          Int        @default(0)
+  engagementRate Float      @default(0)
+  fetchedAt      DateTime   @default(now())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([postId])
+  @@map("post_analytics")
 }

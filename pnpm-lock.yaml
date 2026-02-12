@@ -29,6 +29,9 @@ importers:
       '@creator-studio/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@creator-studio/social':
+        specifier: workspace:*
+        version: link:../../packages/social
       '@creator-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -166,8 +169,21 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/social:
+    dependencies:
+      '@creator-studio/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/ui:
     dependencies:
+      '@radix-ui/react-slot':
+        specifier: ^1.1.0
+        version: 1.2.4(@types/react@18.3.28)(react@18.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
