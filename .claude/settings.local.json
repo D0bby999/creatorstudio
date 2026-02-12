@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:shotstack.com)",
+      "WebFetch(domain:docs.crewai.com)",
+      "WebFetch(domain:postiz.com)",
+      "WebFetch(domain:typebot.io)",
+      "WebFetch(domain:n8n.io)",
+      "Bash(node:*)",
+      "Bash(git clone --depth 1 https://github.com/nextauth/nextauth.git next-auth)",
+      "Bash(git clone --depth 1 https://github.com/shadcn-ui/ui.git shadcn-ui)",
+      "Bash(git clone --depth 1 https://github.com/microsoft/playwright.git playwright)",
+      "Bash(git clone --depth 1 https://github.com/yjs/yjs.git yjs)",
+      "Bash(git clone:*)",
+      "Bash(find:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(pnpm config:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(pnpm exec prisma:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

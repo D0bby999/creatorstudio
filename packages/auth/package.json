@@ -1,0 +1,22 @@
+{
+  "name": "@creator-studio/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/auth-server.ts",
+    "./client": "./src/auth-client.ts"
+  },
+  "scripts": {
+    "lint": "echo 'no lint'",
+    "build": "echo 'no build needed'"
+  },
+  "dependencies": {
+    "better-auth": "^1.4.18",
+    "@creator-studio/db": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

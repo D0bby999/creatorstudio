@@ -1,0 +1,55 @@
+# dependencies
+node_modules
+
+# build outputs
+build/
+dist/
+.turbo/
+.react-router/
+
+# testing
+coverage/
+
+# misc
+.DS_Store
+*.pem
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# reference repos (cloned for analysis)
+reference/
+
+# repomix
+repomix-output.xml
+
+# plans (managed separately)
+plans/**/*
+!plans/templates/*
+
+# screenshots & research
+screenshots/*
+docs/screenshots/*
+docs/research/*
+
+# misc tooling
+.serena/cache
+logs.txt
+test-ck
+__pycache__
+prompt.md
+ck.md
+.gemini/settings.json
+.claude/settings.bak.json
