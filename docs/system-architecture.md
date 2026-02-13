@@ -928,12 +928,180 @@ All 8 core packages have been elevated from MVP stubs to production-quality impl
 10. Merge to main → Deploy to production
 ```
 
+## Ecosystem & Integrations Layer (Phase 5a)
+
+### Webhooks Package (`packages/webhooks`)
+
+**Event-driven HTTP callbacks for real-time notifications:**
+
+```typescript
+// HMAC-SHA256 signing
+signPayload(secret, payload) → signature
+verifySignature(secret, payload, signature) → boolean
+
+// Event delivery
+trigger(event, userId, payload) → delivers to all webhooks
+deliverWebhook(webhook, event, payload) → POST with signature header
+
+// Retry scheduler (exponential backoff)
+startRetryScheduler() → background job every 5 minutes
+```
+
+**Features:**
+- HMAC-SHA256 payload signing for security verification
+- Automatic retry with exponential backoff (3 attempts max)
+- Event types: `post.created`, `export.completed`, `crawler.finished`
+- HTTPS-only webhook URLs enforced
+- Signature sent in `X-Webhook-Signature` header
+
+### REST API Endpoints
+
+**Authentication:**
+- `GET /api/v1/auth/verify` → Verify API key (for Zapier)
+- `GET /api/v1/users/me` → Current user profile
+
+**Social Posts:**
+- `POST /api/v1/posts` → Create social media post
+  - Requires `posts:write` scope
+  - Input: `accountId`, `content`, `mediaUrls[]`, `scheduledAt`
+  - Returns: `postId`, `status`, `platformPostId`
+
+**Zapier Triggers:**
+- `GET /api/v1/zapier/posts/recent` → Poll recent posts (last 15 min)
+- `GET /api/v1/zapier/exports/recent` → Poll recent exports (last 15 min)
+
+**API Key Management:**
+- `GET /api/api-keys` → List user's API keys
+- `POST /api/api-keys` → Generate new API key
+- `DELETE /api/api-keys/:id` → Revoke API key
+
+**Webhook Management:**
+- `GET /api/webhooks` → List user's webhooks
+- `POST /api/webhooks` → Create webhook subscription
+- `DELETE /api/webhooks/:id` → Delete webhook
+
+### API Key Authentication
+
+**Security Implementation:**
+```typescript
+// SHA-256 hashing (irreversible)
+hashApiKey(key) → stored in database
+
+// Scope enforcement
+requireApiKey(request, ['posts:write', 'exports:read'])
+  → validates key, checks scopes, returns userId
+```
+
+**Key Format:** `cs_live_abc123...` (40-char hex)
+
+**Scopes:**
+- `posts:read`, `posts:write` → Social media operations
+- `exports:read`, `exports:write` → Canvas/video exports
+- `webhooks:read`, `webhooks:write` → Webhook management
+- `profile:read` → User profile access
+
+**Rate Limiting:**
+- In-memory token bucket algorithm
+- Default: 100 requests/minute per API key
+- 429 response when exceeded
+
+### Zapier Integration (`zapier/`)
+
+**Structure:**
+- `authentication.js` → Bearer token auth config
+- `triggers/` → 2 polling triggers (post-created, export-completed)
+- `creates/` → 2 actions (create-post, upload-image stub)
+
+**Triggers:**
+1. **New Post Created** → Polls `/v1/zapier/posts/recent`
+   - Output: postId, content, platform, status, publishedAt
+2. **Export Completed** → Polls `/v1/zapier/exports/recent`
+   - Output: exportId, type, format, downloadUrl
+
+**Actions:**
+1. **Create Social Post** → `POST /v1/posts`
+   - Input: accountId, content, mediaUrls, scheduledAt
+2. **Upload Image** → `POST /v1/images` (stub)
+
+**Deployment:** `zapier push` after testing via Zapier CLI
+
+### Bluesky/AT Protocol Integration
+
+**Client Implementation:** `packages/social/src/lib/bluesky-client.ts`
+
+```typescript
+class BlueskyClient implements SocialPlatformClient {
+  // AT Protocol session management
+  createSession() → accessJwt, refreshJwt, did
+
+  // Post with up to 4 images
+  post({ content, mediaUrls }) → { id, url }
+
+  // Image upload via uploadBlob
+  // Returns blob reference for embed
+}
+```
+
+**Features:**
+- App password authentication (no OAuth required)
+- AT Protocol record creation (`app.bsky.feed.post`)
+- Image uploads (max 4, JPEG format)
+- Session auto-refresh
+- Platform factory integration
+
+**Usage:**
+```typescript
+createPlatformClient('bluesky', { handle, appPassword })
+```
+
+### Dashboard Pages
+
+**API Keys Management** (`/dashboard/api-keys`):
+- Generate new keys with scope selection
+- View existing keys (masked, last 4 chars visible)
+- Revoke keys
+- Copy key on generation (shown once)
+
+**Webhooks Management** (`/dashboard/webhooks`):
+- Subscribe to events (post.created, export.completed)
+- Configure endpoint URLs (HTTPS only)
+- View delivery logs and retry attempts
+- Test webhook delivery
+
+**Plugins/Integrations** (`/dashboard/plugins`):
+- Zapier integration instructions
+- API key generation for integrations
+- OAuth connection status (future: Slack, Discord)
+
+### Security Considerations
+
+**API Keys:**
+- SHA-256 hashed before storage (irreversible)
+- Keys never displayed after generation
+- Expiration dates optional
+- Scope-based permission enforcement
+- Timing-safe comparison for validation
+
+**Webhooks:**
+- HMAC-SHA256 signature verification
+- HTTPS-only URLs enforced
+- Replay attack prevention (timestamp in payload)
+- Rate limiting on webhook endpoints
+- Automatic retry with exponential backoff
+
+**Rate Limiting:**
+- Per-API-key token bucket
+- Configurable limits (default 100/min)
+- 429 status with `Retry-After` header
+- Reset time included in response
+
 ## Architecture Evolution Timeline
 
 ```
 Phase 1 (Foundation):       Monorepo, SSR, auth, basic UI ✓
 Phase 2 (Enhancement):      Deep package implementation, 246 tests ✓
-Phase 3 (Optimization):     Performance, caching, analytics (planned)
-Phase 4 (Scale):            Organizations, teams, enterprise features (planned)
-Phase 5 (Ecosystem):        Plugins, integrations, marketplace (planned)
+Phase 3 (Optimization):     Pagination, Sentry, cache headers, bundle analysis ✓
+Phase 4 (Scale):            Organizations, teams, RBAC ✓
+Phase 5a (Ecosystem):       Webhooks, REST API, Zapier, Bluesky ✓
+Phase 5b (Advanced):        More integrations, OAuth providers (planned)
 ```

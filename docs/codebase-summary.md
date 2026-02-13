@@ -88,14 +88,28 @@ creator-studio/
   - `/dashboard/ai` → `ai.tsx`
   - `/dashboard/organizations` → `organizations.tsx` (org list)
   - `/dashboard/organizations/:orgId` → `organizations.$orgId.tsx` (org detail + members/settings)
+  - `/dashboard/api-keys` → `api-keys.tsx` (API key management)
+  - `/dashboard/webhooks` → `webhooks.tsx` (webhook subscriptions)
+  - `/dashboard/plugins` → `plugins.tsx` (integrations: Zapier, etc.)
 - `/api/auth/*` → `routes/api.auth.$.ts` (Better Auth handler)
 - `/api/organizations/*` → `routes/api.organizations.ts` (org CRUD + member management)
+- `/api/api-keys` → `routes/api.api-keys.ts` (API key CRUD)
+- `/api/webhooks` → `routes/api.webhooks.ts` (webhook CRUD)
+- `/api/social/connect` → `routes/api.social.connect.ts` (OAuth flow)
+- `/api/v1/*` → REST API v1 (public API with key auth)
+  - `/api/v1/auth/verify` → Verify API key
+  - `/api/v1/users/me` → Current user profile
+  - `/api/v1/posts` → Create social post
+  - `/api/v1/zapier/posts/recent` → Recent posts (Zapier trigger)
+  - `/api/v1/zapier/exports/recent` → Recent exports (Zapier trigger)
 
 **Key Files:**
 - `app/root.tsx` → Root layout with HTML structure
 - `app/routes.ts` → Route configuration (includes org routes)
 - `app/lib/auth-server.ts` → Server-side auth utilities
 - `app/lib/auth-client.ts` → Client-side auth hooks
+- `app/lib/api-key-auth.ts` → API key authentication (SHA-256 hashing, scope enforcement)
+- `app/lib/api-rate-limiter.ts` → Token bucket rate limiter (100 req/min default)
 - `app/components/organization-switcher.tsx` → Org selector in nav
 
 ### `@creator-studio/db`
@@ -273,6 +287,7 @@ creator-studio/
 - **Platform Interface** → Unified API for all platforms
 - **Twitter Client** → Tweet scheduling and publishing
 - **LinkedIn Client** → Professional content posting
+- **Bluesky Client** → AT Protocol posting with app passwords
 - **Platform Factory** → Dynamic client instantiation
 - **Unified Composer** → Single interface for all platforms
 - **Media Upload** → Image and video upload handling
@@ -282,13 +297,15 @@ creator-studio/
 - `src/clients/` → Platform-specific implementations
 - `src/twitter-client.ts` → Twitter/X API integration
 - `src/linkedin-client.ts` → LinkedIn API integration
-- `src/platform-factory.ts` → Client factory pattern
+- `src/lib/bluesky-client.ts` → Bluesky AT Protocol client
+- `src/platform-factory.ts` → Client factory pattern (supports bluesky)
 - `src/composer.ts` → Unified post composer
 - `src/*.test.ts` → 47 comprehensive tests
 
 **Dependencies:**
 - `twitter-api-v2` → Twitter/X API client
 - `linkedin-api` → LinkedIn API integration
+- AT Protocol (native fetch) → Bluesky integration
 - Media upload via platform APIs
 
 ### `@creator-studio/ai`
@@ -319,6 +336,53 @@ creator-studio/
 - `ai` + `@ai-sdk/openai` → Vercel AI SDK and OpenAI provider
 - `zod` → Schema validation for structured outputs
 - In-memory session storage (swappable to Redis)
+
+### `@creator-studio/webhooks`
+**Path:** `packages/webhooks`
+**Type:** Event-driven HTTP callbacks with HMAC signing
+**Exports:**
+- `./webhook-signer` → HMAC-SHA256 signing/verification
+- `./webhook-manager` → Event delivery system
+- `./webhook-retry-scheduler` → Automatic retry with exponential backoff
+
+**Features:**
+- HMAC-SHA256 payload signing for security
+- Event trigger system (`post.created`, `export.completed`, `crawler.finished`)
+- Retry scheduler with exponential backoff (3 attempts max)
+- HTTPS-only URL enforcement
+- Signature header: `X-Webhook-Signature`
+
+**Key Files:**
+- `src/webhook-signer.ts` → Crypto signing utilities
+- `src/webhook-manager.ts` → Delivery logic
+- `src/webhook-retry-scheduler.ts` → Background retry job
+
+**Dependencies:**
+- `node:crypto` → HMAC signing
+- Database storage for webhook subscriptions and delivery logs
+
+### Zapier Integration
+**Path:** `zapier/`
+**Type:** No-code automation platform integration
+**Structure:**
+- `authentication.js` → Bearer token auth (API keys)
+- `triggers/` → 2 polling triggers
+  - `post-created.js` → New social posts (polls `/v1/zapier/posts/recent`)
+  - `export-completed.js` → Completed exports (polls `/v1/zapier/exports/recent`)
+- `creates/` → 2 actions
+  - `create-post.js` → Create social post via `POST /v1/posts`
+  - `upload-image.js` → Upload image stub
+
+**Deployment:**
+- Install: `npm install -g zapier-platform-cli`
+- Push: `zapier push`
+- Test: `zapier test`
+
+**API Requirements:**
+- `GET /api/v1/auth/verify` → Key validation
+- `GET /api/v1/zapier/posts/recent` → Recent posts (15 min window)
+- `GET /api/v1/zapier/exports/recent` → Recent exports (15 min window)
+- `POST /api/v1/posts` → Create post with scheduling
 
 ## Testing Summary
 
@@ -488,12 +552,25 @@ import { useLoaderData } from 'react-router' // Hooks
 - `@creator-studio/canvas` → Tldraw editor integration
 - `@creator-studio/video` → Remotion compositions
 - `@creator-studio/crawler` → Web scraping engine
-- `@creator-studio/social` → Social media clients
+- `@creator-studio/social` → Social media clients (Twitter, LinkedIn, Bluesky)
 - `@creator-studio/ai` → AI agent framework
+- `@creator-studio/webhooks` → Event delivery system
+
+**External Integrations:**
+- `zapier/` → Zapier platform integration (triggers + actions)
+
+### Phase 5a: Ecosystem & Integrations (COMPLETE)
+**Completed:**
+- [x] Webhooks package with HMAC-SHA256 signing, retry scheduler
+- [x] REST API v1 endpoints (auth, posts, Zapier triggers)
+- [x] API key authentication (SHA-256 hashing, scope-based permissions)
+- [x] Rate limiting (token bucket, 100 req/min default)
+- [x] Zapier integration (2 triggers, 2 actions)
+- [x] Bluesky/AT Protocol client (app password auth, image uploads)
+- [x] Dashboard pages (API keys, webhooks, plugins/integrations)
+- [x] Security: HTTPS-only webhooks, timing-safe comparisons, scope enforcement
 
 **Next Steps:**
-- Production deployment and scaling
-- Performance optimization and caching
-- Advanced analytics and monitoring
-- Additional platform integrations
-- Enterprise features (organizations, teams, permissions)
+- Phase 5b: Additional OAuth providers (Slack, Discord, GitHub)
+- Phase 6: Analytics dashboard and reporting
+- Phase 7: Production deployment and scaling
