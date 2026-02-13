@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Form } from 'react-router'
-import { Instagram, Plus, Calendar, TrendingUp } from 'lucide-react'
+import { Form, useFetcher } from 'react-router'
+import { Instagram, Plus, Calendar, TrendingUp, Cloud, X } from 'lucide-react'
 import { Button } from '@creator-studio/ui/components/button'
 import { Card } from '@creator-studio/ui/components/card'
 import { Input } from '@creator-studio/ui/components/input'
@@ -69,6 +69,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function Social({ loaderData }: Route.ComponentProps) {
   const { socialAccounts, recentPosts, stats } = loaderData
   const [showComposer, setShowComposer] = useState(false)
+  const [showBlueskyConnect, setShowBlueskyConnect] = useState(false)
+  const connectFetcher = useFetcher()
+  const disconnectFetcher = useFetcher()
 
   return (
     <div className="p-6">
@@ -132,44 +135,115 @@ export default function Social({ loaderData }: Route.ComponentProps) {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Connected Accounts</h2>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowBlueskyConnect(!showBlueskyConnect)}
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Connect Account
+            Connect Bluesky
           </Button>
         </div>
 
+        {/* Bluesky Connection Form */}
+        {showBlueskyConnect && (
+          <div className="mb-4 rounded-lg border border-[hsl(var(--border))] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-medium">Connect Bluesky Account</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBlueskyConnect(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <connectFetcher.Form method="post" action="/api/social/connect" className="space-y-3">
+              <input type="hidden" name="action" value="connectBluesky" />
+              <div>
+                <Label htmlFor="handle">Handle</Label>
+                <Input
+                  id="handle"
+                  name="handle"
+                  type="text"
+                  placeholder="username.bsky.social"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="appPassword">App Password</Label>
+                <Input
+                  id="appPassword"
+                  name="appPassword"
+                  type="password"
+                  placeholder="xxxx-xxxx-xxxx-xxxx"
+                  className="mt-1"
+                  required
+                />
+                <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+                  Generate an app password in your Bluesky settings
+                </p>
+              </div>
+              {connectFetcher.data?.error && (
+                <p className="text-sm text-red-600">{connectFetcher.data.error}</p>
+              )}
+              {connectFetcher.data?.success && (
+                <p className="text-sm text-green-600">
+                  Connected @{connectFetcher.data.username} successfully!
+                </p>
+              )}
+              <Button
+                type="submit"
+                disabled={connectFetcher.state === 'submitting'}
+              >
+                {connectFetcher.state === 'submitting' ? 'Connecting...' : 'Connect'}
+              </Button>
+            </connectFetcher.Form>
+          </div>
+        )}
+
         {socialAccounts.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[hsl(var(--border))] p-8 text-center">
-            <Instagram className="mx-auto h-12 w-12 text-[hsl(var(--muted-foreground))]" />
+            <Cloud className="mx-auto h-12 w-12 text-[hsl(var(--muted-foreground))]" />
             <p className="mt-4 font-medium">No accounts connected</p>
             <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-              Connect your Instagram account to start scheduling posts
+              Connect your social media accounts to start scheduling posts
             </p>
-            <Button className="mt-4" variant="outline">
-              Connect Instagram
-            </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            {socialAccounts.map((account) => (
-              <div
-                key={account.id}
-                className="flex items-center justify-between rounded-lg border border-[hsl(var(--border))] p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <Instagram className="h-5 w-5" />
-                  <div>
-                    <p className="font-medium">@{account.username}</p>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
-                    </p>
+            {socialAccounts.map((account) => {
+              const PlatformIcon = account.platform === 'bluesky' ? Cloud : Instagram
+              return (
+                <div
+                  key={account.id}
+                  className="flex items-center justify-between rounded-lg border border-[hsl(var(--border))] p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <PlatformIcon className="h-5 w-5" />
+                    <div>
+                      <p className="font-medium">@{account.username}</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
+                      </p>
+                    </div>
                   </div>
+                  <disconnectFetcher.Form method="post" action="/api/social/connect">
+                    <input type="hidden" name="action" value="disconnect" />
+                    <input type="hidden" name="accountId" value={account.id} />
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      disabled={disconnectFetcher.state === 'submitting'}
+                    >
+                      {disconnectFetcher.state === 'submitting' ? 'Removing...' : 'Disconnect'}
+                    </Button>
+                  </disconnectFetcher.Form>
                 </div>
-                <Button variant="outline" size="sm">
-                  Settings
-                </Button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </Card>

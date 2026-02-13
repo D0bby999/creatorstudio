@@ -22,6 +22,7 @@
     "@creator-studio/social": "workspace:*",
     "@creator-studio/ui": "workspace:*",
     "@creator-studio/video": "workspace:*",
+    "@creator-studio/webhooks": "workspace:*",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-router/node": "^7.12.0",
     "@react-router/serve": "^7.12.0",

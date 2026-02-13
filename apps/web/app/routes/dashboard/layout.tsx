@@ -13,6 +13,9 @@ import {
   Building2,
   LayoutDashboard,
   LogOut,
+  Webhook,
+  Key,
+  Puzzle,
 } from 'lucide-react'
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -34,6 +37,9 @@ const navItems = [
   { to: '/dashboard/social', label: 'Social', icon: Share2 },
   { to: '/dashboard/crawler', label: 'Crawler', icon: Globe },
   { to: '/dashboard/ai', label: 'AI Tools', icon: Sparkles },
+  { to: '/dashboard/webhooks', label: 'Webhooks', icon: Webhook },
+  { to: '/dashboard/api-keys', label: 'API Keys', icon: Key },
+  { to: '/dashboard/plugins', label: 'Plugins', icon: Puzzle },
   { to: '/dashboard/organizations', label: 'Organizations', icon: Building2 },
 ]
 

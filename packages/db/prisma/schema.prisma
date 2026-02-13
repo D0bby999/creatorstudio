@@ -17,13 +17,16 @@ model User {
   image          String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  sessions       Session[]
-  accounts       Account[]
+  sessions            Session[]
+  accounts            Account[]
   projects            Project[]
   socialAccounts      SocialAccount[]
   crawlJobs           CrawlJob[]
   aiSessions          AiSession[]
   organizationMembers OrganizationMember[]
+  webhookEndpoints    WebhookEndpoint[]
+  plugins             Plugin[]
+  apiKeys             ApiKey[]
 
   @@unique([email])
   @@map("user")
@@ -217,4 +220,87 @@ model OrganizationMember {
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@map("organization_member")
+}
+
+// ─── Webhook tables ───
+
+model WebhookEndpoint {
+  id             String         @id @default(cuid())
+  url            String
+  secret         String
+  events         String[]
+  enabled        Boolean        @default(true)
+  organizationId String?
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhookEvents  WebhookEvent[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("webhook_endpoint")
+}
+
+model WebhookEvent {
+  id          String          @id @default(cuid())
+  endpointId  String
+  endpoint    WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventType   String
+  payload     Json
+  signature   String
+  status      String          @default("pending")
+  attempts    Int             @default(0)
+  maxAttempts Int             @default(3)
+  lastError   String?
+  deliveredAt DateTime?
+  createdAt   DateTime        @default(now())
+  nextRetryAt DateTime?
+
+  @@index([endpointId])
+  @@index([status])
+  @@index([nextRetryAt])
+  @@map("webhook_event")
+}
+
+// ─── Plugin tables ───
+
+model Plugin {
+  id             String   @id @default(cuid())
+  name           String
+  version        String   @default("1.0.0")
+  enabled        Boolean  @default(false)
+  config         Json?
+  organizationId String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([name, organizationId])
+  @@unique([name, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("plugin")
+}
+
+// ─── API Key tables ───
+
+model ApiKey {
+  id             String    @id @default(cuid())
+  key            String    @unique
+  name           String
+  lastUsedAt     DateTime?
+  rateLimit      Int       @default(10)
+  scopes         String[]  @default(["posts:read", "posts:write", "images:read"])
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?
+  enabled        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime?
+
+  @@index([userId])
+  @@index([key])
+  @@map("api_key")
 }

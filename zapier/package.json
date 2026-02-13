@@ -1,0 +1,15 @@
+{
+  "name": "creator-studio-zapier",
+  "version": "1.0.0",
+  "description": "Zapier integration for Creator Studio",
+  "main": "index.js",
+  "scripts": {
+    "test": "zapier test"
+  },
+  "dependencies": {
+    "zapier-platform-core": "15.x"
+  },
+  "devDependencies": {
+    "zapier-platform-cli": "15.x"
+  }
+}

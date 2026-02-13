@@ -6,6 +6,7 @@ import type { SocialPlatformClient, PlatformConfig } from './platform-interface'
 import { InstagramClient } from './instagram-client'
 import { TwitterClient } from './twitter-client'
 import { LinkedInClient } from './linkedin-client'
+import { BlueskyClient } from './bluesky-client'
 
 export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
   instagram: {
@@ -26,11 +27,18 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
     supportedMediaTypes: ['image/jpeg', 'image/png', 'video/mp4'],
     hashtagSupport: true,
   },
+  bluesky: {
+    maxContentLength: 300,
+    maxMediaCount: 4,
+    supportedMediaTypes: ['image/jpeg', 'image/png', 'image/gif'],
+    hashtagSupport: false,
+  },
 }
 
 export function getPlatformClient(
   platform: SocialPlatform,
-  accessToken: string
+  accessToken: string,
+  additionalParams?: { handle?: string; appPassword?: string }
 ): SocialPlatformClient {
   switch (platform) {
     case 'instagram':
@@ -39,6 +47,11 @@ export function getPlatformClient(
       return new TwitterClient(accessToken)
     case 'linkedin':
       return new LinkedInClient(accessToken)
+    case 'bluesky':
+      if (!additionalParams?.handle || !additionalParams?.appPassword) {
+        throw new Error('Bluesky requires handle and appPassword')
+      }
+      return new BlueskyClient(additionalParams.handle, additionalParams.appPassword)
     default:
       throw new Error(`Unsupported platform: ${platform}`)
   }

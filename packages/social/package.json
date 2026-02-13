@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./client": "./src/lib/instagram-client.ts",
+    "./bluesky": "./src/lib/bluesky-client.ts",
     "./scheduler": "./src/lib/social-scheduler.ts",
     "./analytics": "./src/lib/social-analytics.ts",
     "./types": "./src/types/social-types.ts",

@@ -53,9 +53,8 @@ export async function action({ request }: ActionArgs) {
           const client = new InstagramClient(socialAccount.accessToken)
           const response = await client.post({
             userId: socialAccount.platformUserId,
-            imageUrl: mediaUrl.endsWith('.mp4') ? undefined : mediaUrl,
-            videoUrl: mediaUrl.endsWith('.mp4') ? mediaUrl : undefined,
-            caption: content,
+            content,
+            mediaUrls: [mediaUrl],
           })
 
           // Update post status
