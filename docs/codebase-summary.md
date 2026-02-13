@@ -86,13 +86,17 @@ creator-studio/
   - `/dashboard/crawler` → `crawler.tsx`
   - `/dashboard/social` → `social.tsx`
   - `/dashboard/ai` → `ai.tsx`
+  - `/dashboard/organizations` → `organizations.tsx` (org list)
+  - `/dashboard/organizations/:orgId` → `organizations.$orgId.tsx` (org detail + members/settings)
 - `/api/auth/*` → `routes/api.auth.$.ts` (Better Auth handler)
+- `/api/organizations/*` → `routes/api.organizations.ts` (org CRUD + member management)
 
 **Key Files:**
 - `app/root.tsx` → Root layout with HTML structure
-- `app/routes.ts` → Route configuration
+- `app/routes.ts` → Route configuration (includes org routes)
 - `app/lib/auth-server.ts` → Server-side auth utilities
 - `app/lib/auth-client.ts` → Client-side auth hooks
+- `app/components/organization-switcher.tsx` → Org selector in nav
 
 ### `@creator-studio/db`
 **Path:** `packages/db`
@@ -131,9 +135,11 @@ creator-studio/
 - `.` → `src/index.ts`
 - `./server` → `src/auth-server.ts`
 - `./client` → `src/auth-client.ts`
+- `./lib/rbac-helpers` → `src/lib/rbac-helpers.ts` (RBAC utilities)
 
 **Enhanced Capabilities:**
 - **Better Auth Plugins** → Two-factor auth (2FA), magic link authentication, organization roles
+- **RBAC Helpers** → Role hierarchy (owner > admin > member), permission checks, role validation
 - **Middleware Helpers** → requireAuth, requireRole, requireOrganizationRole
 - **17 Tests** → Session validation, plugin configuration, middleware enforcement
 

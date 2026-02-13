@@ -2,19 +2,29 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import type { Route } from './+types/layout'
 import { requireSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
+import { prisma } from '@creator-studio/db/client'
+import { OrganizationSwitcher } from '~/components/organization-switcher'
 import {
   Image,
   Video,
   Share2,
   Globe,
   Sparkles,
+  Building2,
   LayoutDashboard,
   LogOut,
 } from 'lucide-react'
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireSession(request)
-  return { user: session.user }
+
+  const orgMemberships = await prisma.organizationMember.findMany({
+    where: { userId: session.user.id },
+    include: { organization: { select: { id: true, name: true, slug: true } } },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return { user: session.user, orgMemberships }
 }
 
 const navItems = [
@@ -24,10 +34,11 @@ const navItems = [
   { to: '/dashboard/social', label: 'Social', icon: Share2 },
   { to: '/dashboard/crawler', label: 'Crawler', icon: Globe },
   { to: '/dashboard/ai', label: 'AI Tools', icon: Sparkles },
+  { to: '/dashboard/organizations', label: 'Organizations', icon: Building2 },
 ]
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
-  const { user } = loaderData
+  const { user, orgMemberships } = loaderData
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -43,6 +54,8 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
             Creator Studio
           </Link>
         </div>
+
+        <OrganizationSwitcher memberships={orgMemberships} />
 
         <nav className="flex-1 space-y-1 p-3">
           {navItems.map(({ to, label, icon: Icon }) => (

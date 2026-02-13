@@ -240,6 +240,33 @@ Better Auth checks:
 Return Session { user, expiresAt, ... } or null
 ```
 
+## Organization & RBAC Layer (packages/auth + apps/web)
+
+### RBAC Hierarchy
+**Pure function helpers** in `packages/auth/src/lib/rbac-helpers.ts`:
+- **Owner** → Full control (manage members, billing, settings, delete org)
+- **Admin** → Manage content/members (no billing or org deletion)
+- **Member** → Create/edit own content (no member management)
+
+**Privilege Escalation Protection:**
+- Members cannot promote themselves
+- Only Owner or Admin can manage roles
+- Owner cannot downgrade self (prevent lockout)
+
+### Organization API Routes (`routes/api.organizations.ts`)
+- `POST /api/organizations` → Create org (current user = owner)
+- `GET /api/organizations` → List user's orgs
+- `PUT /api/organizations/:id` → Update org (admin+ required)
+- `DELETE /api/organizations/:id` → Delete org (owner only)
+- `POST /api/organizations/:id/members` → Add member (admin+)
+- `DELETE /api/organizations/:id/members/:userId` → Remove member (admin+)
+- `PUT /api/organizations/:id/members/:userId` → Change role (admin+, with escalation checks)
+
+### Organization UI Components
+- **Organization List** (`dashboard/organizations.tsx`) → Browse all orgs, create new
+- **Organization Detail** (`dashboard/organizations.$orgId.tsx`) → Tabs: overview, members, settings
+- **Organization Switcher** (`components/organization-switcher.tsx`) → Dropdown in dashboard nav
+
 ## Database Layer (packages/db)
 
 ### Prisma Architecture
@@ -278,24 +305,33 @@ Return Session { user, expiresAt, ... } or null
 │ updatedAt        │   │
 └──────────────────┘   │
                        │
-         ┌─────────────┼─────────────┬─────────────┐
-         │             │             │             │
-         ▼             ▼             ▼             ▼
-┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐
-│  Session   │  │  Account   │  │  Project   │  │Verification│
-│────────────│  │────────────│  │────────────│  │────────────│
-│ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)    │
-│ userId (FK)│  │ userId (FK)│  │ userId (FK)│  │ identifier │
-│ token      │  │ providerId │  │ name       │  │ value      │
-│ expiresAt  │  │ accountId  │  │ type       │  │ expiresAt  │
-│ ipAddress  │  │ accessToken│  │ data (JSON)│  │ createdAt  │
-│ userAgent  │  │refreshToken│  │ thumbnail  │  │ updatedAt  │
-│ createdAt  │  │ idToken    │  │ createdAt  │  └────────────┘
-│ updatedAt  │  │ scope      │  │ updatedAt  │
-└────────────┘  │ password   │  └────────────┘
-                │ createdAt  │
-                │ updatedAt  │
-                └────────────┘
+         ┌─────────────┼─────────────┬─────────────┬──────────────┐
+         │             │             │             │              │
+         ▼             ▼             ▼             ▼              ▼
+┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌──────────────┐
+│  Session   │  │  Account   │  │  Project   │  │Verification│  │ Organization │
+│────────────│  │────────────│  │────────────│  │────────────│  │──────────────│
+│ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)      │
+│ userId (FK)│  │ userId (FK)│  │ userId (FK)│  │ identifier │  │ name         │
+│ token      │  │ providerId │  │ name       │  │ value      │  │ ownerId (FK) │
+│ expiresAt  │  │ accountId  │  │ type       │  │ expiresAt  │  │ createdAt    │
+│ ipAddress  │  │ accessToken│  │ data (JSON)│  │ createdAt  │  │ updatedAt    │
+│ userAgent  │  │refreshToken│  │ thumbnail  │  │ updatedAt  │  └──────────────┘
+│ createdAt  │  │ idToken    │  │ createdAt  │  └────────────┘         │
+│ updatedAt  │  │ scope      │  │ updatedAt  │                         │
+└────────────┘  │ password   │  └────────────┘                         │
+                │ createdAt  │                                         │
+                │ updatedAt  │                                         ▼
+                └────────────┘                              ┌──────────────────┐
+                                                           │ OrganizationMember│
+                                                           │──────────────────│
+                                                           │ id (PK)          │
+                                                           │ orgId (FK)       │
+                                                           │ userId (FK)      │
+                                                           │ role             │
+                                                           │ createdAt        │
+                                                           │ updatedAt        │
+                                                           └──────────────────┘
 ```
 
 ### Table Purposes
@@ -305,6 +341,8 @@ Return Session { user, expiresAt, ... } or null
 **Account:** OAuth provider credentials + password hashes
 **Verification:** Email/phone verification tokens
 **Project:** User-created canvas/video projects (app-specific)
+**Organization:** Team/workspace containers (created by users)
+**OrganizationMember:** User membership + role assignments (owner/admin/member)
 
 ## Canvas Editor Layer (packages/canvas)
 

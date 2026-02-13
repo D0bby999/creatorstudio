@@ -42,7 +42,14 @@
       "Bash(do [ -f \"$file\" ])",
       "Bash(done)",
       "Bash(for:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(pnpm --filter \"@creator-studio/*\" test:*)",
+      "Bash(grep:*)",
+      "Bash(git -C /Users/dobby/Heroin/creatorstudio branch:*)",
+      "Bash(pnpm --filter \"@creator-studio/db\" test:*)",
+      "Bash(pnpm --filter \"@creator-studio/web\" test:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm --filter @creator-studio/auth test:*)"
     ]
   }
 }
