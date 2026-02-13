@@ -1,4 +1,5 @@
 import { prisma } from '../client'
+import { paginationArgs, type PaginationParams } from '../helpers/pagination'
 
 /**
  * Create crawl job
@@ -29,13 +30,21 @@ export async function findCrawlJobById(id: string) {
 }
 
 /**
- * Find crawl jobs by status
+ * Find crawl jobs by status (paginated)
  */
-export async function findCrawlJobsByStatus(status: string) {
-  return prisma.crawlJob.findMany({
-    where: { status },
-    orderBy: { priority: 'desc' },
-  })
+export async function findCrawlJobsByStatus(status: string, pagination?: PaginationParams) {
+  const where = { status }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.crawlJob.findMany({ where, orderBy: { priority: 'desc' }, take: p.take, skip: p.skip }),
+      prisma.crawlJob.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.crawlJob.findMany({ where, orderBy: { priority: 'desc' } })
 }
 
 /**
@@ -59,11 +68,19 @@ export async function updateCrawlJobStatus(
 }
 
 /**
- * Find all crawl jobs for a user
+ * Find all crawl jobs for a user (paginated)
  */
-export async function findCrawlJobsByUserId(userId: string) {
-  return prisma.crawlJob.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  })
+export async function findCrawlJobsByUserId(userId: string, pagination?: PaginationParams) {
+  const where = { userId }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.crawlJob.findMany({ where, orderBy: { createdAt: 'desc' }, take: p.take, skip: p.skip }),
+      prisma.crawlJob.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.crawlJob.findMany({ where, orderBy: { createdAt: 'desc' } })
 }

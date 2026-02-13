@@ -1,5 +1,8 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse } from 'react-router'
+import { Analytics } from '@vercel/analytics/react'
+import { useEffect } from 'react'
 import type { Route } from './+types/root'
+import { initSentry, captureError } from './lib/sentry-client'
 import './app.css'
 
 export const links: Route.LinksFunction = () => [
@@ -12,6 +15,10 @@ export const links: Route.LinksFunction = () => [
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    initSentry()
+  }, [])
+
   return (
     <html lang="en" className="h-full">
       <head>
@@ -24,6 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Analytics />
       </body>
     </html>
   )
@@ -34,6 +42,10 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  useEffect(() => {
+    captureError(error)
+  }, [error])
+
   let message = 'Oops!'
   let details = 'An unexpected error occurred.'
   let stack: string | undefined

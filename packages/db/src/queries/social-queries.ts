@@ -1,4 +1,5 @@
 import { prisma } from '../client'
+import { paginationArgs, type PaginationParams } from '../helpers/pagination'
 
 /**
  * Create social account
@@ -18,13 +19,21 @@ export async function createSocialAccount(data: {
 }
 
 /**
- * Find all social accounts for a user
+ * Find all social accounts for a user (paginated)
  */
-export async function findSocialAccountsByUserId(userId: string) {
-  return prisma.socialAccount.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  })
+export async function findSocialAccountsByUserId(userId: string, pagination?: PaginationParams) {
+  const where = { userId }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.socialAccount.findMany({ where, orderBy: { createdAt: 'desc' }, take: p.take, skip: p.skip }),
+      prisma.socialAccount.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.socialAccount.findMany({ where, orderBy: { createdAt: 'desc' } })
 }
 
 /**
@@ -44,20 +53,21 @@ export async function createSocialPost(data: {
 }
 
 /**
- * Find posts that are due to be published
+ * Find posts that are due to be published (paginated)
  */
-export async function findDuePosts() {
-  return prisma.socialPost.findMany({
-    where: {
-      status: 'scheduled',
-      scheduledAt: {
-        lte: new Date(),
-      },
-    },
-    include: {
-      socialAccount: true,
-    },
-  })
+export async function findDuePosts(pagination?: PaginationParams) {
+  const where = { status: 'scheduled', scheduledAt: { lte: new Date() } }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.socialPost.findMany({ where, include: { socialAccount: true }, take: p.take, skip: p.skip }),
+      prisma.socialPost.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.socialPost.findMany({ where, include: { socialAccount: true } })
 }
 
 /**

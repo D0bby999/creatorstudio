@@ -1,4 +1,5 @@
 import { prisma } from '../client'
+import { paginationArgs, type PaginationParams, type PaginatedResponse } from '../helpers/pagination'
 
 /**
  * Create new project
@@ -29,13 +30,21 @@ export async function findProjectById(id: string) {
 }
 
 /**
- * Find all projects for a user
+ * Find all projects for a user (paginated)
  */
-export async function findProjectsByUserId(userId: string) {
-  return prisma.project.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  })
+export async function findProjectsByUserId(userId: string, pagination?: PaginationParams) {
+  const where = { userId }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.project.findMany({ where, orderBy: { createdAt: 'desc' }, take: p.take, skip: p.skip }),
+      prisma.project.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.project.findMany({ where, orderBy: { createdAt: 'desc' } })
 }
 
 /**

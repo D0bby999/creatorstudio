@@ -1,4 +1,5 @@
 import { prisma } from '../client'
+import { paginationArgs, type PaginationParams } from '../helpers/pagination'
 
 /**
  * Create AI session
@@ -23,13 +24,21 @@ export async function findAiSessionById(id: string) {
 }
 
 /**
- * Find all AI sessions for a user
+ * Find all AI sessions for a user (paginated)
  */
-export async function findAiSessionsByUserId(userId: string) {
-  return prisma.aiSession.findMany({
-    where: { userId },
-    orderBy: { updatedAt: 'desc' },
-  })
+export async function findAiSessionsByUserId(userId: string, pagination?: PaginationParams) {
+  const where = { userId }
+
+  if (pagination) {
+    const p = paginationArgs(pagination)
+    const [items, total] = await Promise.all([
+      prisma.aiSession.findMany({ where, orderBy: { updatedAt: 'desc' }, take: p.take, skip: p.skip }),
+      prisma.aiSession.count({ where }),
+    ])
+    return p.toResponse(items, total)
+  }
+
+  return prisma.aiSession.findMany({ where, orderBy: { updatedAt: 'desc' } })
 }
 
 /**
