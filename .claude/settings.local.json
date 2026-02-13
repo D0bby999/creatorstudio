@@ -36,7 +36,13 @@
       "Bash(pnpm db:push:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(npx tsc:*)",
-      "Bash(pnpm --filter @creator-studio/web build:*)"
+      "Bash(pnpm --filter @creator-studio/web build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(for file in /Users/dobby/Heroin/creatorstudio/packages/ai/src/**/*.{ts,tsx} /Users/dobby/Heroin/creatorstudio/apps/web/app/routes/api.ai.ts /Users/dobby/Heroin/creatorstudio/apps/web/app/routes/dashboard/ai.tsx)",
+      "Bash(do [ -f \"$file\" ])",
+      "Bash(done)",
+      "Bash(for:*)",
+      "Bash(wc:*)"
     ]
   }
 }

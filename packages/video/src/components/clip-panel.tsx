@@ -71,6 +71,10 @@ const SAMPLE_IMAGES = [
 export const ClipPanel = ({ onAddClip, fps }: ClipPanelProps) => {
   const [textInput, setTextInput] = useState('')
   const [textDuration, setTextDuration] = useState('3')
+  const [audioUrl, setAudioUrl] = useState('')
+  const [audioDuration, setAudioDuration] = useState('5')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoDuration, setVideoDuration] = useState('5')
 
   const handleAddImage = (imageUrl: string) => {
     onAddClip({
@@ -99,6 +103,36 @@ export const ClipPanel = ({ onAddClip, fps }: ClipPanelProps) => {
       transition: { type: 'fade', durationInFrames: fps * 0.5 },
     })
     setTextInput('')
+  }
+
+  const handleAddAudio = () => {
+    if (!audioUrl.trim()) return
+
+    const durationSeconds = parseFloat(audioDuration) || 5
+    onAddClip({
+      type: 'audio',
+      src: audioUrl,
+      from: 0,
+      durationInFrames: fps * durationSeconds,
+      props: {
+        volume: 1,
+      },
+    })
+    setAudioUrl('')
+  }
+
+  const handleAddVideo = () => {
+    if (!videoUrl.trim()) return
+
+    const durationSeconds = parseFloat(videoDuration) || 5
+    onAddClip({
+      type: 'video',
+      src: videoUrl,
+      from: 0,
+      durationInFrames: fps * durationSeconds,
+      transition: { type: 'fade', durationInFrames: fps * 0.5 },
+    })
+    setVideoUrl('')
   }
 
   return (
@@ -144,6 +178,64 @@ export const ClipPanel = ({ onAddClip, fps }: ClipPanelProps) => {
           onClick={handleAddText}
         >
           Add Text Clip
+        </button>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>Audio Clip</div>
+        <label style={styles.label}>Audio URL</label>
+        <input
+          type="text"
+          style={styles.input}
+          placeholder="https://example.com/audio.mp3"
+          value={audioUrl}
+          onChange={(e) => setAudioUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAddAudio()}
+        />
+        <label style={styles.label}>Duration (seconds)</label>
+        <input
+          type="number"
+          style={styles.input}
+          min="1"
+          max="60"
+          step="1"
+          value={audioDuration}
+          onChange={(e) => setAudioDuration(e.target.value)}
+        />
+        <button
+          style={styles.button}
+          onClick={handleAddAudio}
+        >
+          Add Audio Clip
+        </button>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>Video Clip</div>
+        <label style={styles.label}>Video URL</label>
+        <input
+          type="text"
+          style={styles.input}
+          placeholder="https://example.com/video.mp4"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAddVideo()}
+        />
+        <label style={styles.label}>Duration (seconds)</label>
+        <input
+          type="number"
+          style={styles.input}
+          min="1"
+          max="60"
+          step="1"
+          value={videoDuration}
+          onChange={(e) => setVideoDuration(e.target.value)}
+        />
+        <button
+          style={styles.button}
+          onClick={handleAddVideo}
+        >
+          Add Video Clip
         </button>
       </div>
     </div>

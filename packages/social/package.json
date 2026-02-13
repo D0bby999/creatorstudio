@@ -7,15 +7,21 @@
     "./client": "./src/lib/instagram-client.ts",
     "./scheduler": "./src/lib/social-scheduler.ts",
     "./analytics": "./src/lib/social-analytics.ts",
-    "./types": "./src/types/social-types.ts"
+    "./types": "./src/types/social-types.ts",
+    "./factory": "./src/lib/platform-factory.ts",
+    "./composer": "./src/lib/unified-post-composer.ts",
+    "./upload": "./src/lib/media-upload-handler.ts",
+    "./interface": "./src/lib/platform-interface.ts"
   },
   "scripts": {
-    "build": "echo 'no build needed'"
+    "build": "echo 'no build needed'",
+    "test": "vitest run"
   },
   "dependencies": {
     "@creator-studio/db": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

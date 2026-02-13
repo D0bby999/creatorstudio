@@ -11,16 +11,19 @@
   },
   "scripts": {
     "lint": "echo 'no lint'",
-    "build": "echo 'no build needed'"
+    "build": "echo 'no build needed'",
+    "test": "vitest run"
   },
   "dependencies": {
-    "tldraw": "^4.3.1"
+    "tldraw": "^4.3.1",
+    "@creator-studio/db": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

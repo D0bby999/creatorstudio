@@ -50,6 +50,15 @@ const styles = {
     whiteSpace: 'nowrap',
     padding: '0 8px',
   } as CSSProperties,
+  dragHandle: {
+    position: 'absolute',
+    left: '4px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: '12px',
+    opacity: 0.6,
+    pointerEvents: 'none',
+  } as CSSProperties,
   playhead: {
     position: 'absolute',
     top: 0,
@@ -88,6 +97,8 @@ export const VideoTimeline = ({ project, currentFrame, onSeek }: VideoTimelinePr
         return '#ff9f4a'
       case 'video':
         return '#9f4aff'
+      case 'audio':
+        return '#4aff9f'
       default:
         return '#666666'
     }
@@ -125,6 +136,7 @@ export const VideoTimeline = ({ project, currentFrame, onSeek }: VideoTimelinePr
                     }}
                     title={`${clipName} (${clip.from}-${clip.from + clip.durationInFrames})`}
                   >
+                    <span style={styles.dragHandle}>≡</span>
                     {clipName}
                   </div>
                 )

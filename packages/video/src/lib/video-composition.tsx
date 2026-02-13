@@ -1,5 +1,5 @@
-import { AbsoluteFill, Img, Sequence, interpolate, useCurrentFrame } from 'remotion'
-import type { VideoProject, Clip } from '../types/video-types'
+import { AbsoluteFill, Img, Sequence, interpolate, useCurrentFrame, OffthreadVideo, Audio } from 'remotion'
+import type { VideoProject, Clip, AudioClipProps } from '../types/video-types'
 
 interface VideoCompositionProps {
   project: VideoProject
@@ -12,35 +12,83 @@ interface ClipRendererProps {
 const ClipRenderer = ({ clip }: ClipRendererProps) => {
   const frame = useCurrentFrame()
 
-  // Apply fade transition if present
+  // Apply transitions
   let opacity = 1
-  if (clip.transition?.type === 'fade') {
+  let transform = ''
+  let clipPath = ''
+
+  if (clip.transition) {
     const transitionFrames = clip.transition.durationInFrames
-    // Fade in at start
-    if (frame < transitionFrames) {
-      opacity = interpolate(frame, [0, transitionFrames], [0, 1], {
-        extrapolateRight: 'clamp',
-      })
-    }
-    // Fade out at end
-    const fadeOutStart = clip.durationInFrames - transitionFrames
-    if (frame >= fadeOutStart) {
-      opacity = interpolate(
-        frame,
-        [fadeOutStart, clip.durationInFrames],
-        [1, 0],
-        { extrapolateRight: 'clamp' },
-      )
+
+    switch (clip.transition.type) {
+      case 'fade': {
+        // Fade in at start
+        if (frame < transitionFrames) {
+          opacity = interpolate(frame, [0, transitionFrames], [0, 1], {
+            extrapolateRight: 'clamp',
+          })
+        }
+        // Fade out at end
+        const fadeOutStart = clip.durationInFrames - transitionFrames
+        if (frame >= fadeOutStart) {
+          opacity = interpolate(
+            frame,
+            [fadeOutStart, clip.durationInFrames],
+            [1, 0],
+            { extrapolateRight: 'clamp' },
+          )
+        }
+        break
+      }
+      case 'slide-left': {
+        const translateX = interpolate(frame, [0, transitionFrames], [-100, 0], { extrapolateRight: 'clamp' })
+        transform = `translateX(${translateX}%)`
+        break
+      }
+      case 'slide-right': {
+        const translateX = interpolate(frame, [0, transitionFrames], [100, 0], { extrapolateRight: 'clamp' })
+        transform = `translateX(${translateX}%)`
+        break
+      }
+      case 'slide-up': {
+        const translateY = interpolate(frame, [0, transitionFrames], [100, 0], { extrapolateRight: 'clamp' })
+        transform = `translateY(${translateY}%)`
+        break
+      }
+      case 'slide-down': {
+        const translateY = interpolate(frame, [0, transitionFrames], [-100, 0], { extrapolateRight: 'clamp' })
+        transform = `translateY(${translateY}%)`
+        break
+      }
+      case 'wipe': {
+        const progress = interpolate(frame, [0, transitionFrames], [0, 100], { extrapolateRight: 'clamp' })
+        clipPath = `inset(0 ${100 - progress}% 0 0)`
+        break
+      }
     }
   }
 
   // Render based on clip type
   if (clip.type === 'image') {
     return (
-      <AbsoluteFill style={{ opacity }}>
+      <AbsoluteFill style={{ opacity, transform, clipPath }}>
         <Img src={clip.src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </AbsoluteFill>
     )
+  }
+
+  if (clip.type === 'video') {
+    return (
+      <AbsoluteFill style={{ opacity, transform, clipPath }}>
+        <OffthreadVideo src={clip.src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </AbsoluteFill>
+    )
+  }
+
+  if (clip.type === 'audio') {
+    const audioProps = clip.props as AudioClipProps | undefined
+    const volume = audioProps?.volume ?? 1
+    return <Audio src={clip.src} volume={volume} />
   }
 
   if (clip.type === 'text') {
@@ -49,6 +97,8 @@ const ClipRenderer = ({ clip }: ClipRendererProps) => {
       <AbsoluteFill
         style={{
           opacity,
+          transform,
+          clipPath,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

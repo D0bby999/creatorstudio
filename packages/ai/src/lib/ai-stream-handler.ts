@@ -10,6 +10,7 @@ const TOOL_MAP = {
   researcher: { searchWeb, analyzeTrends },
   writer: {},
   designer: { suggestDesign },
+  planner: { searchWeb, analyzeTrends, suggestDesign },
 }
 
 /**

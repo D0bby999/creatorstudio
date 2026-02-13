@@ -19,8 +19,11 @@ model User {
   updatedAt      DateTime        @updatedAt
   sessions       Session[]
   accounts       Account[]
-  projects       Project[]
-  socialAccounts SocialAccount[]
+  projects            Project[]
+  socialAccounts      SocialAccount[]
+  crawlJobs           CrawlJob[]
+  aiSessions          AiSession[]
+  organizationMembers OrganizationMember[]
 
   @@unique([email])
   @@map("user")
@@ -148,4 +151,70 @@ model PostAnalytics {
 
   @@index([postId])
   @@map("post_analytics")
+}
+
+// ─── Crawler tables ───
+
+model CrawlJob {
+  id          String   @id @default(cuid())
+  url         String
+  type        String   // url | seo
+  status      String   @default("pending") // pending | running | completed | failed
+  result      Json?
+  error       String?
+  priority    Int      @default(0)
+  retryCount  Int      @default(0)
+  maxRetries  Int      @default(3)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@map("crawl_job")
+}
+
+// ─── AI tables ───
+
+model AiSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentRole  String
+  messages   Json     @default("[]")
+  tokenCount Int      @default(0)
+  title      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@map("ai_session")
+}
+
+// ─── Organization tables ───
+
+model Organization {
+  id        String               @id @default(cuid())
+  name      String
+  slug      String               @unique
+  members   OrganizationMember[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@map("organization")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String       @default("member") // owner | admin | member
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("organization_member")
 }

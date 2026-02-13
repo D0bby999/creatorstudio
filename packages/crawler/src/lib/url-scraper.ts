@@ -3,8 +3,13 @@ import type { ScrapedContent } from '../types/crawler-types'
 
 /**
  * Scrapes a URL and extracts content using cheerio
+ * @param url - URL to scrape
+ * @param session - Optional session data (cookies, userAgent)
  */
-export async function scrapeUrl(url: string): Promise<ScrapedContent> {
+export async function scrapeUrl(
+  url: string,
+  session?: { cookies?: string; userAgent?: string }
+): Promise<ScrapedContent> {
   try {
     // Normalize URL
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`
@@ -16,7 +21,8 @@ export async function scrapeUrl(url: string): Promise<ScrapedContent> {
     const response = await fetch(normalizedUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; CreatorStudio/1.0; +https://creatorstudio.dev)'
+        'User-Agent': session?.userAgent ?? 'Mozilla/5.0 (compatible; CreatorStudio/1.0; +https://creatorstudio.dev)',
+        ...(session?.cookies ? { 'Cookie': session.cookies } : {}),
       }
     })
 

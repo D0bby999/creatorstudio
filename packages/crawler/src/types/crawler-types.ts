@@ -40,3 +40,25 @@ export interface TrackedUrl {
   lastCrawl?: string
   schedule?: string
 }
+
+export interface RequestQueueItem {
+  url: string
+  priority: number
+  retryCount: number
+  maxRetries: number
+  metadata?: Record<string, unknown>
+}
+
+export interface RateLimitConfig {
+  maxPerMinute: number
+  maxConcurrent: number
+}
+
+export interface CrawlConfig {
+  maxDepth: number
+  sameDomainOnly: boolean
+  maxPages: number
+  rateLimitPerDomain: number
+}
+
+export type ExportFormat = 'json' | 'csv'

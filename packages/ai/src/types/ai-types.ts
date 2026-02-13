@@ -1,4 +1,6 @@
-export type AgentRole = 'researcher' | 'writer' | 'designer'
+import { z } from 'zod'
+
+export type AgentRole = 'researcher' | 'writer' | 'designer' | 'planner'
 
 export interface ChatMessage {
   id: string
@@ -43,4 +45,39 @@ export interface ContentDraft {
   hashtags: string[]
   platform: string
   characterCount: number
+}
+
+// Zod schemas for structured output
+export const ContentPlanSchema = z.object({
+  title: z.string(),
+  platforms: z.array(z.enum(['instagram', 'twitter', 'linkedin', 'youtube', 'tiktok'])),
+  topics: z.array(z.string()),
+  schedule: z.array(z.object({
+    day: z.string(),
+    platform: z.string(),
+    contentType: z.string(),
+  })),
+})
+export type ContentPlan = z.infer<typeof ContentPlanSchema>
+
+export const PostDraftSchema = z.object({
+  content: z.string(),
+  hashtags: z.array(z.string()),
+  platform: z.string(),
+  characterCount: z.number(),
+})
+export type PostDraft = z.infer<typeof PostDraftSchema>
+
+export const DesignBriefSchema = z.object({
+  templateId: z.string(),
+  colorScheme: z.array(z.string()),
+  textContent: z.string(),
+  dimensions: z.object({ width: z.number(), height: z.number() }),
+})
+export type DesignBrief = z.infer<typeof DesignBriefSchema>
+
+export interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
 }

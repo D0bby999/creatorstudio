@@ -1,6 +1,6 @@
-// Social platform types for Instagram MVP
+// Social platform types for multi-platform support
 
-export type SocialPlatform = 'instagram'
+export type SocialPlatform = 'instagram' | 'twitter' | 'linkedin'
 
 export type PostStatus = 'draft' | 'scheduled' | 'publishing' | 'published' | 'failed'
 

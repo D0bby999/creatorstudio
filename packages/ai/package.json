@@ -10,10 +10,14 @@
   },
   "scripts": {
     "lint": "echo 'no lint'",
-    "build": "echo 'no build needed'"
+    "build": "echo 'no build needed'",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.0",
+    "@creator-studio/canvas": "workspace:*",
+    "@creator-studio/crawler": "workspace:*",
+    "@creator-studio/db": "workspace:*",
     "ai": "^4.3.0",
     "zod": "^3.24.0"
   },
@@ -24,6 +28,7 @@
   "devDependencies": {
     "@types/react": "^18.3.25",
     "@types/react-dom": "^18.3.7",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,2 +1,7 @@
 export { prisma } from './client'
-export type { User, Session, Account, Project } from '@prisma/client'
+export type { User, Session, Account, Project, SocialAccount, SocialPost, PostAnalytics, CrawlJob, AiSession, Organization, OrganizationMember } from '@prisma/client'
+export * from './queries/user-queries'
+export * from './queries/project-queries'
+export * from './queries/social-queries'
+export * from './queries/crawl-queries'
+export * from './queries/ai-session-queries'

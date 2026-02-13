@@ -2,10 +2,19 @@ import { useState, useCallback } from 'react'
 import { Tldraw, type Editor } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { SocialCardShapeUtil } from '../shapes/social-card-shape'
+import { QuoteCardShapeUtil } from '../shapes/quote-card-shape'
+import { CarouselSlideShapeUtil } from '../shapes/carousel-slide-shape'
+import { TextOverlayShapeUtil } from '../shapes/text-overlay-shape'
 import { ExportPanel } from './export-panel'
 import { TemplatePanel } from './template-panel'
+import { ShapeInsertionToolbar } from './shape-insertion-toolbar'
 
-const customShapeUtils = [SocialCardShapeUtil]
+const customShapeUtils = [
+  SocialCardShapeUtil,
+  QuoteCardShapeUtil,
+  CarouselSlideShapeUtil,
+  TextOverlayShapeUtil,
+]
 
 interface CanvasEditorProps {
   /** Key for browser persistence (IndexedDB) */
@@ -70,6 +79,9 @@ export function CanvasEditor({ persistenceKey = 'creator-studio-canvas' }: Canva
       {showExport && editor && (
         <ExportPanel editor={editor} onClose={() => setShowExport(false)} />
       )}
+
+      {/* Shape insertion toolbar */}
+      {editor && <ShapeInsertionToolbar editor={editor} />}
 
       {/* Tldraw canvas */}
       <Tldraw

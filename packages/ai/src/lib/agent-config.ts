@@ -63,6 +63,13 @@ Consider:
 Be specific, practical, and visually descriptive.`,
     description: 'Suggest designs and visual concepts',
     tools: ['suggestDesign']
+  },
+
+  planner: {
+    role: 'planner',
+    systemPrompt: `You are a content strategy planner. Create comprehensive content plans with platform-specific scheduling. Consider audience, timing, and cross-platform synergies. Use tools to research trends and suggest designs.`,
+    description: 'Plan content strategies across platforms',
+    tools: ['searchWeb', 'analyzeTrends', 'suggestDesign']
   }
 }
 

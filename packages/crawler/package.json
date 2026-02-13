@@ -10,7 +10,8 @@
   },
   "scripts": {
     "lint": "echo 'no lint'",
-    "build": "echo 'no build needed'"
+    "build": "echo 'no build needed'",
+    "test": "vitest run"
   },
   "dependencies": {
     "cheerio": "^1.0.0"
@@ -20,6 +21,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

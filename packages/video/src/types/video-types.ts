@@ -16,7 +16,7 @@ export interface Track {
 
 export interface Clip {
   id: string
-  type: 'image' | 'video' | 'text'
+  type: 'image' | 'video' | 'text' | 'audio'
   src: string
   from: number // start frame
   durationInFrames: number
@@ -25,8 +25,18 @@ export interface Clip {
 }
 
 export interface Transition {
-  type: 'fade' | 'slide-left' | 'slide-right' | 'wipe'
+  type: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'wipe'
   durationInFrames: number
+}
+
+export interface AudioClipProps {
+  volume?: number
+  startFrom?: number
+}
+
+export interface VideoClipProps {
+  loop?: boolean
+  muted?: boolean
 }
 
 export type ExportFormat = 'mp4' | 'webm' | 'gif'

@@ -10,17 +10,22 @@
   },
   "scripts": {
     "lint": "echo 'no lint'",
-    "build": "echo 'no build needed'"
+    "build": "echo 'no build needed'",
+    "test": "vitest run"
   },
   "dependencies": {
     "remotion": "^4.0.0",
-    "@remotion/player": "^4.0.0"
+    "@remotion/player": "^4.0.0",
+    "@creator-studio/db": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

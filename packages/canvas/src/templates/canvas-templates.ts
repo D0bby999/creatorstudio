@@ -95,6 +95,65 @@ export const canvasTemplates: CanvasTemplate[] = [
     height: 1080,
     description: 'Widescreen slide (16:9)',
   },
+  // LinkedIn
+  {
+    id: 'li-post',
+    name: 'LinkedIn Post',
+    category: 'LinkedIn',
+    width: 1200,
+    height: 1200,
+    description: 'Square post (1:1)',
+  },
+  {
+    id: 'li-banner',
+    name: 'LinkedIn Banner',
+    category: 'LinkedIn',
+    width: 1584,
+    height: 396,
+    description: 'Profile banner',
+  },
+  {
+    id: 'li-article',
+    name: 'LinkedIn Article',
+    category: 'LinkedIn',
+    width: 1200,
+    height: 628,
+    description: 'Article cover image',
+  },
+  // Pinterest
+  {
+    id: 'pin-standard',
+    name: 'Pinterest Pin',
+    category: 'Pinterest',
+    width: 1000,
+    height: 1500,
+    description: 'Standard pin (2:3)',
+  },
+  {
+    id: 'pin-square',
+    name: 'Pinterest Square',
+    category: 'Pinterest',
+    width: 1000,
+    height: 1000,
+    description: 'Square pin (1:1)',
+  },
+  // Facebook (additional)
+  {
+    id: 'fb-cover',
+    name: 'Facebook Cover',
+    category: 'Facebook',
+    width: 820,
+    height: 312,
+    description: 'Page cover photo',
+  },
+  {
+    id: 'fb-story',
+    name: 'Facebook Story',
+    category: 'Facebook',
+    width: 1080,
+    height: 1920,
+    description: 'Story format (9:16)',
+  },
 ]
 
 /** Group templates by category */
