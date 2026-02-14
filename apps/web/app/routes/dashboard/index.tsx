@@ -1,6 +1,9 @@
 import { Link } from 'react-router'
 import { Image, Video, Share2, Globe, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@creator-studio/ui/components/card'
+import { PageHeader } from '@creator-studio/ui/components/composites/page-header'
+import { useSession } from '~/lib/auth-client'
+import { getGreeting } from '~/lib/format-utils'
 
 const tools = [
   {
@@ -36,12 +39,16 @@ const tools = [
 ]
 
 export default function DashboardIndex() {
+  const { data: session } = useSession()
+  const userName = session?.user?.name || 'there'
+
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">Choose a tool to get started</p>
-      </div>
+      <PageHeader
+        title={getGreeting(userName)}
+        description="Choose a tool to get started"
+        className="mb-6"
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tools.map(({ to, label, description, icon: Icon }) => (

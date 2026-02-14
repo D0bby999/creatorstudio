@@ -7,6 +7,8 @@ import { Button } from '@creator-studio/ui/components/button'
 import { Card } from '@creator-studio/ui/components/card'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
+import { PageHeader } from '@creator-studio/ui/components/composites/page-header'
+import { EmptyState } from '@creator-studio/ui/components/composites/empty-state'
 import {
   Dialog,
   DialogContent,
@@ -50,13 +52,11 @@ export default function OrganizationsPage({ loaderData }: Route.ComponentProps) 
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Organizations</h1>
-          <p className="mt-1 text-[hsl(var(--muted-foreground))]">
-            Manage your teams and workspaces
-          </p>
-        </div>
+      <PageHeader
+        title="Organizations"
+        description="Manage your teams and workspaces"
+        className="mb-6"
+      >
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -90,16 +90,14 @@ export default function OrganizationsPage({ loaderData }: Route.ComponentProps) 
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+      </PageHeader>
 
       {memberships.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Building2 className="mx-auto h-12 w-12 text-[hsl(var(--muted-foreground))]" />
-          <p className="mt-4 font-medium">No organizations yet</p>
-          <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-            Create your first organization to collaborate with your team
-          </p>
-        </Card>
+        <EmptyState
+          icon={<Building2 className="h-12 w-12" />}
+          title="No organizations yet"
+          description="Create your first organization to collaborate with your team"
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {memberships.map(({ organization: org, role }) => {

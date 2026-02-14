@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useLocation } from 'react-router'
 
 interface SidebarContextValue {
   collapsed: boolean
@@ -10,7 +11,12 @@ interface SidebarContextValue {
 
 const SidebarContext = createContext<SidebarContextValue | undefined>(undefined)
 
+const EDITOR_ROUTES = ['/dashboard/canvas', '/dashboard/video']
+
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const isEditorRoute = EDITOR_ROUTES.includes(location.pathname)
+
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('sidebar-collapsed') === 'true'
@@ -24,6 +30,12 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
       return next
     })
   }, [])
+
+  useEffect(() => {
+    if (isEditorRoute && !collapsed) {
+      setCollapsed(true)
+    }
+  }, [isEditorRoute, collapsed])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

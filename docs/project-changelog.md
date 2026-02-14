@@ -284,7 +284,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.5.0 | Phase 5a: Ecosystem | 2026-02-14 | Current |
+| 0.6.0 | UI/UX Design System | 2026-02-14 | Current |
+| 0.5.0 | Phase 5a: Ecosystem | 2026-02-14 | Released |
 | 0.4.0 | Phase 4: Enterprise | 2025-Q3 | Released |
 | 0.3.0 | Phase 3: Performance | 2025-Q2 | Released |
 | 0.2.0 | Phase 2: Packages | 2025-Q1 | Released |

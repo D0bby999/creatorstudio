@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Form, useFetcher } from 'react-router'
+import { useFetcher } from 'react-router'
 import { Key, Plus, Trash2, Copy, Check } from 'lucide-react'
 import { Button } from '@creator-studio/ui/components/button'
 import { Card } from '@creator-studio/ui/components/card'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
+import { PageHeader } from '@creator-studio/ui/components/composites/page-header'
+import { EmptyState } from '@creator-studio/ui/components/composites/empty-state'
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import type { Route } from './+types/api-keys'
@@ -70,18 +72,16 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">API Keys</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Manage API keys for programmatic access to Creator Studio
-          </p>
-        </div>
+      <PageHeader
+        title="API Keys"
+        description="Manage API keys for programmatic access to Creator Studio"
+        className="mb-6"
+      >
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Create API Key
         </Button>
-      </div>
+      </PageHeader>
 
       {showCreateDialog && (
         <Card className="mb-6 p-4">
@@ -134,10 +134,11 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Your API Keys</h2>
         {apiKeys.length === 0 ? (
-          <Card className="p-6 text-center text-[hsl(var(--muted-foreground))]">
-            <Key className="mx-auto mb-2 h-8 w-8 opacity-50" />
-            <p>No API keys created</p>
-          </Card>
+          <EmptyState
+            icon={<Key className="h-12 w-12" />}
+            title="No API keys created"
+            description="Create your first API key to access Creator Studio programmatically"
+          />
         ) : (
           <div className="space-y-3">
             {apiKeys.map((apiKey: typeof apiKeys[number]) => (

@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Form, useFetcher } from 'react-router'
+import { useFetcher } from 'react-router'
 import { Puzzle, FileText, Droplet, BarChart3 } from 'lucide-react'
 import { Button } from '@creator-studio/ui/components/button'
 import { Card } from '@creator-studio/ui/components/card'
+import { PageHeader } from '@creator-studio/ui/components/composites/page-header'
+import { EmptyState } from '@creator-studio/ui/components/composites/empty-state'
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import type { Route } from './+types/plugins'
@@ -91,12 +92,11 @@ export default function Plugins({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Plugins</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Extend Creator Studio with additional features and integrations
-        </p>
-      </div>
+      <PageHeader
+        title="Plugins"
+        description="Extend Creator Studio with additional features and integrations"
+        className="mb-6"
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {availablePlugins.map((plugin) => {
@@ -169,10 +169,13 @@ export default function Plugins({ loaderData }: Route.ComponentProps) {
       )}
 
       {installedPlugins.length === 0 && (
-        <Card className="mt-8 p-6 text-center text-[hsl(var(--muted-foreground))]">
-          <Puzzle className="mx-auto mb-2 h-8 w-8 opacity-50" />
-          <p>No plugins installed yet</p>
-        </Card>
+        <div className="mt-8">
+          <EmptyState
+            icon={<Puzzle className="h-12 w-12" />}
+            title="No plugins installed yet"
+            description="Enable plugins above to extend Creator Studio functionality"
+          />
+        </div>
       )}
     </div>
   )

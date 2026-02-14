@@ -1,4 +1,4 @@
-import { useState, useCallback, type CSSProperties } from 'react'
+import { useState, useCallback } from 'react'
 import { AiChat } from '@creator-studio/ai/components/ai-chat'
 import { type AgentRole } from '@creator-studio/ai/types/ai-types'
 
@@ -83,59 +83,25 @@ export default function AI() {
     setCurrentAgent(role as AgentRole)
   }, [])
 
-  const containerStyle: CSSProperties = {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#fff',
-  }
-
-  const errorBannerStyle: CSSProperties = {
-    padding: '16px',
-    backgroundColor: '#fef2f2',
-    borderBottom: '1px solid #fecaca',
-    color: '#991b1b',
-  }
-
-  const errorTitleStyle: CSSProperties = {
-    fontWeight: 600,
-    marginBottom: '4px',
-  }
-
-  const errorTextStyle: CSSProperties = {
-    fontSize: '14px',
-  }
-
-  const codeStyle: CSSProperties = {
-    backgroundColor: '#fee2e2',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontFamily: 'monospace',
-    fontSize: '13px',
-  }
-
-  const chatContainerStyle: CSSProperties = {
-    flex: 1,
-    overflow: 'hidden',
-  }
-
   return (
-    <div style={containerStyle}>
+    <div className="flex h-full flex-col bg-background">
       {error && (
-        <div style={errorBannerStyle}>
-          <div style={errorTitleStyle}>Error</div>
-          <div style={errorTextStyle}>{error}</div>
+        <div className="border-b border-destructive/20 bg-destructive/10 p-4 text-destructive">
+          <div className="mb-1 font-semibold">Error</div>
+          <div className="text-sm">{error}</div>
           {error.includes('OPENAI_API_KEY') && (
-            <div style={{ ...errorTextStyle, marginTop: '8px' }}>
+            <div className="mt-2 text-sm">
               To enable AI features, set your OpenAI API key:
               <br />
-              <code style={codeStyle}>export OPENAI_API_KEY=your-key-here</code>
+              <code className="rounded bg-destructive/20 px-1.5 py-0.5 font-mono text-[13px]">
+                export OPENAI_API_KEY=your-key-here
+              </code>
             </div>
           )}
         </div>
       )}
 
-      <div style={chatContainerStyle}>
+      <div className="flex-1 overflow-hidden">
         <AiChat
           messages={messages}
           onSendMessage={handleSend}
