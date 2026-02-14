@@ -24,7 +24,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@creator-studio/db": "workspace:*"
+    "@creator-studio/db": "workspace:*",
+    "@creator-studio/utils": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

@@ -19,7 +19,8 @@
     "@remotion/lambda": "^4.0.0",
     "@creator-studio/db": "workspace:*",
     "@creator-studio/redis": "workspace:*",
-    "@creator-studio/storage": "workspace:*"
+    "@creator-studio/storage": "workspace:*",
+    "@creator-studio/utils": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.3.1",

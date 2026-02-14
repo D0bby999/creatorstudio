@@ -34,6 +34,12 @@ class PluginWorkerSandbox {
         let pluginCode = null;
         const allowedNetworkUrls = ${allowedNetworkUrls};
 
+        // Block all network APIs except wrapped fetch
+        self.XMLHttpRequest = undefined;
+        self.WebSocket = undefined;
+        self.importScripts = undefined;
+        self.EventSource = undefined;
+
         // Wrap fetch to enforce network allowlist
         const originalFetch = self.fetch;
         self.fetch = function(url, options) {
@@ -65,7 +71,7 @@ class PluginWorkerSandbox {
 
           if (type === 'load') {
             try {
-              const response = await fetch(sourceUrl);
+              const response = await originalFetch(sourceUrl);
               const code = await response.text();
               pluginCode = new Function('self', 'postMessage', code);
               pluginCode(self, self.postMessage.bind(self));
@@ -148,9 +154,17 @@ class PluginWorkerSandbox {
       return Promise.reject(new Error(`Plugin ${pluginId} not loaded`))
     }
 
-    const callId = this.callIdCounter++
-    return new Promise((resolve) => {
-      this.pendingCalls.get(pluginId)?.set(callId, resolve)
+    const callId = this.callIdCounter = (this.callIdCounter + 1) % Number.MAX_SAFE_INTEGER
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCalls.get(pluginId)?.delete(callId)
+        reject(new Error(`Plugin ${pluginId} timed out after 30s`))
+      }, 30_000)
+
+      this.pendingCalls.get(pluginId)?.set(callId, (response) => {
+        clearTimeout(timeout)
+        resolve(response)
+      })
       worker.postMessage({ ...message, callId })
     })
   }

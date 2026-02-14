@@ -77,27 +77,39 @@ const PLATFORM_SCHEDULES: Record<string, PlatformSchedule> = {
   },
 }
 
-// UTC offset lookup for major timezones (hours from UTC)
-const TIMEZONE_OFFSETS: Record<string, number> = {
-  'America/New_York': -5,
-  'America/Chicago': -6,
-  'America/Denver': -7,
-  'America/Los_Angeles': -8,
-  'Europe/London': 0,
-  'Europe/Paris': 1,
-  'Europe/Berlin': 1,
-  'Asia/Tokyo': 9,
-  'Asia/Shanghai': 8,
-  'Asia/Dubai': 4,
-  'Australia/Sydney': 11,
-  'Pacific/Auckland': 13,
-  'UTC': 0,
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/**
+ * DST-aware timezone offset using Intl.DateTimeFormat
+ * Returns hours from UTC (e.g., -4 for EDT, -5 for EST)
+ */
+function getTimezoneOffset(timezone: string): number {
+  try {
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'shortOffset',
+    })
+    const parts = formatter.formatToParts(now)
+    const tzPart = parts.find(p => p.type === 'timeZoneName')
+    if (!tzPart) return 0
+
+    // Parse "GMT", "GMT-4", "GMT+5:30"
+    if (tzPart.value === 'GMT') return 0
+    const match = tzPart.value.match(/GMT([+-]?\d+)(?::(\d+))?/)
+    if (!match) return 0
+    const hours = parseInt(match[1], 10)
+    const minutes = match[2] ? parseInt(match[2], 10) : 0
+    return hours + (minutes / 60) * Math.sign(hours || 1)
+  } catch {
+    return 0
+  }
 }
 
 /**
  * Suggest optimal posting times for a platform
  * Returns top 5 time slots with engagement scores
- * Timezone adjusts hours (e.g., 'America/New_York' shifts UTC times by -5)
+ * Timezone adjusts hours dynamically (DST-aware)
  */
 export async function suggestPostingTimes(
   platform: string,
@@ -109,34 +121,24 @@ export async function suggestPostingTimes(
     throw new Error(`Platform ${platform} not supported`)
   }
 
-  // Get timezone offset (default to 0 for UTC)
-  const timezoneOffset = timezone ? (TIMEZONE_OFFSETS[timezone] ?? 0) : 0
-
+  const timezoneOffset = timezone ? getTimezoneOffset(timezone) : 0
   const suggestions: PostingTime[] = []
 
-  // Generate suggestions from platform best times
   for (const daySchedule of schedule.bestTimes) {
     for (const hour of daySchedule.hours) {
-      // Apply timezone offset
       let adjustedHour = hour + timezoneOffset
       let adjustedDay = daySchedule.day
 
-      // Handle day rollover when hour goes negative or >= 24
       if (adjustedHour < 0) {
         adjustedHour += 24
-        // Day shift backward (simplified - doesn't account for week wrap)
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        const currentDayIndex = days.indexOf(daySchedule.day)
-        adjustedDay = days[(currentDayIndex - 1 + 7) % 7]
+        const currentDayIndex = DAYS.indexOf(daySchedule.day)
+        adjustedDay = DAYS[(currentDayIndex - 1 + 7) % 7]
       } else if (adjustedHour >= 24) {
         adjustedHour -= 24
-        // Day shift forward
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        const currentDayIndex = days.indexOf(daySchedule.day)
-        adjustedDay = days[(currentDayIndex + 1) % 7]
+        const currentDayIndex = DAYS.indexOf(daySchedule.day)
+        adjustedDay = DAYS[(currentDayIndex + 1) % 7]
       }
 
-      // Calculate score based on popularity (more suggestions = higher score)
       const baseScore = 85
       const hourBonus = daySchedule.hours.length > 2 ? 10 : 5
       const weekendPenalty = ['Saturday', 'Sunday'].includes(adjustedDay) ? -5 : 0
@@ -149,7 +151,6 @@ export async function suggestPostingTimes(
     }
   }
 
-  // Sort by score and return top 5
   return suggestions
     .sort((a, b) => b.score - a.score)
     .slice(0, 5)

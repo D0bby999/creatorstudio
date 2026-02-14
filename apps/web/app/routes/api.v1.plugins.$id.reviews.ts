@@ -63,6 +63,14 @@ export async function action({ params, request }: { params: { id: string }; requ
       return Response.json({ error: 'Plugin not found' }, { status: 404 })
     }
 
+    // Require active installation before allowing review
+    const install = await prisma.pluginInstall.findUnique({
+      where: { pluginId_userId: { pluginId: params.id, userId } },
+    })
+    if (!install || install.uninstalledAt) {
+      return Response.json({ error: 'Must install plugin before reviewing' }, { status: 403 })
+    }
+
     const review = await prisma.pluginReview.upsert({
       where: {
         pluginId_userId: { pluginId: params.id, userId },

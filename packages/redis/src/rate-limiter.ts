@@ -77,6 +77,10 @@ export async function checkRateLimit(apiKeyId: string, limit = 10, windowSeconds
     return
   }
 
+  // Move accessed entry to end of Map (LRU: most recently used at end)
+  memoryWindows.delete(apiKeyId)
+  memoryWindows.set(apiKeyId, existing)
+
   if (existing.count >= limit) {
     const retryAfter = Math.ceil((existing.resetAt - now) / 1000)
     throw new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {

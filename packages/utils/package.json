@@ -1,0 +1,13 @@
+{
+  "name": "@creator-studio/utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ssrf-validator": "./src/ssrf-validator.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.8",
+    "typescript": "^5.9.3"
+  }
+}

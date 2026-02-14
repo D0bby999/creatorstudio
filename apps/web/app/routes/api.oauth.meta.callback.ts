@@ -35,6 +35,12 @@ interface DiscoveredAccount {
   pageAccessToken?: string
 }
 
+function metaApiFetch(url: string, token: string) {
+  return fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
 export async function loader({ request }: LoaderArgs) {
   try {
     await requireSession(request)
@@ -86,13 +92,12 @@ export async function loader({ request }: LoaderArgs) {
 
     // Discover connected platforms (store encrypted tokens for security)
     const discoveredAccounts: DiscoveredAccount[] = []
-
-    // Encrypt tokens before storing
     const encryptedAccessToken = encryptToken(longLivedResult.accessToken)
 
-    // Get Facebook Pages
-    const pagesResponse = await fetch(
-      `https://graph.facebook.com/v22.0/me/accounts?access_token=${longLivedResult.accessToken}`
+    // Get Facebook Pages — use Authorization header (not query param)
+    const pagesResponse = await metaApiFetch(
+      'https://graph.facebook.com/v22.0/me/accounts',
+      longLivedResult.accessToken
     )
     if (pagesResponse.ok) {
       const pagesData = await pagesResponse.json()
@@ -108,17 +113,18 @@ export async function loader({ request }: LoaderArgs) {
         })
 
         // Check if page has Instagram business account
-        const igResponse = await fetch(
-          `https://graph.facebook.com/v22.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+        const igResponse = await metaApiFetch(
+          `https://graph.facebook.com/v22.0/${page.id}?fields=instagram_business_account`,
+          page.access_token
         )
         if (igResponse.ok) {
           const igData = await igResponse.json()
           if (igData.instagram_business_account) {
             const igAccountId = igData.instagram_business_account.id
 
-            // Get Instagram username
-            const igProfileResponse = await fetch(
-              `https://graph.facebook.com/v22.0/${igAccountId}?fields=username&access_token=${page.access_token}`
+            const igProfileResponse = await metaApiFetch(
+              `https://graph.facebook.com/v22.0/${igAccountId}?fields=username`,
+              page.access_token
             )
             if (igProfileResponse.ok) {
               const igProfile = await igProfileResponse.json()
@@ -138,15 +144,16 @@ export async function loader({ request }: LoaderArgs) {
     }
 
     // Check for Threads access (requires threads_basic scope)
-    const threadsResponse = await fetch(
-      `https://graph.facebook.com/v22.0/me?fields=threads_publishing_limit&access_token=${longLivedResult.accessToken}`
+    const threadsResponse = await metaApiFetch(
+      'https://graph.facebook.com/v22.0/me?fields=threads_publishing_limit',
+      longLivedResult.accessToken
     )
     if (threadsResponse.ok) {
       const threadsData = await threadsResponse.json()
       if (threadsData.threads_publishing_limit) {
-        // User has Threads access
-        const meResponse = await fetch(
-          `https://graph.facebook.com/v22.0/me?access_token=${longLivedResult.accessToken}`
+        const meResponse = await metaApiFetch(
+          'https://graph.facebook.com/v22.0/me',
+          longLivedResult.accessToken
         )
         if (meResponse.ok) {
           const meData: MetaUserData = await meResponse.json()
@@ -161,17 +168,14 @@ export async function loader({ request }: LoaderArgs) {
       }
     }
 
-    // Store encrypted accounts in Redis (not cookie) for security
-    // Generate random session ID to reference the cached data
+    // Store accounts in Redis — pass raw object, cacheSet handles serialization
     const discoverySessionId = crypto.randomUUID()
     await cacheSet(
       `meta:discover:${discoverySessionId}`,
-      JSON.stringify(discoveredAccounts),
+      discoveredAccounts,
       300 // 5 min TTL
     )
 
-    // Store only the session ID in cookie (not the tokens)
-    // NOTE: Picker dialog route must read from Redis using this session ID
     const headers = new Headers()
     headers.append(
       'Set-Cookie',

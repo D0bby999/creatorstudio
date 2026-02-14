@@ -74,26 +74,45 @@ export async function getUserInstalledPlugins(userId: string) {
 }
 
 export async function trackPluginInstall(pluginId: string, userId: string) {
-  await prisma.pluginInstall.upsert({
-    where: { pluginId_userId: { pluginId, userId } },
-    create: { pluginId, userId, installedAt: new Date() },
-    update: { uninstalledAt: null },
-  })
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.pluginInstall.findUnique({
+      where: { pluginId_userId: { pluginId, userId } },
+    })
 
-  await prisma.plugin.update({
-    where: { id: pluginId },
-    data: { installCount: { increment: 1 } },
+    if (existing && !existing.uninstalledAt) return
+
+    await tx.pluginInstall.upsert({
+      where: { pluginId_userId: { pluginId, userId } },
+      create: { pluginId, userId, installedAt: new Date() },
+      update: { uninstalledAt: null },
+    })
+
+    await tx.plugin.update({
+      where: { id: pluginId },
+      data: { installCount: { increment: 1 } },
+    })
   })
 }
 
 export async function trackPluginUninstall(pluginId: string, userId: string) {
-  await prisma.pluginInstall.update({
-    where: { pluginId_userId: { pluginId, userId } },
-    data: { uninstalledAt: new Date() },
-  })
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.pluginInstall.findUnique({
+      where: { pluginId_userId: { pluginId, userId } },
+    })
 
-  await prisma.plugin.update({
-    where: { id: pluginId },
-    data: { installCount: { decrement: 1 } },
+    if (!existing || existing.uninstalledAt) return
+
+    await tx.pluginInstall.update({
+      where: { pluginId_userId: { pluginId, userId } },
+      data: { uninstalledAt: new Date() },
+    })
+
+    const plugin = await tx.plugin.findUnique({ where: { id: pluginId }, select: { installCount: true } })
+    if (plugin && plugin.installCount > 0) {
+      await tx.plugin.update({
+        where: { id: pluginId },
+        data: { installCount: { decrement: 1 } },
+      })
+    }
   })
 }

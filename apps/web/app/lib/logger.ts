@@ -1,13 +1,14 @@
 import pino from 'pino'
+import { createRequire } from 'node:module'
 
 const isDev = process.env.NODE_ENV === 'development'
 
-// Safely configure pino-pretty transport in dev mode
-// Falls back to default JSON transport if pino-pretty is unavailable
 function getTransportConfig() {
   if (!isDev) return undefined
 
   try {
+    const require = createRequire(import.meta.url)
+    require.resolve('pino-pretty')
     return {
       target: 'pino-pretty',
       options: {
@@ -17,7 +18,6 @@ function getTransportConfig() {
       },
     }
   } catch {
-    // pino-pretty not available, use default JSON transport
     return undefined
   }
 }

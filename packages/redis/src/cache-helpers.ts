@@ -15,13 +15,15 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
     return value ?? null
   }
 
-  // Fallback: in-memory
+  // Fallback: in-memory — move to end for LRU on access
   const entry = memoryStore.get(key)
   if (!entry) return null
   if (entry.expiresAt && Date.now() > entry.expiresAt) {
     memoryStore.delete(key)
     return null
   }
+  memoryStore.delete(key)
+  memoryStore.set(key, entry)
   return JSON.parse(entry.value) as T
 }
 
@@ -37,9 +39,8 @@ export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): P
     return
   }
 
-  // Fallback: in-memory with LRU eviction
+  // Fallback: in-memory with LRU eviction (least recently used = first in Map)
   if (memoryStore.size >= MAX_MEMORY_ENTRIES) {
-    // Remove oldest entry (first key in Map)
     const oldestKey = memoryStore.keys().next().value
     if (oldestKey) {
       memoryStore.delete(oldestKey)

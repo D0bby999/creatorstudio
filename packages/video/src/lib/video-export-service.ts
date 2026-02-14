@@ -8,36 +8,24 @@
 import { getRemotionLambdaConfig } from './remotion-lambda-config'
 import { cacheGet, cacheSet } from '@creator-studio/redis'
 import { uploadFile, getPublicUrl, generateMediaPath } from '@creator-studio/storage'
+import { validateServerFetchUrl } from '@creator-studio/utils/ssrf-validator'
 
 /**
- * Inline SSRF prevention for S3 URL validation
- * Only allows expected AWS S3 domains
+ * S3 URL validation — validates HTTPS + expected AWS S3 domain in region.
+ * Uses shared SSRF validator for base checks, then applies S3-specific domain allowlist.
  */
 function validateS3Url(urlStr: string, expectedRegion: string): void {
-  try {
-    const url = new URL(urlStr)
+  validateServerFetchUrl(urlStr)
 
-    // Only allow HTTPS
-    if (url.protocol !== 'https:') {
-      throw new Error(`Non-HTTPS S3 URL blocked: ${urlStr}`)
-    }
+  const url = new URL(urlStr)
+  const allowedPatterns = [
+    new RegExp(`^[a-z0-9.-]+\\.s3\\.${expectedRegion}\\.amazonaws\\.com$`),
+    new RegExp(`^s3\\.${expectedRegion}\\.amazonaws\\.com$`),
+  ]
 
-    // Validate it's an AWS S3 domain in the expected region
-    const allowedPatterns = [
-      new RegExp(`^[a-z0-9.-]+\\.s3\\.${expectedRegion}\\.amazonaws\\.com$`),
-      new RegExp(`^s3\\.${expectedRegion}\\.amazonaws\\.com$`),
-    ]
-
-    const isValidS3Domain = allowedPatterns.some((pattern) => pattern.test(url.hostname))
-
-    if (!isValidS3Domain) {
-      throw new Error(`Invalid S3 domain (expected region ${expectedRegion}): ${urlStr}`)
-    }
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error(`Invalid S3 URL format: ${urlStr}`)
-    }
-    throw error
+  const isValidS3Domain = allowedPatterns.some((pattern) => pattern.test(url.hostname))
+  if (!isValidS3Domain) {
+    throw new Error(`Invalid S3 domain (expected region ${expectedRegion}): ${urlStr}`)
   }
 }
 
@@ -104,15 +92,15 @@ export async function startExport(
       privacy: 'public',
     })
 
-    // Cache initial progress
-    await cacheSet(
+    // Cache initial progress — pass raw object, cacheSet handles serialization
+    await cacheSet<ExportProgress>(
       `video:export:${exportId}`,
-      JSON.stringify({
+      {
         exportId,
         status: 'rendering',
         progress: 0,
         renderId: result.renderId,
-      } as ExportProgress),
+      },
       3600 // 1 hour TTL
     )
 
@@ -153,10 +141,10 @@ export async function getExportProgress(
       renderId,
     }
 
-    // Cache progress update
-    await cacheSet(
+    // Cache progress update — pass raw object, cacheSet handles serialization
+    await cacheSet<ExportProgress>(
       `video:export:${exportId}`,
-      JSON.stringify(exportProgress),
+      exportProgress,
       3600
     )
 

@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { ScrapedContent } from '../types/crawler-types'
+import { resolveAndValidateUrl } from '@creator-studio/utils/ssrf-validator'
 
 /**
  * Scrapes a URL and extracts content using cheerio
@@ -13,6 +14,9 @@ export async function scrapeUrl(
   try {
     // Normalize URL
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`
+
+    // Validate URL with DNS resolution — allow HTTP for crawler
+    await resolveAndValidateUrl(normalizedUrl, { allowHttp: true })
 
     // Fetch HTML with timeout
     const controller = new AbortController()

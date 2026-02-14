@@ -302,6 +302,7 @@ model Plugin {
   @@index([userId])
   @@index([status])
   @@index([categoryId])
+  @@index([tags], type: Gin)
   @@map("plugin")
 }
 

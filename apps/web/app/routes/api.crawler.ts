@@ -1,11 +1,13 @@
 import type { Route } from './+types/api.crawler'
 import { createJob, getJobs } from '@creator-studio/crawler/lib/crawl-job-manager'
+import { requireSession } from '~/lib/auth-server'
 import { logger } from '~/lib/logger'
 
 /**
  * POST handler: creates a new crawl job
  */
 export async function action({ request }: Route.ActionArgs) {
+  await requireSession(request)
   try {
     const body = await request.json()
     const { url, type } = body
@@ -39,7 +41,8 @@ export async function action({ request }: Route.ActionArgs) {
 /**
  * GET handler: returns list of recent jobs
  */
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireSession(request)
   try {
     const jobs = await getJobs()
     return Response.json({ jobs })

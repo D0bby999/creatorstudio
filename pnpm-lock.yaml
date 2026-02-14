@@ -53,6 +53,9 @@ importers:
       '@creator-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@creator-studio/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@creator-studio/video':
         specifier: workspace:*
         version: link:../../packages/video
@@ -282,6 +285,9 @@ importers:
       '@creator-studio/redis':
         specifier: workspace:*
         version: link:../redis
+      '@creator-studio/utils':
+        specifier: workspace:*
+        version: link:../utils
       cheerio:
         specifier: ^1.0.0
         version: 1.2.0
@@ -355,6 +361,9 @@ importers:
       '@creator-studio/db':
         specifier: workspace:*
         version: link:../db
+      '@creator-studio/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       typescript:
         specifier: ^5.9.3
@@ -461,6 +470,15 @@ importers:
         specifier: ^3.2.1
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
+  packages/utils:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.18.8
+        version: 22.19.11
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/video:
     dependencies:
       '@creator-studio/db':
@@ -472,6 +490,9 @@ importers:
       '@creator-studio/storage':
         specifier: workspace:*
         version: link:../storage
+      '@creator-studio/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@remotion/lambda':
         specifier: ^4.0.0
         version: 4.0.422(@remotion/bundler@4.0.422(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

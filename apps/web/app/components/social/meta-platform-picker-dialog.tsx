@@ -26,26 +26,22 @@ interface MetaPlatformPickerDialogProps {
 export function MetaPlatformPickerDialog({ show, onClose }: MetaPlatformPickerDialogProps) {
   const [discoveredAccounts, setDiscoveredAccounts] = useState<DiscoveredAccount[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(false)
   const fetcher = useFetcher()
 
   useEffect(() => {
     if (show) {
-      // Read discovered accounts from cookie
-      const cookies = document.cookie.split(';')
-      const accountsCookie = cookies
-        .find((c) => c.trim().startsWith('meta_discovered_accounts='))
-        ?.split('=')[1]
-
-      if (accountsCookie) {
-        try {
-          const accounts = JSON.parse(decodeURIComponent(accountsCookie))
-          setDiscoveredAccounts(accounts)
-          // Pre-select all accounts
-          setSelectedAccounts(new Set(accounts.map((_: any, i: number) => i.toString())))
-        } catch (error) {
-          console.error('Failed to parse discovered accounts:', error)
-        }
-      }
+      setLoading(true)
+      fetch('/api/social/meta-discovered-accounts')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.accounts) {
+            setDiscoveredAccounts(data.accounts)
+            setSelectedAccounts(new Set(data.accounts.map((_: unknown, i: number) => i.toString())))
+          }
+        })
+        .catch((err) => console.error('Failed to fetch discovered accounts:', err))
+        .finally(() => setLoading(false))
     }
   }, [show])
 
@@ -106,7 +102,9 @@ export function MetaPlatformPickerDialog({ show, onClose }: MetaPlatformPickerDi
             </Button>
           </div>
 
-          {discoveredAccounts.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading accounts...</p>
+          ) : discoveredAccounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">No accounts found. Please try again.</p>
           ) : (
             <>

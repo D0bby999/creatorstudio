@@ -16,43 +16,49 @@ export async function action({ params, request }: { params: { id: string }; requ
     }
 
     if (request.method === 'POST') {
-      const install = await prisma.pluginInstall.upsert({
-        where: {
-          pluginId_userId: { pluginId, userId },
-        },
-        create: {
-          pluginId,
-          userId,
-          installedAt: new Date(),
-        },
-        update: {
-          uninstalledAt: null,
-        },
-      })
+      const install = await prisma.$transaction(async (tx) => {
+        const existing = await tx.pluginInstall.findUnique({
+          where: { pluginId_userId: { pluginId, userId } },
+        })
 
-      await prisma.plugin.update({
-        where: { id: pluginId },
-        data: { installCount: { increment: 1 } },
+        if (existing && !existing.uninstalledAt) {
+          return existing // Already installed, no-op
+        }
+
+        const record = await tx.pluginInstall.upsert({
+          where: { pluginId_userId: { pluginId, userId } },
+          create: { pluginId, userId, installedAt: new Date() },
+          update: { uninstalledAt: null },
+        })
+
+        await tx.plugin.update({
+          where: { id: pluginId },
+          data: { installCount: { increment: 1 } },
+        })
+
+        return record
       })
 
       return Response.json({ install })
     } else if (request.method === 'DELETE') {
-      const install = await prisma.pluginInstall.findUnique({
-        where: { pluginId_userId: { pluginId, userId } },
-      })
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.pluginInstall.findUnique({
+          where: { pluginId_userId: { pluginId, userId } },
+        })
 
-      if (!install) {
-        return Response.json({ error: 'Plugin not installed' }, { status: 404 })
-      }
+        if (!existing || existing.uninstalledAt) {
+          throw new Response(JSON.stringify({ error: 'Plugin not installed' }), { status: 404 })
+        }
 
-      await prisma.pluginInstall.update({
-        where: { pluginId_userId: { pluginId, userId } },
-        data: { uninstalledAt: new Date() },
-      })
+        await tx.pluginInstall.update({
+          where: { pluginId_userId: { pluginId, userId } },
+          data: { uninstalledAt: new Date() },
+        })
 
-      await prisma.plugin.update({
-        where: { id: pluginId },
-        data: { installCount: { decrement: 1 } },
+        await tx.plugin.update({
+          where: { id: pluginId },
+          data: { installCount: { decrement: 1 } },
+        })
       })
 
       return Response.json({ success: true })
@@ -60,6 +66,7 @@ export async function action({ params, request }: { params: { id: string }; requ
 
     return Response.json({ error: 'Method not allowed' }, { status: 405 })
   } catch (error) {
+    if (error instanceof Response) throw error
     logger.error({ error, pluginId }, 'Failed to track plugin install/uninstall')
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }

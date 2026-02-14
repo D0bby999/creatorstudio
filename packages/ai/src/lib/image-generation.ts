@@ -72,11 +72,15 @@ export async function generateImage(
 
     await new Promise(resolve => setTimeout(resolve, 1000))
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10_000)
     const pollResponse = await fetch(`${REPLICATE_API_URL}/${predictionId}`, {
       headers: {
         'Authorization': `Token ${token}`,
       },
+      signal: controller.signal,
     })
+    clearTimeout(timeoutId)
 
     if (!pollResponse.ok) {
       throw new Error('Failed to poll prediction status')
