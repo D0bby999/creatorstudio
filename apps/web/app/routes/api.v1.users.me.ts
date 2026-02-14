@@ -5,7 +5,7 @@ import { checkRateLimit } from '~/lib/api-rate-limiter'
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { userId, apiKey } = await requireApiKey(request)
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const user = await prisma.user.findUnique({
     where: { id: userId },

@@ -43,10 +43,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const sessionId = url.searchParams.get('sessionId')
 
   if (sessionId) {
-    const session = getSession(sessionId)
+    const session = await getSession(sessionId)
     return Response.json({ session })
   }
 
-  const sessions = getSessions()
+  const sessions = await getSessions()
   return Response.json({ sessions })
 }

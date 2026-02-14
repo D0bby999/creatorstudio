@@ -1,5 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
+import type { generateImage } from './image-generation'
+import type { suggestHashtags } from './hashtag-suggestions'
 
 /**
  * Web search tool - uses crawler to scrape search results
@@ -222,6 +224,64 @@ export const suggestDesign = tool({
           }
         ],
         contentAnalysis: `For "${content}" on ${platform}, consider using visual hierarchy with your main message front and center.`
+      }
+    }
+  },
+})
+
+/**
+ * Image generation tool - creates images from text prompts via Replicate API
+ */
+export const generateImageTool = tool({
+  description: 'Generate an image from a text description using AI',
+  parameters: z.object({
+    prompt: z.string().describe('Detailed description of the image to generate'),
+    width: z.number().optional().describe('Image width in pixels (default: 1024)'),
+    height: z.number().optional().describe('Image height in pixels (default: 1024)'),
+  }),
+  execute: async ({ prompt, width, height }) => {
+    try {
+      const { generateImage } = await import('./image-generation')
+      const result = await generateImage(prompt, { width, height })
+      return {
+        success: true,
+        imageUrl: result.url,
+        id: result.id,
+        prompt,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Image generation failed',
+      }
+    }
+  },
+})
+
+/**
+ * Hashtag suggestion tool - generates platform-specific hashtags
+ */
+export const suggestHashtagsTool = tool({
+  description: 'Generate relevant hashtags for social media content',
+  parameters: z.object({
+    content: z.string().describe('The content to generate hashtags for'),
+    platform: z.enum(['instagram', 'twitter', 'tiktok', 'linkedin']).describe('Target social platform'),
+    count: z.number().optional().describe('Number of hashtags to generate'),
+  }),
+  execute: async ({ content, platform, count }) => {
+    try {
+      const { suggestHashtags } = await import('./hashtag-suggestions')
+      const hashtags = await suggestHashtags(content, platform, count)
+      return {
+        success: true,
+        hashtags,
+        platform,
+        formatted: hashtags.map(tag => `#${tag}`).join(' '),
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Hashtag generation failed',
       }
     }
   },

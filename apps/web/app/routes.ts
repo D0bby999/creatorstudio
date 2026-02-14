@@ -6,6 +6,7 @@ export default [
   route('sign-up', 'routes/sign-up.tsx'),
   route('api/auth/*', 'routes/api.auth.$.ts'),
   route('api/ai', 'routes/api.ai.ts'),
+  route('api/inngest', 'routes/api.inngest.ts'),
   route('api/organizations', 'routes/api.organizations.ts'),
   route('api/social/connect', 'routes/api.social.connect.ts'),
   route('api/webhooks', 'routes/api.webhooks.ts'),

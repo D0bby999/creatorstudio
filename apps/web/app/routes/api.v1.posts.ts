@@ -5,7 +5,7 @@ import { checkRateLimit } from '~/lib/api-rate-limiter'
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { userId, apiKey } = await requireApiKey(request, ['posts:read'])
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const url = new URL(request.url)
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50') || 50, 100)
@@ -39,7 +39,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export async function action({ request }: Route.ActionArgs) {
   const { userId, apiKey } = await requireApiKey(request, ['posts:write'])
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const body = await request.json()
   const { content, platform, socialAccountId, mediaUrls, scheduledAt } = body

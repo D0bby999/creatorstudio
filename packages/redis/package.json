@@ -1,0 +1,20 @@
+{
+  "name": "@creator-studio/redis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/redis-client.ts",
+    "./cache": "./src/cache-helpers.ts",
+    "./rate-limiter": "./src/rate-limiter.ts"
+  },
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.8",
+    "typescript": "^5.9.3"
+  }
+}

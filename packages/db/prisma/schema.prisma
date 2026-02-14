@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ─── Better Auth tables ───
@@ -27,6 +28,8 @@ model User {
   webhookEndpoints    WebhookEndpoint[]
   plugins             Plugin[]
   apiKeys             ApiKey[]
+  mediaFiles          MediaFile[]
+  videoExports        VideoExport[]
 
   @@unique([email])
   @@map("user")
@@ -313,4 +316,48 @@ model ApiKey {
   @@index([userId])
   @@index([key])
   @@map("api_key")
+}
+
+// ─── Media Storage tables ───
+
+model MediaFile {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  filename    String
+  contentType String
+  size        Int
+  url         String
+  type        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@map("media_file")
+}
+
+// ─── Video Export tables ───
+
+model VideoExport {
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  status      String   @default("queued")
+  format      String   @default("mp4")
+  progress    Float    @default(0)
+  renderId    String?
+  outputUrl   String?
+  fileSize    Int?
+  duration    Float?
+  error       String?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@map("video_export")
 }

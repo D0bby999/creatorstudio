@@ -40,7 +40,7 @@ export async function action({ request }: Route.ActionArgs) {
  */
 export async function loader() {
   try {
-    const jobs = getJobs()
+    const jobs = await getJobs()
     return Response.json({ jobs })
   } catch (error) {
     console.error('Crawler API error:', error)

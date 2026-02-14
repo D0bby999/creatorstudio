@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build artifacts
+**/build
+**/.turbo
+**/dist
+**/.next
+
+# Git
+.git
+.gitignore
+.github
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!README.md
+docs
+plans
+reference
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage
+.vitest
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
+.npmrc
+.yarnrc
+.pnp.*

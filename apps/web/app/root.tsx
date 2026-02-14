@@ -2,7 +2,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse }
 import { Analytics } from '@vercel/analytics/react'
 import { useEffect } from 'react'
 import type { Route } from './+types/root'
-import { initSentry, captureError } from './lib/sentry-client'
+import { captureError } from './lib/sentry-client'
 import { ThemeProvider } from '@creator-studio/ui/lib/theme-provider'
 import { themeScript } from '@creator-studio/ui/lib/theme-script'
 import './app.css'
@@ -17,10 +17,6 @@ export const links: Route.LinksFunction = () => [
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    initSentry()
-  }, [])
-
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>

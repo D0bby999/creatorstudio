@@ -1,0 +1,23 @@
+{
+  "name": "@creator-studio/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "lint": "echo 'no lint'",
+    "build": "echo 'no build needed'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.8",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.1"
+  }
+}

@@ -6,6 +6,43 @@ import { InstagramClient } from './instagram-client'
 import type { ScheduledPostJob } from '../types/social-types'
 
 /**
+ * Send social post scheduled event to Inngest
+ */
+export async function sendScheduledPostEvent(postId: string, scheduledAt: Date): Promise<void> {
+  // Skip if INNGEST_EVENT_KEY not configured
+  if (!process.env.INNGEST_EVENT_KEY) {
+    console.warn('INNGEST_EVENT_KEY not set, scheduled posts will not auto-publish')
+    return
+  }
+
+  try {
+    const response = await fetch('https://inn.gs/e/creator-studio', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.INNGEST_EVENT_KEY}`,
+      },
+      body: JSON.stringify({
+        name: 'social/post.scheduled',
+        data: {
+          postId,
+          scheduledAt: scheduledAt.toISOString(),
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Inngest API error: ${response.status}`)
+    }
+
+    console.log(`Sent Inngest event for post ${postId}`)
+  } catch (error) {
+    console.error('Failed to send Inngest event:', error)
+    // Don't throw - post is still scheduled in DB
+  }
+}
+
+/**
  * Get posts that are due to be published
  */
 export async function getDuePosts(): Promise<ScheduledPostJob[]> {
@@ -147,6 +184,11 @@ export async function schedulePost(params: {
   })
 
   console.log(`Scheduled post ${post.id} for ${scheduledAt.toISOString()}`)
+
+  // Send Inngest event for background publishing
+  await sendScheduledPostEvent(post.id, scheduledAt).catch((error) => {
+    console.error('Failed to schedule via Inngest:', error)
+  })
 
   return post.id
 }

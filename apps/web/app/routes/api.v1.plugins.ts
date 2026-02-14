@@ -5,7 +5,7 @@ import { validatePluginManifest } from '~/lib/plugins/plugin-manifest-schema'
 
 export async function loader({ request }: { request: Request }) {
   const { apiKey } = await requireApiKey(request, ['plugins:read'])
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const url = new URL(request.url)
   const search = url.searchParams.get('search') || ''

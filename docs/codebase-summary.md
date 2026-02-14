@@ -420,6 +420,54 @@ creator-studio/
 - `node:crypto` → HMAC signing
 - Database storage for webhook subscriptions and delivery logs
 
+### `@creator-studio/redis`
+**Path:** `packages/redis`
+**Type:** Distributed caching layer with in-memory fallback
+**Exports:**
+- `./client` → Redis client instance
+- `./cache-helpers` → get, set, del, ttl utilities
+- `./rate-limiter` → Token bucket rate limiting
+
+**Features:**
+- Upstash Redis for production deployments
+- In-memory fallback for MVP/offline compatibility
+- TTL support with automatic key expiration
+- Rate limiting: 10K+ concurrent connections
+- Session storage for distributed systems
+
+**Key Files:**
+- `src/client.ts` → Redis/fallback client
+- `src/cache-helpers.ts` → Cache operations
+- `src/rate-limiter.ts` → Token bucket algorithm
+
+**Dependencies:**
+- `@upstash/redis` → Serverless Redis client
+- Fallback uses Node.js Map with expiration timers
+
+### `@creator-studio/storage`
+**Path:** `packages/storage`
+**Type:** Cloud media storage with direct upload support
+**Exports:**
+- `./client` → Storage client instance
+- `./upload-handler` → Presigned URL generation
+- `./download-handler` → File retrieval
+
+**Features:**
+- Cloudflare R2 for production deployments
+- In-memory file system for MVP/testing
+- Presigned URLs for direct client uploads (1-hour expiry)
+- Multi-part upload for large files (>5MB)
+- Public URL generation with CDN caching
+
+**Key Files:**
+- `src/client.ts` → S3/fallback storage client
+- `src/upload-handler.ts` → Presigned URL logic
+- `src/download-handler.ts` → File retrieval
+
+**Dependencies:**
+- `@aws-sdk/client-s3` → S3/R2 compatible API
+- Fallback uses Node.js file system (ephemeral on serverless)
+
 ### `@creator-studio/sdk`
 **Path:** `packages/sdk`
 **Type:** Type-safe OpenAPI client for external integrations
@@ -551,7 +599,7 @@ creator-studio/
 
 ## Testing Summary
 
-**Total Tests:** 350+ across 35+ test files
+**Total Tests:** 400+ across 40+ test files
 - DB: 34 tests
 - Auth: 17 tests
 - UI (base + composites): 41 tests (17 base + 24 composites)
@@ -562,6 +610,8 @@ creator-studio/
 - AI: 31 tests
 - SDK: 8+ tests (client generation, request validation)
 - Plugins: 12+ tests (manifest validation, sandbox, registry)
+- Redis: 18+ tests (cache operations, rate limiting, fallback)
+- Storage: 15+ tests (uploads, presigned URLs, fallback)
 
 **Phase 5b Test Coverage:**
 - [x] Facebook/Instagram/Threads clients (Meta API integration)
@@ -758,7 +808,28 @@ import { useLoaderData } from 'react-router' // Hooks
 - [x] Dashboard pages (API keys, webhooks, plugins/integrations)
 - [x] Security: HTTPS-only webhooks, timing-safe comparisons, scope enforcement
 
+### Phase 5b: Extended Ecosystem (COMPLETE)
+**Completed:**
+- [x] Plugin system with Web Worker sandbox isolation
+- [x] Plugin marketplace with approval workflow
+- [x] 4 new social platform integrations (Instagram, TikTok, Facebook, Threads)
+- [x] OpenAPI 3.1 spec generation from Zod schemas
+- [x] SDK package with openapi-fetch client
+- [x] Unified OAuth flows for Meta platforms (FB/IG/Threads)
+- [x] Token encryption (AES-256-GCM before storage)
+- [x] Event hook system (7 hook types)
+
+### Phase 6: Advanced Features (COMPLETE)
+**Completed:**
+- [x] Redis integration (packages/redis) — Upstash + in-memory fallback
+- [x] Inngest job queue — Async social, webhook, crawler, export jobs
+- [x] R2 media storage (packages/storage) — Cloudflare + presigned URLs
+- [x] Remotion Lambda video export — Server-side rendering with progress tracking
+- [x] Browserless crawler — Cheerio-first + JavaScript rendering fallback
+- [x] Advanced AI features — Image generation, hashtag suggestions, performance prediction
+- [x] Vercel + Docker deployment — Production-ready containerization
+- [x] DevOps CI/CD — GitHub Actions, Sentry, Pino logging, CSP/CORS headers
+
 **Next Steps:**
-- Phase 5b: Additional OAuth providers (Slack, Discord, GitHub)
-- Phase 6: Analytics dashboard and reporting
-- Phase 7: Production deployment and scaling
+- Phase 7: Advanced analytics dashboard
+- Phase 8: Global scalability and multi-region support

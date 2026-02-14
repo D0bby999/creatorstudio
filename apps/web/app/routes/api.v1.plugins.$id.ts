@@ -4,7 +4,7 @@ import { checkRateLimit } from '~/lib/api-rate-limiter'
 
 export async function loader({ params, request }: { params: { id: string }; request: Request }) {
   const { apiKey } = await requireApiKey(request, ['plugins:read'])
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const plugin = await prisma.plugin.findUnique({
     where: { id: params.id },
@@ -33,7 +33,7 @@ export async function loader({ params, request }: { params: { id: string }; requ
 
 export async function action({ params, request }: { params: { id: string }; request: Request }) {
   const { userId, apiKey } = await requireApiKey(request, ['plugins:write'])
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const body = await request.json()
   const { action: actionType, config } = body

@@ -1368,6 +1368,218 @@ PATCH /api/v1/plugins/:id/approve (admin only)
   - Make publicly available
 ```
 
+## Phase 6: Infrastructure & Advanced Features
+
+### Redis Integration (packages/redis)
+
+**Cache Layer Architecture:**
+```
+Application
+    ▼
+packages/redis (Unified Interface)
+    ├─ Upstash Redis (production)
+    ├─ In-memory fallback (MVP/offline)
+    └─ Cache helpers (get, set, del, ttl)
+    ▼
+Key Use Cases:
+- Session storage (distributed)
+- Rate limiting (token bucket)
+- Webhook delivery retry state
+- API key cache
+- Crawler session management
+```
+
+**Features:**
+- TTL support for automatic expiration
+- In-memory fallback (no external dependency required)
+- Rate limiting: 10K+ concurrent connections
+- Serialization: JSON for objects, string for primitives
+
+### Storage Layer (packages/storage)
+
+**Cloud Storage Architecture:**
+```
+Application
+    ▼
+packages/storage (Unified Interface)
+    ├─ Cloudflare R2 (production)
+    ├─ In-memory fallback (MVP)
+    └─ Storage helpers (upload, download, delete)
+    ▼
+Presigned URL Flow:
+1. Client requests upload URL
+2. Server generates 1-hour presigned URL
+3. Client uploads directly to R2
+4. Webhook notifies server of completion
+```
+
+**Features:**
+- Presigned URLs for direct client uploads
+- Multi-part upload for files >5MB
+- Public URL generation
+- CDN caching via Cloudflare
+- In-memory file system fallback for testing
+
+### Inngest Job Queue
+
+**Event-Driven Architecture:**
+```
+Trigger Event
+    ▼
+Inngest Job Enqueue
+    ├─ Social post publish
+    ├─ Webhook delivery
+    ├─ Crawler execution
+    └─ Video export render
+    ▼
+Background Processing:
+- Retry with exponential backoff (max 5 attempts)
+- Rate limiting per job type
+- Progress tracking via database updates
+- Timeout: 1 hour per job
+```
+
+**Job Types:**
+1. **social.publish** → Async social media posting
+2. **webhook.deliver** → Reliable webhook delivery
+3. **crawler.execute** → Long-running site crawls
+4. **video.export** → Server-side video rendering
+
+### Remotion Lambda Video Export
+
+**Server-Side Rendering Flow:**
+```
+User submits export
+    ▼
+Create Remotion composition
+    ▼
+Submit to Remotion Lambda
+    ├─ AWS Lambda execution
+    ├─ FFmpeg video encoding
+    └─ Progress callback to server
+    ▼
+Upload to R2 storage
+    ▼
+Return download URL to client
+```
+
+**Optimization:**
+- Estimated rendering time feedback
+- Cost optimization: Reduce concurrency to 1 during peak
+- Caching: Reuse rendered segments across exports
+- Timeout: 15 minutes per render
+
+### Browserless Crawler
+
+**Smart Rendering Strategy:**
+```
+Crawl Request
+    ▼
+Attempt 1: Cheerio (fast, HTML-only)
+    ✓ If successful → Return results
+    ✗ If JS-heavy detected → Fallback
+    ▼
+Attempt 2: Browserless.io (Chrome rendering)
+    ✓ If successful → Cache response
+    ✗ If timeout → Return partial results
+```
+
+**Features:**
+- JavaScript rendering detection (check for `__next`, dynamic content)
+- Cookie session persistence
+- Custom headers and user-agent rotation
+- Timeout: 30 seconds per page
+- Success rate target: >95%
+
+### Advanced AI Features
+
+**Image Generation (Replicate API):**
+- Model: Stable Diffusion v3
+- Cost: ~$0.05 per image
+- Queue support for batch generation
+- Example: Generate product mockups, hero images
+
+**Hashtag Suggestion Engine:**
+- Analyze post content (NLP)
+- Recommend trending hashtags (Twitter, Instagram, TikTok-specific)
+- Deduplication and ranking
+- Cost: ~$0.01 per suggestion
+
+**Performance Prediction:**
+- ML model trained on historical post data
+- Input: content, platforms, hashtags
+- Output: Predicted engagement score (0-100)
+- Used for content optimization advice
+
+### DevOps & Deployment
+
+**Vercel Configuration (vercel.json):**
+```json
+{
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/web/build",
+  "nodeVersion": "20.x",
+  "env": {
+    "DATABASE_URL": { "required": true },
+    "UPSTASH_REDIS_REST_URL": { "required": false },
+    "INNGEST_EVENT_KEY": { "required": false }
+  }
+}
+```
+
+**Docker Deployment (Dockerfile):**
+```dockerfile
+FROM node:20-alpine
+RUN npm install -g pnpm
+WORKDIR /app
+COPY . .
+RUN pnpm install
+RUN pnpm build
+EXPOSE 3000
+CMD ["pnpm", "start"]
+```
+
+**CI/CD Workflows:**
+- GitHub Actions on push to main
+  1. Lint: `pnpm lint`
+  2. Test: `pnpm test`
+  3. Build: `pnpm build`
+  4. Deploy: Vercel auto-deploy
+
+**Health Check Endpoint:**
+```
+GET /health
+Response: { "status": "ok", "version": "0.8.0", "timestamp": "..." }
+```
+
+### Observability
+
+**Logging Architecture (Pino):**
+```typescript
+// Structured JSON logs
+logger.info({ userId, action, duration }, 'User action completed')
+// Output: {"level":30,"time":"...","pid":123,"userId":"...","action":"..."}
+```
+
+**Error Tracking (Sentry):**
+- Error sampling: 100% in production
+- Release version tracking
+- Source maps uploaded
+- Alerts for new error types
+
+**Security Headers:**
+- CSP: `default-src 'self'`
+- CORS: Wildcard for Zapier/SDK consumers
+- X-Frame-Options: `SAMEORIGIN`
+- X-Content-Type-Options: `nosniff`
+
+**Input Sanitization:**
+- DOMPurify for HTML content
+- Zod validation for API payloads
+- Rate limiting per IP/API key
+- SQL injection prevention via Prisma
+
 ## Architecture Evolution Timeline
 
 ```
@@ -1377,5 +1589,6 @@ Phase 3 (Optimization):     Pagination, Sentry, cache headers, bundle analysis �
 Phase 4 (Scale):            Organizations, teams, RBAC ✓
 Phase 5a (Ecosystem):       Webhooks, REST API, Zapier, Bluesky ✓
 Phase 5b (Extended):        OAuth, 4 new platforms, plugins, OpenAPI ✓
-Phase 6 (Advanced):         Advanced AI, Make.com, analytics (planned)
+Phase 6 (Advanced):         Redis, Inngest, R2 Storage, Remotion Lambda, DevOps ✓
+Phase 7+ (Scale & Polish):  Analytics, advanced features, global CDN
 ```

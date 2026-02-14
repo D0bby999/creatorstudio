@@ -1,15 +1,48 @@
 import type { CrawlJob, ScrapedContent, SeoReport } from '../types/crawler-types'
-import { scrapeUrl } from './url-scraper'
+import { smartScrape } from './smart-scraper'
 import { analyzeSeo } from './seo-analyzer'
+import { cacheGet, cacheSet, cacheDel, cacheGetByPrefix } from '@creator-studio/redis/cache'
 
-// In-memory job storage (simple MVP - can be replaced with BullMQ later)
-const jobs = new Map<string, CrawlJob>()
+const JOB_PREFIX = 'crawler:job:'
+const JOB_TTL = 604800 // 7 days
 
 /**
  * Generates unique job ID
  */
 function generateJobId(): string {
   return `job_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+}
+
+/**
+ * Send crawl job event to Inngest for background execution
+ */
+async function sendCrawlJobEvent(jobId: string, url: string, type: 'url' | 'seo'): Promise<void> {
+  // Skip if INNGEST_EVENT_KEY not configured (fall back to direct execution)
+  if (!process.env.INNGEST_EVENT_KEY) {
+    return
+  }
+
+  try {
+    const response = await fetch('https://inn.gs/e/creator-studio', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.INNGEST_EVENT_KEY}`,
+      },
+      body: JSON.stringify({
+        name: 'crawler/job.created',
+        data: { jobId, url, type },
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Inngest API error: ${response.status}`)
+    }
+  } catch (error) {
+    console.error('Failed to send Inngest event:', error)
+    // Fall back to direct execution
+    throw error
+  }
 }
 
 /**
@@ -25,20 +58,26 @@ export async function createJob(
     url,
     type,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   }
 
-  jobs.set(jobId, job)
+  await cacheSet(`${JOB_PREFIX}${jobId}`, job, JOB_TTL)
 
-  // Execute job asynchronously
-  executeJob(jobId).catch(error => {
-    const failedJob = jobs.get(jobId)
-    if (failedJob) {
-      failedJob.status = 'failed'
-      failedJob.error = error instanceof Error ? error.message : 'Unknown error'
-      failedJob.completedAt = new Date().toISOString()
-    }
-  })
+  // Try to send to Inngest first, fall back to direct execution
+  try {
+    await sendCrawlJobEvent(jobId, url, type)
+  } catch {
+    // Inngest unavailable, execute directly
+    executeJob(jobId).catch(async (error) => {
+      const failedJob = await cacheGet<CrawlJob>(`${JOB_PREFIX}${jobId}`)
+      if (failedJob) {
+        failedJob.status = 'failed'
+        failedJob.error = error instanceof Error ? error.message : 'Unknown error'
+        failedJob.completedAt = new Date().toISOString()
+        await cacheSet(`${JOB_PREFIX}${jobId}`, failedJob, JOB_TTL)
+      }
+    })
+  }
 
   return job
 }
@@ -47,16 +86,15 @@ export async function createJob(
  * Executes a crawl job
  */
 async function executeJob(jobId: string): Promise<void> {
-  const job = jobs.get(jobId)
+  const job = await cacheGet<CrawlJob>(`${JOB_PREFIX}${jobId}`)
   if (!job) return
 
   job.status = 'running'
+  await cacheSet(`${JOB_PREFIX}${jobId}`, job, JOB_TTL)
 
   try {
-    // Scrape URL
-    const content: ScrapedContent = await scrapeUrl(job.url)
+    const content = await smartScrape(job.url)
 
-    // If SEO analysis requested, analyze the content
     if (job.type === 'seo') {
       const report: SeoReport = analyzeSeo(content)
       job.result = report
@@ -66,33 +104,38 @@ async function executeJob(jobId: string): Promise<void> {
 
     job.status = 'completed'
     job.completedAt = new Date().toISOString()
+    await cacheSet(`${JOB_PREFIX}${jobId}`, job, JOB_TTL)
   } catch (error) {
     job.status = 'failed'
     job.error = error instanceof Error ? error.message : 'Unknown error'
     job.completedAt = new Date().toISOString()
+    await cacheSet(`${JOB_PREFIX}${jobId}`, job, JOB_TTL)
     throw error
   }
 }
 
 /**
- * Gets all jobs
+ * Gets all jobs sorted by most recent
  */
-export function getJobs(): CrawlJob[] {
-  return Array.from(jobs.values()).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+export async function getJobs(): Promise<CrawlJob[]> {
+  const jobs = await cacheGetByPrefix<CrawlJob>(JOB_PREFIX)
+  return jobs.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
 }
 
 /**
  * Gets a single job by ID
  */
-export function getJob(id: string): CrawlJob | undefined {
-  return jobs.get(id)
+export async function getJob(id: string): Promise<CrawlJob | undefined> {
+  const job = await cacheGet<CrawlJob>(`${JOB_PREFIX}${id}`)
+  return job ?? undefined
 }
 
 /**
  * Clears all jobs (useful for testing)
  */
-export function clearJobs(): void {
-  jobs.clear()
+export async function clearJobs(): Promise<void> {
+  const jobs = await cacheGetByPrefix<CrawlJob>(JOB_PREFIX)
+  await Promise.all(jobs.map((j) => cacheDel(`${JOB_PREFIX}${j.id}`)))
 }

@@ -81,3 +81,36 @@ export interface TokenUsage {
   completionTokens: number
   totalTokens: number
 }
+
+// Image generation types
+export interface ImageGenerationOptions {
+  model?: string
+  width?: number
+  height?: number
+}
+
+export interface ImageGenerationResult {
+  url: string
+  id: string
+}
+
+// Content scheduling types
+export interface PostingTime {
+  day: string
+  hour: number
+  score: number
+}
+
+// Performance prediction types
+export interface PerformancePrediction {
+  score: number
+  factors: string[]
+  suggestions: string[]
+}
+
+// Hashtag generation types
+export interface HashtagSuggestion {
+  hashtags: string[]
+  platform: string
+  formatted: string
+}

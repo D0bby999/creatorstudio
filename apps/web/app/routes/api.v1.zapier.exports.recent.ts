@@ -5,7 +5,7 @@ import { checkRateLimit } from '~/lib/api-rate-limiter'
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { userId, apiKey } = await requireApiKey(request)
-  checkRateLimit(apiKey.id, apiKey.rateLimit)
+  await checkRateLimit(apiKey.id, apiKey.rateLimit)
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
 

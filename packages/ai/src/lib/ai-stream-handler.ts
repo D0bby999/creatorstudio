@@ -26,14 +26,14 @@ export async function handleAiStream(
   agentRole: AgentRole
 ) {
   const config = getAgentConfig(agentRole)
-  const session = getSession(sessionId)
+  const session = await getSession(sessionId)
 
   if (!session) {
     throw new Error(`Session ${sessionId} not found`)
   }
 
   // Add user message to session
-  addMessage(sessionId, { role: 'user', content: userMessage })
+  await addMessage(sessionId, { role: 'user', content: userMessage })
 
   // Build message history from session
   const messages = session.messages.map(m => ({
@@ -51,9 +51,9 @@ export async function handleAiStream(
     messages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: 3,
-    onFinish: ({ text }) => {
+    onFinish: async ({ text }) => {
       // Save assistant's response to session
-      addMessage(sessionId, {
+      await addMessage(sessionId, {
         role: 'assistant',
         content: text,
         agentRole
