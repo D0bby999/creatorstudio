@@ -1,0 +1,16 @@
+{
+  "name": "@creator-studio/sdk",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/client.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.6"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.3",
+    "typescript": "^5.9.3"
+  }
+}

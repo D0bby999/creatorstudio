@@ -6,6 +6,11 @@
   "exports": {
     "./client": "./src/lib/instagram-client.ts",
     "./bluesky": "./src/lib/bluesky-client.ts",
+    "./facebook": "./src/lib/facebook-client.ts",
+    "./threads": "./src/lib/threads-client.ts",
+    "./tiktok": "./src/lib/tiktok-client.ts",
+    "./meta-helpers": "./src/lib/meta-api-helpers.ts",
+    "./tiktok-helpers": "./src/lib/tiktok-api-helpers.ts",
     "./scheduler": "./src/lib/social-scheduler.ts",
     "./analytics": "./src/lib/social-analytics.ts",
     "./types": "./src/types/social-types.ts",

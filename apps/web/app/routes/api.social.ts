@@ -5,7 +5,9 @@ import { redirect } from 'react-router'
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import { schedulePost } from '@creator-studio/social/scheduler'
-import { InstagramClient } from '@creator-studio/social/client'
+import { getPlatformClient } from '@creator-studio/social/factory'
+import { decryptToken } from '~/lib/token-encryption'
+import type { SocialPlatform } from '@creator-studio/social/types'
 
 interface ActionArgs {
   request: Request
@@ -48,9 +50,23 @@ export async function action({ request }: ActionArgs) {
           },
         })
 
-        // Publish to platform
-        if (socialAccount.platform === 'instagram') {
-          const client = new InstagramClient(socialAccount.accessToken)
+        // Publish to platform using factory
+        try {
+          const token = decryptToken(socialAccount.accessToken)
+          const metadata = socialAccount.metadata as Record<string, string> | null
+
+          // Build platform-specific params
+          const platformParams: any = {}
+          if (metadata?.pageId) platformParams.pageId = metadata.pageId
+          if (metadata?.pageAccessToken) {
+            platformParams.pageAccessToken = decryptToken(metadata.pageAccessToken)
+          }
+          if (metadata?.handle) platformParams.handle = metadata.handle
+          if (metadata?.appPassword) platformParams.appPassword = metadata.appPassword
+          if (metadata?.openId) platformParams.openId = metadata.openId
+
+          const client = getPlatformClient(socialAccount.platform as SocialPlatform, token, platformParams)
+
           const response = await client.post({
             userId: socialAccount.platformUserId,
             content,
@@ -66,6 +82,18 @@ export async function action({ request }: ActionArgs) {
               platformPostId: response.id,
             },
           })
+        } catch (publishError) {
+          console.error('Platform publish error:', publishError)
+          await prisma.socialPost.update({
+            where: { id: post.id },
+            data: {
+              status: 'failed',
+            },
+          })
+          return Response.json(
+            { error: publishError instanceof Error ? publishError.message : 'Publish failed' },
+            { status: 500 }
+          )
         }
 
         return redirect('/dashboard/social')

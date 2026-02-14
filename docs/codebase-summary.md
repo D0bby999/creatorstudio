@@ -90,16 +90,27 @@ creator-studio/
   - `/dashboard/organizations/:orgId` → `organizations.$orgId.tsx` (org detail + members/settings)
   - `/dashboard/api-keys` → `api-keys.tsx` (API key management)
   - `/dashboard/webhooks` → `webhooks.tsx` (webhook subscriptions)
-  - `/dashboard/plugins` → `plugins.tsx` (integrations: Zapier, etc.)
+  - `/dashboard/plugins/marketplace` → `plugins.marketplace.tsx` (browse plugins)
+  - `/dashboard/plugins/installed` → `plugins.installed.tsx` (manage installed plugins)
 - `/api/auth/*` → `routes/api.auth.$.ts` (Better Auth handler)
 - `/api/organizations/*` → `routes/api.organizations.ts` (org CRUD + member management)
 - `/api/api-keys` → `routes/api.api-keys.ts` (API key CRUD)
 - `/api/webhooks` → `routes/api.webhooks.ts` (webhook CRUD)
-- `/api/social/connect` → `routes/api.social.connect.ts` (OAuth flow)
+- `/api/social` → `routes/api.social.ts` (Social platform management, posting)
+- `/api/social/connect` → `routes/api.social.connect.ts` (Social platform connection)
+- `/api/oauth/meta/authorize` → `routes/api.oauth.meta.authorize.ts` (Meta login)
+- `/api/oauth/meta/callback` → `routes/api.oauth.meta.callback.ts` (Meta token exchange)
+- `/api/oauth/tiktok/authorize` → `routes/api.oauth.tiktok.authorize.ts` (TikTok login)
+- `/api/oauth/tiktok/callback` → `routes/api.oauth.tiktok.callback.ts` (TikTok token exchange)
 - `/api/v1/*` → REST API v1 (public API with key auth)
   - `/api/v1/auth/verify` → Verify API key
   - `/api/v1/users/me` → Current user profile
-  - `/api/v1/posts` → Create social post
+  - `/api/v1/posts` → Create/list social posts
+  - `/api/v1/plugins` → Plugin registry CRUD
+  - `/api/v1/plugins/:id/install` → Install plugin
+  - `/api/v1/plugins/:id/uninstall` → Uninstall plugin
+  - `/api/v1/plugins/:id/approve` → Admin approve plugin
+  - `/api/v1/openapi.json` → OpenAPI 3.1 specification
   - `/api/v1/zapier/posts/recent` → Recent posts (Zapier trigger)
   - `/api/v1/zapier/exports/recent` → Recent exports (Zapier trigger)
 
@@ -307,36 +318,54 @@ creator-studio/
 
 ### `@creator-studio/social`
 **Path:** `packages/social`
-**Type:** Social media client abstraction and management
+**Type:** Social media client abstraction with 7 platform support
 **Exports:**
-- `./clients` → Platform-specific clients
+- `./clients` → Platform-specific client implementations
 - `./composer` → Unified post composer
 - `./uploader` → Media upload handler
+- `./types` → Platform-specific type definitions
+- `./lib` → Helper utilities and API abstractions
+
+**Supported Platforms (7 total):**
+- **Twitter/X** → API v2 integration
+- **LinkedIn** → Professional network posting
+- **Bluesky** → AT Protocol with app passwords
+- **Instagram** → Meta Graph API v22.0
+- **Facebook** → Meta Graph API (pages, photo/video/text posts)
+- **Threads** → Container-based publishing workflow
+- **TikTok** → Content Posting API with chunked upload
 
 **Enhanced Capabilities:**
-- **Platform Interface** → Unified API for all platforms
-- **Twitter Client** → Tweet scheduling and publishing
-- **LinkedIn Client** → Professional content posting
-- **Bluesky Client** → AT Protocol posting with app passwords
-- **Platform Factory** → Dynamic client instantiation
-- **Unified Composer** → Single interface for all platforms
-- **Media Upload** → Image and video upload handling
-- **47 Tests** → Client operations, media upload, scheduling
+- **Unified Interface** → All platforms implement `SocialPlatformClient`
+- **Meta Platform Abstraction** → Shared `meta-api-helpers.ts` for IG/FB/Threads
+- **OAuth Integration** → Meta OAuth (FB/IG/Threads) + TikTok OAuth flows
+- **Platform Factory** → Dynamic client instantiation with token decryption
+- **Token Encryption** → AES-256-GCM before database storage
+- **Media Upload** → Chunked upload for TikTok, standard upload for others
+- **Social Analytics** → View insights, follower trends
+- **Post Scheduling** → Future publish capability for all platforms
+- **70+ Tests** → Comprehensive client operations and media handling
 
 **Key Files:**
-- `src/clients/` → Platform-specific implementations
-- `src/twitter-client.ts` → Twitter/X API integration
-- `src/linkedin-client.ts` → LinkedIn API integration
+- `src/types/` → Platform-specific types (facebook-types, threads-types, tiktok-types, etc.)
+- `src/lib/facebook-client.ts` → Facebook Graph API wrapper
+- `src/lib/threads-client.ts` → Threads container-based publisher
+- `src/lib/instagram-client.ts` → Instagram Graph API client
+- `src/lib/tiktok-client.ts` → TikTok Content Posting API
+- `src/lib/twitter-client.ts` → Twitter/X API v2 client
+- `src/lib/linkedin-client.ts` → LinkedIn API integration
 - `src/lib/bluesky-client.ts` → Bluesky AT Protocol client
-- `src/platform-factory.ts` → Client factory pattern (supports bluesky)
-- `src/composer.ts` → Unified post composer
-- `src/*.test.ts` → 47 comprehensive tests
+- `src/lib/meta-api-helpers.ts` → Shared Meta platform utilities
+- `src/lib/media-upload-handler.ts` → Chunked/standard upload logic
+- `src/platform-factory.ts` → Client factory (token decryption + instantiation)
+- `src/*.test.ts` → 70+ comprehensive tests
 
 **Dependencies:**
 - `twitter-api-v2` → Twitter/X API client
 - `linkedin-api` → LinkedIn API integration
+- `crypto` (Node.js) → AES-256-GCM token encryption
 - AT Protocol (native fetch) → Bluesky integration
-- Media upload via platform APIs
+- Meta Graph API (native fetch) → Instagram, Facebook, Threads
 
 ### `@creator-studio/ai`
 **Path:** `packages/ai`
@@ -391,6 +420,112 @@ creator-studio/
 - `node:crypto` → HMAC signing
 - Database storage for webhook subscriptions and delivery logs
 
+### `@creator-studio/sdk`
+**Path:** `packages/sdk`
+**Type:** Type-safe OpenAPI client for external integrations
+**Exports:**
+- `./client` → openapi-fetch based HTTP client
+- `./schemas` → Generated TypeScript types from OpenAPI spec
+
+**Features:**
+- Auto-generated from OpenAPI 3.1 spec
+- Type-safe API calls with Zod schema validation
+- Supports all REST API endpoints (v1)
+- Can be published to npm for third-party use
+- Example: `const { data } = await client.GET('/api/v1/posts')`
+
+**Key Files:**
+- `src/client.ts` → openapi-fetch wrapper
+- `src/schemas.ts` → Generated from OpenAPI spec
+- `README.md` → Usage documentation
+
+**Dependencies:**
+- `openapi-fetch` → Lightweight OpenAPI client
+- `zod` → Schema validation (re-exported)
+
+### Plugin System & Marketplace (apps/web)
+**Path:** `apps/web/app/routes/api.v1.plugins.ts`
+**Type:** Plugin registry, installation, and sandboxed execution
+**Features:**
+- Plugin manifest schema with Zod validation
+- Web Worker sandbox for isolated execution
+- Event hook system (7 hook types)
+- Plugin approval workflow (status: pending|approved|rejected)
+- Dashboard UI for marketplace and management
+
+**Plugin Manifest Schema:**
+```typescript
+{
+  name: string               // Unique plugin identifier
+  version: string            // semver format
+  displayName: string        // User-friendly name
+  description: string        // Long description
+  author: string             // Plugin creator
+  hooks: string[]            // Supported hooks
+  permissions: string[]      // Required permissions
+  config?: Record            // Plugin configuration schema
+}
+```
+
+**Event Hooks (7 types):**
+- `post.creating` → Before social post created
+- `post.created` → After post published
+- `post.scheduled` → When post scheduled
+- `crawler.finished` → After crawler completes
+- `export.completed` → After data export
+- `platform.connected` → After OAuth success
+- `plugin.installed` → After plugin install
+
+**API Endpoints:**
+- `GET /api/v1/plugins` → List marketplace plugins
+- `POST /api/v1/plugins/:id/install` → Install plugin
+- `DELETE /api/v1/plugins/:id/uninstall` → Remove plugin
+- `PATCH /api/v1/plugins/:id/approve` → Admin approval
+
+**Dashboard Routes:**
+- `/dashboard/plugins/marketplace` → Browse available plugins
+- `/dashboard/plugins/installed` → Manage installed plugins
+
+**Key Files:**
+- `routes/api.v1.plugins.ts` → Registry and CRUD operations
+- `lib/plugin-manifest.ts` → Zod validation schema
+- `lib/plugin-sandbox.ts` → Web Worker executor
+- `components/plugin-marketplace.tsx` → Plugin browser UI
+- `components/plugin-manager.tsx` → Installation manager
+
+**Security:**
+- Web Worker isolation prevents malicious code execution
+- Message-passing architecture for safe communication
+- Manifest validation before installation
+- Admin approval workflow for public plugins
+
+### OAuth Flows (apps/web)
+**Supported OAuth Integrations:**
+1. **Meta OAuth** (Facebook/Instagram/Threads) — Single unified flow
+   - Route: `GET /api/oauth/meta/authorize` → Redirect to Meta Login
+   - Route: `POST /api/oauth/meta/callback` → Token exchange + storage
+   - Discovers connected pages, accounts, and profiles
+   - Platform picker dialog for user selection
+   - Token encryption before database storage
+
+2. **TikTok OAuth** — Separate flow with CSRF protection
+   - Route: `GET /api/oauth/tiktok/authorize` → Redirect to TikTok Login
+   - Route: `POST /api/oauth/tiktok/callback` → CSRF validation + token exchange
+   - Scope: `user.info.basic` (extensible for user_video.read, etc.)
+
+**Key Files:**
+- `routes/api.oauth.meta.authorize.ts` → Meta login redirect
+- `routes/api.oauth.meta.callback.ts` → Meta token exchange
+- `routes/api.oauth.tiktok.authorize.ts` → TikTok login redirect
+- `routes/api.oauth.tiktok.callback.ts` → TikTok token exchange
+- `lib/oauth-utils.ts` → CSRF, state validation, encryption
+
+**Token Security:**
+- AES-256-GCM encryption for sensitive tokens
+- State parameter validation (CSRF protection)
+- Secure random key generation
+- Automatic token refresh on expiration
+
 ### Zapier Integration
 **Path:** `zapier/`
 **Type:** No-code automation platform integration
@@ -416,15 +551,27 @@ creator-studio/
 
 ## Testing Summary
 
-**Total Tests:** 282 across 33 test files
+**Total Tests:** 350+ across 35+ test files
 - DB: 34 tests
 - Auth: 17 tests
 - UI (base + composites): 41 tests (17 base + 24 composites)
 - Canvas: 20 tests
 - Video: 23 tests
 - Crawler: 57 tests
-- Social: 47 tests
+- Social: 70+ tests (expanded for 7 platforms + OAuth)
 - AI: 31 tests
+- SDK: 8+ tests (client generation, request validation)
+- Plugins: 12+ tests (manifest validation, sandbox, registry)
+
+**Phase 5b Test Coverage:**
+- [x] Facebook/Instagram/Threads clients (Meta API integration)
+- [x] TikTok client (Content Posting API)
+- [x] Meta OAuth flow (token exchange, encryption)
+- [x] TikTok OAuth flow (CSRF protection)
+- [x] Plugin manifest validation
+- [x] Plugin sandbox isolation
+- [x] Plugin registry API (CRUD operations)
+- [x] OpenAPI spec generation
 
 **Test Infrastructure:**
 - Framework: Vitest 3.2.1
@@ -438,6 +585,16 @@ creator-studio/
 - `BETTER_AUTH_URL` → Application URL (http://localhost:5173 in dev)
 - `BETTER_AUTH_SECRET` → Random secret (min 32 chars)
 
+**Phase 5b - OAuth & Social Integration:**
+- `META_OAUTH_CLIENT_ID` → Facebook/Instagram/Threads app ID
+- `META_OAUTH_CLIENT_SECRET` → Meta OAuth client secret
+- `TIKTOK_OAUTH_CLIENT_ID` → TikTok client key
+- `TIKTOK_OAUTH_CLIENT_SECRET` → TikTok client secret
+- `TWITTER_OAUTH_CLIENT_ID` → Twitter API client ID
+- `TWITTER_OAUTH_CLIENT_SECRET` → Twitter API secret
+- `LINKEDIN_OAUTH_CLIENT_ID` → LinkedIn app ID
+- `LINKEDIN_OAUTH_CLIENT_SECRET` → LinkedIn secret
+
 **Optional:**
 - `GOOGLE_CLIENT_ID` → Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` → Google OAuth secret
@@ -447,6 +604,7 @@ creator-studio/
 - `SENTRY_DSN` → Sentry error tracking
 - `INNGEST_EVENT_KEY` → Inngest scheduling
 - `INNGEST_SIGNING_KEY`
+- `OPENAI_API_KEY` → OpenAI API key (for AI features)
 
 ## Development Workflow
 

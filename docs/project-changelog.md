@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-14
+
+### Added - Phase 5b: Extended Ecosystem (commit pending)
+
+**New Social Platform Clients (packages/social)**
+- Facebook Pages integration — Meta Graph API v22.0 support
+  - Text/photo/video post creation
+  - Page selection and switching
+  - Insights and analytics queries
+- Threads integration — Container-based publishing
+  - Create caption → create container → publish workflow
+  - Media upload support
+  - Scheduled posting
+- TikTok integration — Content Posting API
+  - Direct upload and chunked upload support
+  - Video metadata (title, description, hashtags, keywords)
+  - Schedule post for future publishing
+- Shared metadata helpers for Instagram, Facebook, Threads via `meta-api-helpers.ts`
+- All platforms implement standardized `SocialPlatformClient` interface
+
+**OAuth Flows (apps/web)**
+- Meta OAuth (Facebook/Instagram/Threads) — Single login with platform discovery
+  - Unified login page at `/api/oauth/meta/authorize`
+  - OAuth callback handler at `/api/oauth/meta/callback`
+  - Automatic platform picker dialog for discovered pages/accounts
+  - Secure state parameter handling
+- TikTok OAuth — Separate flow with CSRF state cookies
+  - Login at `/api/oauth/tiktok/authorize`
+  - Callback handler at `/api/oauth/tiktok/callback`
+  - Scope: user.info.basic (for future expansions)
+- Token encryption — AES-256-GCM before database storage (security hardening)
+- Platform-specific metadata storage in `SocialAccount.metadata` Json field
+
+**OpenAPI + SDK (apps/web + packages/sdk)**
+- OpenAPI 3.1 spec generation from Zod schemas via @asteasolutions/zod-to-openapi
+- Route: `GET /api/v1/openapi.json` → Standard OpenAPI documentation
+- New package: `@creator-studio/sdk` with openapi-fetch client
+- Type-safe API client generation from OpenAPI spec
+
+**Plugin Marketplace (apps/web)**
+- Plugin manifest schema with Zod validation
+  - name, version, displayName, description, author, hooks, permissions
+- Web Worker sandbox for isolated plugin execution
+  - Prevents direct access to browser globals
+  - Message-passing architecture for safe communication
+- Event hook system — 7 hook types
+  - `post.creating` — Before post creation
+  - `post.created` → After social post published
+  - `post.scheduled` → When post scheduled
+  - `crawler.finished` → After crawler completes
+  - `export.completed` → After data export
+  - `platform.connected` → After OAuth success
+  - `plugin.installed` → After plugin install
+- Plugin registry API
+  - `GET /api/v1/plugins` → Browse marketplace
+  - `POST /api/v1/plugins/:id/install` → Install plugin
+  - `POST /api/v1/plugins/:id/uninstall` → Remove plugin
+  - `PATCH /api/v1/plugins/:id/approve` → Admin approval (status: approved)
+- Dashboard UI
+  - `/dashboard/plugins/marketplace` → Browse plugins
+  - `/dashboard/plugins/installed` → Manage installed plugins
+  - Install/uninstall forms with error handling
+
+**Database Schema Updates**
+- `SocialAccount.metadata` Json field for platform-specific data
+  - Facebook: pageId, pageAccessToken
+  - Threads: threadId, threadAccessToken
+  - TikTok: openId, businessAccountId
+- Plugin model expanded with marketplace fields
+  - displayName, description, author, iconUrl
+  - manifest (Json) → Plugin configuration schema
+  - sourceUrl → GitHub repository or plugin source
+  - status (pending|approved|rejected) → Marketplace approval
+  - installCount → Usage metrics
+
+### Technical Details
+- **OAuth Security**: State parameter validation, PKCE-ready architecture
+- **Token Storage**: AES-256-GCM encryption before database persistence
+- **Plugin Isolation**: Web Worker sandbox prevents malicious plugin code execution
+- **API Design**: RESTful with Zod validation and OpenAPI documentation
+- **Error Handling**: Graceful degradation for missing platform credentials
+
 ## [0.6.0] - 2026-02-14
 
 ### Added - UI/UX Design System Implementation
@@ -284,7 +366,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.6.0 | UI/UX Design System | 2026-02-14 | Current |
+| 0.7.0 | Phase 5b: Extended Ecosystem | 2026-02-14 | Current |
+| 0.6.0 | UI/UX Design System | 2026-02-14 | Released |
 | 0.5.0 | Phase 5a: Ecosystem | 2026-02-14 | Released |
 | 0.4.0 | Phase 4: Enterprise | 2025-Q3 | Released |
 | 0.3.0 | Phase 3: Performance | 2025-Q2 | Released |

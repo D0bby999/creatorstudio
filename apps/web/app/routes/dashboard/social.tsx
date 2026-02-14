@@ -1,9 +1,12 @@
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router'
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import { PageHeader } from '@creator-studio/ui/components/composites/page-header'
 import { SocialStatsOverview } from '~/components/social/social-stats-overview'
 import { SocialAccountsList } from '~/components/social/social-accounts-list'
 import { SocialPostsTable } from '~/components/social/social-posts-table'
+import { MetaPlatformPickerDialog } from '~/components/social/meta-platform-picker-dialog'
 import type { Route } from './+types/social'
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -46,6 +49,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Social({ loaderData }: Route.ComponentProps) {
   const { socialAccounts, recentPosts, stats } = loaderData
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showMetaPicker, setShowMetaPicker] = useState(false)
+
+  useEffect(() => {
+    // Show Meta platform picker if coming back from OAuth
+    if (searchParams.get('meta_setup') === '1') {
+      setShowMetaPicker(true)
+      // Remove the query param
+      setSearchParams((prev) => {
+        prev.delete('meta_setup')
+        return prev
+      })
+    }
+  }, [searchParams, setSearchParams])
 
   return (
     <div className="p-6">
@@ -57,6 +74,7 @@ export default function Social({ loaderData }: Route.ComponentProps) {
       <SocialStatsOverview stats={stats} />
       <SocialAccountsList accounts={socialAccounts} />
       <SocialPostsTable posts={recentPosts} accounts={socialAccounts} />
+      <MetaPlatformPickerDialog show={showMetaPicker} onClose={() => setShowMetaPicker(false)} />
     </div>
   )
 }

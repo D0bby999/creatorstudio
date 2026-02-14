@@ -1,6 +1,6 @@
 // Social platform types for multi-platform support
 
-export type SocialPlatform = 'instagram' | 'twitter' | 'linkedin' | 'bluesky'
+export type SocialPlatform = 'instagram' | 'twitter' | 'linkedin' | 'bluesky' | 'facebook' | 'threads' | 'tiktok'
 
 export type PostStatus = 'draft' | 'scheduled' | 'publishing' | 'published' | 'failed'
 

@@ -7,6 +7,9 @@ import { InstagramClient } from './instagram-client'
 import { TwitterClient } from './twitter-client'
 import { LinkedInClient } from './linkedin-client'
 import { BlueskyClient } from './bluesky-client'
+import { FacebookClient } from './facebook-client'
+import { ThreadsClient } from './threads-client'
+import { TikTokClient } from './tiktok-client'
 
 export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
   instagram: {
@@ -33,12 +36,44 @@ export const PLATFORM_CONFIGS: Record<SocialPlatform, PlatformConfig> = {
     supportedMediaTypes: ['image/jpeg', 'image/png', 'image/gif'],
     hashtagSupport: false,
   },
+  facebook: {
+    maxContentLength: 63206,
+    maxMediaCount: 10,
+    supportedMediaTypes: ['image/jpeg', 'image/png', 'video/mp4'],
+    hashtagSupport: true,
+  },
+  threads: {
+    maxContentLength: 500,
+    maxMediaCount: 20,
+    supportedMediaTypes: ['image/jpeg', 'image/png', 'video/mp4'],
+    hashtagSupport: true,
+  },
+  tiktok: {
+    maxContentLength: 2200,
+    maxMediaCount: 1,
+    supportedMediaTypes: ['video/mp4', 'video/webm', 'video/quicktime'],
+    hashtagSupport: true,
+  },
+}
+
+export interface PlatformClientParams {
+  handle?: string
+  appPassword?: string
+  pageId?: string
+  pageAccessToken?: string
+  openId?: string
+  userId?: string
+  appId?: string
+  appSecret?: string
+  clientKey?: string
+  clientSecret?: string
+  refreshToken?: string
 }
 
 export function getPlatformClient(
   platform: SocialPlatform,
   accessToken: string,
-  additionalParams?: { handle?: string; appPassword?: string }
+  additionalParams?: PlatformClientParams
 ): SocialPlatformClient {
   switch (platform) {
     case 'instagram':
@@ -52,6 +87,32 @@ export function getPlatformClient(
         throw new Error('Bluesky requires handle and appPassword')
       }
       return new BlueskyClient(additionalParams.handle, additionalParams.appPassword)
+    case 'facebook':
+      if (!additionalParams?.pageId || !additionalParams?.pageAccessToken) {
+        throw new Error('Facebook requires pageId and pageAccessToken')
+      }
+      return new FacebookClient(
+        accessToken,
+        additionalParams.pageId,
+        additionalParams.pageAccessToken,
+        additionalParams.appId,
+        additionalParams.appSecret
+      )
+    case 'threads':
+      return new ThreadsClient(
+        accessToken,
+        additionalParams?.userId,
+        additionalParams?.appId,
+        additionalParams?.appSecret
+      )
+    case 'tiktok':
+      return new TikTokClient(
+        accessToken,
+        additionalParams?.openId,
+        additionalParams?.clientKey,
+        additionalParams?.clientSecret,
+        additionalParams?.refreshToken
+      )
     default:
       throw new Error(`Unsupported platform: ${platform}`)
   }

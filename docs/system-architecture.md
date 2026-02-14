@@ -1154,9 +1154,11 @@ createPlatformClient('bluesky', { handle, appPassword })
 - Test webhook delivery
 
 **Plugins/Integrations** (`/dashboard/plugins`):
-- Zapier integration instructions
-- API key generation for integrations
-- OAuth connection status (future: Slack, Discord)
+- Plugin marketplace with searchable listings
+- Install/uninstall plugin management
+- Marketplace browse (`/dashboard/plugins/marketplace`)
+- Installed plugins management (`/dashboard/plugins/installed`)
+- Plugin manifest validation and approval workflow
 
 ### Security Considerations
 
@@ -1180,6 +1182,192 @@ createPlatformClient('bluesky', { handle, appPassword })
 - 429 status with `Retry-After` header
 - Reset time included in response
 
+### OAuth Flows & Social Platform Integration
+
+**Meta OAuth (Facebook/Instagram/Threads)**
+
+```
+User clicks "Connect with Facebook"
+         ▼
+GET /api/oauth/meta/authorize
+  - Generate state param, store in session
+  - Redirect to https://www.facebook.com/v22.0/dialog/oauth
+         ▼
+User approves on Meta Login → Redirects back with code + state
+         ▼
+POST /api/oauth/meta/callback
+  - Verify state param (CSRF protection)
+  - Exchange code for access_token + user_id
+  - Query /me/accounts endpoint (discovers pages)
+  - User selects page (platform picker dialog)
+  - Encrypt tokens with AES-256-GCM
+  - Store in SocialAccount with metadata (pageId, etc.)
+         ▼
+Redirect to /dashboard/social with success message
+```
+
+**TikTok OAuth**
+
+```
+User clicks "Connect with TikTok"
+         ▼
+GET /api/oauth/tiktok/authorize
+  - Generate CSRF state, store in secure cookie
+  - Redirect to https://www.tiktok.com/oauth/authorize
+         ▼
+User approves on TikTok → Redirects back with code + state
+         ▼
+POST /api/oauth/tiktok/callback
+  - Verify CSRF state from cookie
+  - Exchange code for access_token
+  - Query user.info endpoint
+  - Encrypt token with AES-256-GCM
+  - Store in SocialAccount
+         ▼
+Redirect to /dashboard/social with success message
+```
+
+**Token Security Architecture**
+
+```
+1. OAuth Provider → Access Token
+         ▼
+2. Server receives token
+         ▼
+3. Generate random 32-byte key
+         ▼
+4. Encrypt with AES-256-GCM
+         IV + Ciphertext + AuthTag
+         ▼
+5. Store encrypted data in SocialAccount.accessToken
+         ▼
+6. Store encryption key in secure environment or key vault
+```
+
+**Social Platform Client Pattern**
+
+```typescript
+interface SocialPlatformClient {
+  // Post to platform
+  post(options: PostOptions): Promise<PostResult>
+
+  // Optional: Schedule for future
+  schedulePost(options: ScheduleOptions): Promise<PostResult>
+
+  // Get platform-specific metadata
+  getMetadata(): Record<string, unknown>
+}
+
+// Platform factory with token decryption
+createPlatformClient(platform, socialAccount, decryptionKey)
+  - Decrypt tokens from DB
+  - Instantiate platform-specific client
+  - Return authenticated client ready to use
+```
+
+**Supported Platforms (7 total)**
+
+| Platform | Method | Auth | Features |
+|----------|--------|------|----------|
+| Twitter | REST API v2 | Bearer Token | Tweet, schedule, media |
+| LinkedIn | REST API | Bearer Token | Posts, articles, engagement |
+| Bluesky | AT Protocol | App Password | Posts, media (4 max) |
+| Instagram | Meta Graph API | Access Token | Posts, stories, reels |
+| Facebook | Meta Graph API | Page Token | Posts, pages, insights |
+| Threads | Meta Graph API | Access Token | Container posts, images |
+| TikTok | Content Posting API | Access Token | Videos, captions, hashtags |
+
+### Plugin System & Marketplace
+
+**Plugin Manifest Schema**
+
+```json
+{
+  "name": "plugin-id",
+  "version": "1.0.0",
+  "displayName": "Plugin Display Name",
+  "description": "Long description",
+  "author": "Author Name",
+  "hooks": ["post.created", "platform.connected"],
+  "permissions": ["read:posts", "write:accounts"],
+  "config": {
+    "type": "object",
+    "properties": { ... }
+  }
+}
+```
+
+**Plugin Execution via Web Worker Sandbox**
+
+```
+Plugin event triggered
+         ▼
+Create Web Worker instance
+         ▼
+Load plugin code in worker context
+  - Worker has NO access to:
+    - window, document, localStorage
+    - Fetch (except to plugin-provided endpoints)
+    - Network directly
+         ▼
+Send message to worker: { event, payload, context }
+         ▼
+Plugin processes in isolation
+         ▼
+Worker returns result via message
+         ▼
+Validate result against hook schema
+         ▼
+Return to caller
+```
+
+**Event Hook System (7 types)**
+
+1. `post.creating` → Before post created
+   - Input: content, platforms, mediaUrls
+   - Output: modified content or approval
+2. `post.created` → After social post published
+   - Input: postId, platform, content, url
+   - Output: none (notification only)
+3. `post.scheduled` → When post scheduled
+   - Input: postId, scheduledTime
+   - Output: none
+4. `crawler.finished` → After crawler completes
+   - Input: crawlerId, results, duration
+   - Output: processing instructions
+5. `export.completed` → After data export
+   - Input: exportId, format, fileUrl
+   - Output: post-processing (e.g., upload to Slack)
+6. `platform.connected` → After OAuth success
+   - Input: platform, accountId, metadata
+   - Output: onboarding data
+7. `plugin.installed` → After plugin installed
+   - Input: pluginId, config
+   - Output: initialization result
+
+**Plugin Registry API**
+
+```
+GET /api/v1/plugins
+  - List all approved plugins
+  - Filter by hook type, platform
+  - Return marketplace metadata
+
+POST /api/v1/plugins/:id/install
+  - User installs plugin
+  - Validate manifest
+  - Store installation + config
+  - Return plugin instance
+
+DELETE /api/v1/plugins/:id/uninstall
+  - Remove plugin installation
+  - Cleanup Web Workers
+
+PATCH /api/v1/plugins/:id/approve (admin only)
+  - Change status: pending → approved
+  - Make publicly available
+```
+
 ## Architecture Evolution Timeline
 
 ```
@@ -1188,5 +1376,6 @@ Phase 2 (Enhancement):      Deep package implementation, 246 tests ✓
 Phase 3 (Optimization):     Pagination, Sentry, cache headers, bundle analysis ✓
 Phase 4 (Scale):            Organizations, teams, RBAC ✓
 Phase 5a (Ecosystem):       Webhooks, REST API, Zapier, Bluesky ✓
-Phase 5b (Advanced):        More integrations, OAuth providers (planned)
+Phase 5b (Extended):        OAuth, 4 new platforms, plugins, OpenAPI ✓
+Phase 6 (Advanced):         Advanced AI, Make.com, analytics (planned)
 ```

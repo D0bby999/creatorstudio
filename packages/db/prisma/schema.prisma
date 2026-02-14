@@ -99,12 +99,13 @@ model Project {
 
 model SocialAccount {
   id             String       @id @default(cuid())
-  platform       String       // instagram
+  platform       String       // instagram | facebook | threads | tiktok | bluesky | twitter | linkedin
   platformUserId String
   username       String
   accessToken    String
   refreshToken   String?
   expiresAt      DateTime?
+  metadata       Json?        // Platform-specific data (pageId, pageAccessToken, openId, etc.)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts          SocialPost[]
@@ -276,11 +277,20 @@ model Plugin {
   user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   installedAt    DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  displayName    String   @default("")
+  description    String   @default("")
+  author         String   @default("")
+  iconUrl        String?
+  manifest       Json?
+  sourceUrl      String?
+  status         String   @default("pending")
+  installCount   Int      @default(0)
 
   @@unique([name, organizationId])
   @@unique([name, userId])
   @@index([organizationId])
   @@index([userId])
+  @@index([status])
   @@map("plugin")
 }
 

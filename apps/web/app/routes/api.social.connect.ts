@@ -4,6 +4,7 @@
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import { BlueskyClient } from '@creator-studio/social/bluesky'
+import { encryptToken } from '~/lib/token-encryption'
 import type { Route } from './+types/api.social.connect'
 
 export async function action({ request }: Route.ActionArgs) {
@@ -58,6 +59,67 @@ export async function action({ request }: Route.ActionArgs) {
       } catch (err) {
         console.error('Bluesky auth error:', err)
         return Response.json({ error: 'Invalid credentials or authentication failed' }, { status: 401 })
+      }
+    }
+
+    // Connect Meta accounts (Instagram/Facebook/Threads)
+    if (action === 'connectMeta') {
+      const accountsJson = formData.get('accounts')?.toString()
+
+      if (!accountsJson) {
+        return Response.json({ error: 'Accounts data is required' }, { status: 400 })
+      }
+
+      try {
+        const accounts = JSON.parse(accountsJson)
+
+        for (const account of accounts) {
+          // Check if account already exists
+          const existing = await prisma.socialAccount.findFirst({
+            where: {
+              userId: session.user.id,
+              platform: account.platform,
+              platformUserId: account.platformUserId,
+            },
+          })
+
+          if (existing) {
+            // Update existing account
+            await prisma.socialAccount.update({
+              where: { id: existing.id },
+              data: {
+                accessToken: encryptToken(account.accessToken),
+                expiresAt: new Date(Date.now() + account.expiresIn * 1000),
+                username: account.name,
+                metadata: {
+                  pageId: account.pageId,
+                  pageAccessToken: account.pageAccessToken ? encryptToken(account.pageAccessToken) : undefined,
+                },
+              },
+            })
+          } else {
+            // Create new account
+            await prisma.socialAccount.create({
+              data: {
+                userId: session.user.id,
+                platform: account.platform,
+                platformUserId: account.platformUserId,
+                username: account.name,
+                accessToken: encryptToken(account.accessToken),
+                expiresAt: new Date(Date.now() + account.expiresIn * 1000),
+                metadata: {
+                  pageId: account.pageId,
+                  pageAccessToken: account.pageAccessToken ? encryptToken(account.pageAccessToken) : undefined,
+                },
+              },
+            })
+          }
+        }
+
+        return Response.json({ success: true })
+      } catch (err) {
+        console.error('Meta connect error:', err)
+        return Response.json({ error: 'Failed to connect Meta accounts' }, { status: 500 })
       }
     }
 

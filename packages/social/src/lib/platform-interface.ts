@@ -7,6 +7,7 @@ export interface PostParams {
   content: string
   mediaUrls: string[]
   userId: string
+  mediaType?: 'image' | 'video' | 'carousel'
 }
 
 export interface PlatformPostResponse {
