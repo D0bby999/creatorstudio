@@ -1,25 +1,18 @@
-const DANGEROUS_TAGS = /<(script|iframe|object|embed|link|style|meta|base)[^>]*>.*?<\/\1>|<(script|iframe|object|embed|link|style|meta|base)[^>]*\/>/gis
+import sanitize from 'sanitize-html'
+
 const ALL_TAGS = /<[^>]*>/g
-const DANGEROUS_ATTRS = /\s(on\w+|href\s*=\s*["']?\s*javascript:|src\s*=\s*["']?\s*data:text\/html)/gi
 
 export function sanitizeHtml(input: string): string {
   if (!input || typeof input !== 'string') return ''
 
-  let sanitized = input
-    .replace(DANGEROUS_TAGS, '')
-    .replace(DANGEROUS_ATTRS, '')
-
-  const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre']
-  const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi
-
-  sanitized = sanitized.replace(tagPattern, (match, tag) => {
-    if (allowedTags.includes(tag.toLowerCase())) {
-      return match
-    }
-    return ''
-  })
-
-  return sanitized.trim()
+  // Use sanitize-html library for proper HTML sanitization
+  return sanitize(input, {
+    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+    allowedAttributes: {
+      'a': ['href', 'title'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+  }).trim()
 }
 
 export function sanitizePlainText(input: string): string {

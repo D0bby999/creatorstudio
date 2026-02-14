@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 import { handleAiStream } from '@creator-studio/ai/lib/ai-stream-handler'
 import { getSessions, getSession } from '@creator-studio/ai/lib/session-memory'
+import { logger } from '~/lib/logger'
 import type { AgentRole } from '@creator-studio/ai/types/ai-types'
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -30,7 +31,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // Generic error
-    console.error('AI service error:', error)
+    logger.error({ err: error }, 'AI service error')
     return Response.json(
       { error: 'AI service error. Please try again.' },
       { status: 500 }

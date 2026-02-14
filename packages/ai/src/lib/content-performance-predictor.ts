@@ -94,14 +94,31 @@ function analyzeContentHeuristic(content: string, platform: string): Performance
   let score = 50
 
   // Content length analysis
-  const wordCount = content.split(/\s+/).length
-  const optimalLength = platform === 'twitter' ? 100 : 150
-  if (wordCount >= optimalLength * 0.5 && wordCount <= optimalLength * 1.5) {
-    score += 10
-    factors.push('✓ Good content length')
+  if (platform === 'twitter') {
+    // Twitter uses character limit (280 max)
+    const charCount = content.length
+    const optimalCharCount = 280
+    if (charCount > 0 && charCount <= optimalCharCount) {
+      score += 10
+      factors.push('✓ Good content length for Twitter')
+    } else if (charCount > optimalCharCount) {
+      factors.push('✗ Content exceeds Twitter character limit')
+      suggestions.push(`Reduce content to ${optimalCharCount} characters for Twitter`)
+    } else {
+      factors.push('✗ Content too short')
+      suggestions.push('Add more content for better engagement')
+    }
   } else {
-    factors.push('✗ Content length could be optimized')
-    suggestions.push(`Aim for ${optimalLength} words for ${platform}`)
+    // Other platforms use word count
+    const wordCount = content.split(/\s+/).length
+    const optimalLength = 150
+    if (wordCount >= optimalLength * 0.5 && wordCount <= optimalLength * 1.5) {
+      score += 10
+      factors.push('✓ Good content length')
+    } else {
+      factors.push('✗ Content length could be optimized')
+      suggestions.push(`Aim for ${optimalLength} words for ${platform}`)
+    }
   }
 
   // Hashtag presence

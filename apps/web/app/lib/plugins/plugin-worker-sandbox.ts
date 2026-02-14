@@ -1,3 +1,5 @@
+import type { PluginManifest } from './plugin-manifest-schema'
+
 type PluginEvent = {
   type: string
   payload: unknown
@@ -14,7 +16,7 @@ class PluginWorkerSandbox {
   private pendingCalls: Map<string, Map<number, (value: PluginResponse) => void>> = new Map()
   private callIdCounter = 0
 
-  async loadPlugin(pluginId: string, sourceUrl: string): Promise<void> {
+  async loadPlugin(pluginId: string, sourceUrl: string, manifest?: PluginManifest): Promise<void> {
     if (typeof window === 'undefined') {
       throw new Error('PluginWorkerSandbox can only be used in browser environment')
     }
@@ -25,8 +27,38 @@ class PluginWorkerSandbox {
     }
 
     try {
+      // Serialize allowed network URLs for worker (empty array = block all)
+      const allowedNetworkUrls = JSON.stringify(manifest?.permissions?.network || [])
+
       const workerCode = `
         let pluginCode = null;
+        const allowedNetworkUrls = ${allowedNetworkUrls};
+
+        // Wrap fetch to enforce network allowlist
+        const originalFetch = self.fetch;
+        self.fetch = function(url, options) {
+          const urlStr = typeof url === 'string' ? url : url.toString();
+
+          // Check if URL is in allowlist
+          const isAllowed = allowedNetworkUrls.some(allowed => {
+            try {
+              const allowedUrl = new URL(allowed);
+              const requestUrl = new URL(urlStr);
+              // Match origin (protocol + hostname + port)
+              return allowedUrl.origin === requestUrl.origin;
+            } catch {
+              return false;
+            }
+          });
+
+          if (!isAllowed) {
+            const error = new Error('Network request blocked: URL not in manifest permissions.network allowlist: ' + urlStr);
+            console.error('[Plugin Security]', error.message);
+            return Promise.reject(error);
+          }
+
+          return originalFetch.call(self, url, options);
+        };
 
         self.addEventListener('message', async (event) => {
           const { type, callId, payload, sourceUrl } = event.data;

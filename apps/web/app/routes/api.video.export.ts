@@ -9,6 +9,7 @@ import type { Route } from './+types/api.video.export'
 import { auth } from '@creator-studio/auth'
 import { prisma } from '@creator-studio/db'
 import { inngest } from '~/lib/inngest/inngest-client'
+import { logger } from '~/lib/logger'
 
 export async function action({ request }: Route.ActionArgs) {
   // Auth check
@@ -72,7 +73,7 @@ export async function action({ request }: Route.ActionArgs) {
       message: 'Video export queued. Check status via /api/video/export-status',
     })
   } catch (error) {
-    console.error('[Video Export API] Error:', error)
+    logger.error({ err: error }, '[Video Export API] Error')
     return Response.json(
       {
         error: 'Failed to queue video export',

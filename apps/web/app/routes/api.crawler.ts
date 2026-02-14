@@ -1,5 +1,6 @@
 import type { Route } from './+types/api.crawler'
 import { createJob, getJobs } from '@creator-studio/crawler/lib/crawl-job-manager'
+import { logger } from '~/lib/logger'
 
 /**
  * POST handler: creates a new crawl job
@@ -27,7 +28,7 @@ export async function action({ request }: Route.ActionArgs) {
 
     return Response.json({ job }, { status: 201 })
   } catch (error) {
-    console.error('Crawler API error:', error)
+    logger.error({ err: error }, 'Crawler API error')
     return Response.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
@@ -43,7 +44,7 @@ export async function loader() {
     const jobs = await getJobs()
     return Response.json({ jobs })
   } catch (error) {
-    console.error('Crawler API error:', error)
+    logger.error({ err: error }, 'Crawler API error')
     return Response.json(
       { error: 'Failed to fetch jobs' },
       { status: 500 }

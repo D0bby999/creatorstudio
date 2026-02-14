@@ -7,6 +7,7 @@ import { requireSession } from '~/lib/auth-server'
 import { schedulePost } from '@creator-studio/social/scheduler'
 import { getPlatformClient } from '@creator-studio/social/factory'
 import { decryptToken } from '~/lib/token-encryption'
+import { logger } from '~/lib/logger'
 import type { SocialPlatform } from '@creator-studio/social/types'
 
 interface ActionArgs {
@@ -83,7 +84,7 @@ export async function action({ request }: ActionArgs) {
             },
           })
         } catch (publishError) {
-          console.error('Platform publish error:', publishError)
+          logger.error({ err: publishError }, 'Platform publish error')
           await prisma.socialPost.update({
             where: { id: post.id },
             data: {
@@ -162,7 +163,7 @@ export async function action({ request }: ActionArgs) {
         return Response.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Social API error:', error)
+    logger.error({ err: error }, 'Social API error')
     return Response.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

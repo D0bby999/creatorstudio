@@ -30,6 +30,8 @@ model User {
   apiKeys             ApiKey[]
   mediaFiles          MediaFile[]
   videoExports        VideoExport[]
+  pluginReviews       PluginReview[]
+  pluginInstalls      PluginInstall[]
 
   @@unique([email])
   @@map("user")
@@ -270,31 +272,75 @@ model WebhookEvent {
 // ─── Plugin tables ───
 
 model Plugin {
-  id             String   @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String
-  version        String   @default("1.0.0")
-  enabled        Boolean  @default(false)
+  version        String          @default("1.0.0")
+  enabled        Boolean         @default(false)
   config         Json?
   organizationId String?
   userId         String?
-  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  installedAt    DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  displayName    String   @default("")
-  description    String   @default("")
-  author         String   @default("")
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installedAt    DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  displayName    String          @default("")
+  description    String          @default("")
+  author         String          @default("")
   iconUrl        String?
   manifest       Json?
   sourceUrl      String?
-  status         String   @default("pending")
-  installCount   Int      @default(0)
+  status         String          @default("pending")
+  installCount   Int             @default(0)
+  categoryId     String?
+  category       PluginCategory? @relation(fields: [categoryId], references: [id])
+  avgRating      Float           @default(0)
+  featured       Boolean         @default(false)
+  tags           String[]
 
   @@unique([name, organizationId])
   @@unique([name, userId])
   @@index([organizationId])
   @@index([userId])
   @@index([status])
+  @@index([categoryId])
   @@map("plugin")
+}
+
+model PluginCategory {
+  id      String   @id @default(cuid())
+  slug    String   @unique
+  name    String
+  icon    String?
+  plugins Plugin[]
+
+  @@map("plugin_category")
+}
+
+model PluginReview {
+  id        String   @id @default(cuid())
+  pluginId  String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pluginId, userId])
+  @@index([pluginId])
+  @@map("plugin_review")
+}
+
+model PluginInstall {
+  id            String    @id @default(cuid())
+  pluginId      String
+  userId        String
+  installedAt   DateTime  @default(now())
+  uninstalledAt DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pluginId, userId])
+  @@index([pluginId])
+  @@index([userId])
+  @@map("plugin_install")
 }
 
 // ─── API Key tables ───

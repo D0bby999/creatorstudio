@@ -5,6 +5,7 @@ import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import { BlueskyClient } from '@creator-studio/social/bluesky'
 import { encryptToken } from '~/lib/token-encryption'
+import { logger } from '~/lib/logger'
 import type { Route } from './+types/api.social.connect'
 
 export async function action({ request }: Route.ActionArgs) {
@@ -57,7 +58,7 @@ export async function action({ request }: Route.ActionArgs) {
 
         return Response.json({ success: true, username: profile.username })
       } catch (err) {
-        console.error('Bluesky auth error:', err)
+        logger.error({ err }, 'Bluesky auth error')
         return Response.json({ error: 'Invalid credentials or authentication failed' }, { status: 401 })
       }
     }
@@ -118,7 +119,7 @@ export async function action({ request }: Route.ActionArgs) {
 
         return Response.json({ success: true })
       } catch (err) {
-        console.error('Meta connect error:', err)
+        logger.error({ err }, 'Meta connect error')
         return Response.json({ error: 'Failed to connect Meta accounts' }, { status: 500 })
       }
     }
@@ -152,7 +153,7 @@ export async function action({ request }: Route.ActionArgs) {
 
     return Response.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error) {
-    console.error('Social connect error:', error)
+    logger.error({ err: error }, 'Social connect error')
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

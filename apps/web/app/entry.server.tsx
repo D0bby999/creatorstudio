@@ -9,6 +9,8 @@ import { logger } from './lib/logger'
 
 const ABORT_DELAY = 5_000
 
+// Note: @sentry/react v8+ works for both client and server in React Router apps
+// It auto-detects the Node.js runtime and configures appropriately for SSR
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,

@@ -4,6 +4,7 @@
 import { requireSession } from '~/lib/auth-server'
 import { buildMetaAuthUrl } from '~/lib/meta-oauth-config'
 import { randomBytes } from 'node:crypto'
+import { logger } from '~/lib/logger'
 
 interface LoaderArgs {
   request: Request
@@ -33,7 +34,7 @@ export async function loader({ request }: LoaderArgs) {
       headers,
     })
   } catch (error) {
-    console.error('Meta OAuth authorize error:', error)
+    logger.error({ err: error }, 'Meta OAuth authorize error')
     return new Response('Failed to initiate Meta OAuth flow', { status: 500 })
   }
 }

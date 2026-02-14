@@ -16,6 +16,7 @@ interface ImageGenerationResult {
 
 const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions'
 const DEFAULT_MODEL = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b'
+const MAX_POLL_ATTEMPTS = 300 // 5 minutes at 1s intervals
 
 /**
  * Generate image from text prompt using Replicate API
@@ -60,9 +61,15 @@ export async function generateImage(
   const prediction = await response.json()
   const predictionId = prediction.id
 
-  // Poll for completion
+  // Poll for completion with timeout
   let result = prediction
+  let attempts = 0
+
   while (result.status !== 'succeeded' && result.status !== 'failed') {
+    if (attempts >= MAX_POLL_ATTEMPTS) {
+      throw new Error('Image generation timed out after 5 minutes')
+    }
+
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     const pollResponse = await fetch(`${REPLICATE_API_URL}/${predictionId}`, {
@@ -76,6 +83,7 @@ export async function generateImage(
     }
 
     result = await pollResponse.json()
+    attempts++
   }
 
   if (result.status === 'failed') {

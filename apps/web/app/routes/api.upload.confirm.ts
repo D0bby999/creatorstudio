@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { requireSession } from '~/lib/auth-server';
+import { logger } from '~/lib/logger';
 import { prisma } from '@creator-studio/db/client';
 import {
   getFileMetadata,
@@ -73,7 +74,7 @@ export async function action({ request }: ActionFunctionArgs) {
       createdAt: mediaFile.createdAt.toISOString(),
     });
   } catch (error) {
-    console.error('Upload confirmation error:', error);
+    logger.error({ err: error }, 'Upload confirmation error');
     return Response.json(
       { error: 'Failed to confirm upload' },
       { status: 500 }

@@ -3,7 +3,8 @@
 
 import { getRedis } from './redis-client'
 
-// In-memory fallback store for dev mode
+// In-memory fallback store for dev mode with LRU eviction
+const MAX_MEMORY_ENTRIES = 10_000
 const memoryStore = new Map<string, { value: string; expiresAt?: number }>()
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
@@ -36,7 +37,15 @@ export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): P
     return
   }
 
-  // Fallback: in-memory
+  // Fallback: in-memory with LRU eviction
+  if (memoryStore.size >= MAX_MEMORY_ENTRIES) {
+    // Remove oldest entry (first key in Map)
+    const oldestKey = memoryStore.keys().next().value
+    if (oldestKey) {
+      memoryStore.delete(oldestKey)
+    }
+  }
+
   memoryStore.set(key, {
     value: JSON.stringify(value),
     expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined,

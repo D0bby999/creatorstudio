@@ -9,16 +9,51 @@ import { getRemotionLambdaConfig } from './remotion-lambda-config'
 import { cacheGet, cacheSet } from '@creator-studio/redis'
 import { uploadFile, getPublicUrl, generateMediaPath } from '@creator-studio/storage'
 
-// Graceful handling if @remotion/lambda is not available
-let renderMediaOnLambda: any
-let getRenderProgress: any
+/**
+ * Inline SSRF prevention for S3 URL validation
+ * Only allows expected AWS S3 domains
+ */
+function validateS3Url(urlStr: string, expectedRegion: string): void {
+  try {
+    const url = new URL(urlStr)
 
-try {
-  const remotionLambda = await import('@remotion/lambda')
-  renderMediaOnLambda = remotionLambda.renderMediaOnLambda
-  getRenderProgress = remotionLambda.getRenderProgress
-} catch (error) {
-  console.warn('[Video Export] @remotion/lambda not available, export will fail gracefully')
+    // Only allow HTTPS
+    if (url.protocol !== 'https:') {
+      throw new Error(`Non-HTTPS S3 URL blocked: ${urlStr}`)
+    }
+
+    // Validate it's an AWS S3 domain in the expected region
+    const allowedPatterns = [
+      new RegExp(`^[a-z0-9.-]+\\.s3\\.${expectedRegion}\\.amazonaws\\.com$`),
+      new RegExp(`^s3\\.${expectedRegion}\\.amazonaws\\.com$`),
+    ]
+
+    const isValidS3Domain = allowedPatterns.some((pattern) => pattern.test(url.hostname))
+
+    if (!isValidS3Domain) {
+      throw new Error(`Invalid S3 domain (expected region ${expectedRegion}): ${urlStr}`)
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Invalid S3 URL format: ${urlStr}`)
+    }
+    throw error
+  }
+}
+
+// Lazy-loaded Remotion Lambda module
+let _lambda: typeof import('@remotion/lambda') | null = null
+
+async function getRemotionLambda() {
+  if (_lambda) return _lambda
+
+  try {
+    _lambda = await import('@remotion/lambda')
+    return _lambda
+  } catch (error) {
+    console.warn('[Video Export] @remotion/lambda not available, export will fail gracefully')
+    throw new Error('@remotion/lambda package not installed')
+  }
 }
 
 export interface ExportProgress {
@@ -34,7 +69,7 @@ export interface StartExportParams {
   projectId: string
   userId: string
   format: 'mp4' | 'webm'
-  inputProps: Record<string, any>
+  inputProps: Record<string, unknown>
   compositionId?: string
 }
 
@@ -52,16 +87,13 @@ export async function startExport(
     throw new Error('Remotion Lambda not configured. Set REMOTION_REGION, REMOTION_FUNCTION_NAME, REMOTION_SERVE_URL')
   }
 
-  if (!renderMediaOnLambda) {
-    throw new Error('@remotion/lambda package not installed')
-  }
-
+  const lambda = await getRemotionLambda()
   const { projectId, format, inputProps, compositionId = 'VideoComposition' } = params
 
   try {
     // Trigger Lambda render
-    const result = await renderMediaOnLambda({
-      region: config.region as any,
+    const result = await lambda.renderMediaOnLambda({
+      region: config.region as 'us-east-1' | 'us-west-2' | 'eu-central-1' | 'ap-south-1',
       functionName: config.functionName,
       serveUrl: config.serveUrl,
       composition: compositionId,
@@ -104,16 +136,14 @@ export async function getExportProgress(
   region: string,
   bucketName: string
 ): Promise<ExportProgress> {
-  if (!getRenderProgress) {
-    throw new Error('@remotion/lambda package not installed')
-  }
+  const lambda = await getRemotionLambda()
 
   try {
-    const progress = await getRenderProgress({
+    const progress = await lambda.getRenderProgress({
       renderId,
       bucketName,
       functionName: getRemotionLambdaConfig()?.functionName || '',
-      region: region as any,
+      region: region as 'us-east-1' | 'us-west-2' | 'eu-central-1' | 'ap-south-1',
     })
 
     const exportProgress: ExportProgress = {
@@ -159,6 +189,9 @@ export async function copyToR2(
     // Construct Lambda S3 URL (this is a placeholder - actual implementation
     // depends on Lambda bucket configuration)
     const lambdaS3Url = `https://${s3Bucket}.s3.${config.region}.amazonaws.com/${s3Key}`
+
+    // Validate S3 URL to prevent SSRF attacks
+    validateS3Url(lambdaS3Url, config.region)
 
     // Download video file
     const response = await fetch(lambdaS3Url)

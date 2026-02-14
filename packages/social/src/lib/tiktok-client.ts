@@ -18,6 +18,53 @@ import {
   fetchTikTokUserInfo,
 } from './tiktok-api-helpers'
 
+/**
+ * Inline SSRF prevention for video URL validation
+ * Blocks private IP ranges to prevent internal network access
+ */
+function isPrivateHostname(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '0.0.0.0' || hostname === '::1') {
+    return true
+  }
+
+  const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4Match) {
+    const [, a, b, c, d] = ipv4Match.map(Number)
+    if (a > 255 || b > 255 || c > 255 || d > 255) return false
+    if (a === 10) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+    if (a === 127 || a === 0) return true
+    if (a === 169 && b === 254) return true
+  }
+
+  if (hostname.includes(':')) {
+    const lower = hostname.toLowerCase()
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true
+    if (lower.startsWith('fe80:')) return true
+    if (lower === '::1') return true
+  }
+
+  return false
+}
+
+function validateFetchUrl(urlStr: string): void {
+  try {
+    const url = new URL(urlStr)
+    if (url.protocol !== 'https:') {
+      throw new Error(`Non-HTTPS URL blocked: ${urlStr}`)
+    }
+    if (isPrivateHostname(url.hostname)) {
+      throw new Error(`Private IP blocked (SSRF prevention): ${urlStr}`)
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Invalid URL format: ${urlStr}`)
+    }
+    throw error
+  }
+}
+
 export class TikTokClient implements SocialPlatformClient {
   platform = 'tiktok' as const
   private static CHUNK_SIZE = 10 * 1024 * 1024 // 10MB
@@ -48,6 +95,9 @@ export class TikTokClient implements SocialPlatformClient {
     }
 
     const videoUrl = mediaUrls[0]
+
+    // Validate URL to prevent SSRF attacks
+    validateFetchUrl(videoUrl)
 
     // Fetch video data
     const videoResponse = await fetch(videoUrl)

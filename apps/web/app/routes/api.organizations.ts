@@ -4,6 +4,7 @@
 import { prisma } from '@creator-studio/db/client'
 import { canManageMembers, canDeleteOrganization } from '@creator-studio/auth'
 import { requireSession } from '~/lib/auth-server'
+import { logger } from '~/lib/logger'
 
 interface ActionArgs {
   request: Request
@@ -44,7 +45,7 @@ export async function action({ request }: ActionArgs) {
         return Response.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Organization API error:', error)
+    logger.error({ err: error }, 'Organization API error')
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

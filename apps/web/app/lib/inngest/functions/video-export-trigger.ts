@@ -20,7 +20,7 @@ interface VideoExportRequestedEvent {
     projectId: string
     userId: string
     format: 'mp4' | 'webm'
-    inputProps?: Record<string, any>
+    inputProps?: Record<string, unknown>
   }
 }
 
@@ -100,18 +100,16 @@ export const videoExportTrigger = inngest.createFunction(
     })
 
     // Step 4: Poll render progress (every 5 seconds until complete)
-    const renderResult = await step.run('poll-render-progress', async () => {
-      const config = isRemotionLambdaAvailable()
-      if (!config) throw new Error('Lambda not configured')
+    // Using step.run() per iteration to avoid serverless timeout
+    const maxAttempts = 360 // 30 minutes max (5s * 360 = 1800s)
+    let renderResult: { completed: boolean; bucketName: string; s3Key: string } | null = null
 
-      let isComplete = false
-      let attempts = 0
-      const maxAttempts = 360 // 30 minutes max (5s * 360 = 1800s)
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const progress = await step.run(`check-render-status-${attempt}`, async () => {
+        const config = isRemotionLambdaAvailable()
+        if (!config) throw new Error('Lambda not configured')
 
-      while (!isComplete && attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 5000)) // Wait 5 seconds
-
-        const progress = await getExportProgress(
+        const progressData = await getExportProgress(
           exportId,
           renderInfo.renderId,
           process.env.REMOTION_REGION || 'us-east-1',
@@ -122,29 +120,31 @@ export const videoExportTrigger = inngest.createFunction(
         await prisma.videoExport.update({
           where: { id: exportId },
           data: {
-            progress: progress.progress * 100,
+            progress: progressData.progress * 100,
           },
         })
 
-        if (progress.status === 'completed') {
-          isComplete = true
-          return {
-            completed: true,
-            bucketName: renderInfo.bucketName,
-            // Lambda typically outputs to: renders/{renderId}/out.mp4
-            s3Key: `renders/${renderInfo.renderId}/out.${format}`,
-          }
+        return progressData
+      })
+
+      if (progress.status === 'completed') {
+        renderResult = {
+          completed: true,
+          bucketName: renderInfo.bucketName,
+          s3Key: `renders/${renderInfo.renderId}/out.${format}`,
         }
-
-        attempts++
+        break
       }
 
-      if (!isComplete) {
-        throw new Error('Render timeout after 30 minutes')
+      // Wait 5 seconds before next poll (unless this is the last attempt)
+      if (attempt < maxAttempts - 1) {
+        await step.sleep('wait-before-next-poll', '5s')
       }
+    }
 
-      return { completed: true, bucketName: renderInfo.bucketName, s3Key: '' }
-    })
+    if (!renderResult) {
+      throw new Error('Render timeout after 30 minutes')
+    }
 
     // Step 5: Copy rendered video to R2
     const r2Url = await step.run('copy-to-r2', async () => {

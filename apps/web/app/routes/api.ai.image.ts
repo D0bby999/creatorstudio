@@ -6,6 +6,7 @@
 import type { ActionFunctionArgs } from 'react-router'
 import { generateImage } from '@creator-studio/ai/lib/image-generation'
 import { auth } from '~/lib/auth.server'
+import { logger } from '~/lib/logger'
 
 export async function action({ request }: ActionFunctionArgs) {
   // Check authentication
@@ -48,7 +49,7 @@ export async function action({ request }: ActionFunctionArgs) {
       id: result.id,
     })
   } catch (error) {
-    console.error('Image generation error:', error)
+    logger.error({ err: error }, 'Image generation error')
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 

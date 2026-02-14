@@ -6,6 +6,7 @@ import { requireSession } from '~/lib/auth-server'
 import { TIKTOK_OAUTH_CONFIG } from '~/lib/tiktok-oauth-config'
 import { fetchTikTokUserInfo } from '@creator-studio/social/tiktok-helpers'
 import { encryptToken } from '~/lib/token-encryption'
+import { logger } from '~/lib/logger'
 
 interface LoaderArgs {
   request: Request
@@ -54,7 +55,7 @@ export async function loader({ request }: LoaderArgs) {
 
     if (!tokenResponse.ok) {
       const error = await tokenResponse.json()
-      console.error('TikTok token exchange error:', error)
+      logger.error({ err: error }, 'TikTok token exchange error')
       return new Response('Failed to exchange code for token', { status: 500 })
     }
 
@@ -124,7 +125,7 @@ export async function loader({ request }: LoaderArgs) {
       headers,
     })
   } catch (error) {
-    console.error('TikTok OAuth callback error:', error)
+    logger.error({ err: error }, 'TikTok OAuth callback error')
     return new Response('Failed to complete TikTok OAuth flow', { status: 500 })
   }
 }

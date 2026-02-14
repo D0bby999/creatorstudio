@@ -8,6 +8,7 @@ import { suggestHashtags } from '@creator-studio/ai/lib/hashtag-suggestions'
 import { suggestPostingTimes } from '@creator-studio/ai/lib/content-scheduling'
 import { predictPerformance } from '@creator-studio/ai/lib/content-performance-predictor'
 import { auth } from '~/lib/auth.server'
+import { logger } from '~/lib/logger'
 
 export async function action({ request }: ActionFunctionArgs) {
   // Check authentication
@@ -79,7 +80,7 @@ export async function action({ request }: ActionFunctionArgs) {
         return Response.json({ error: 'Invalid type parameter' }, { status: 400 })
     }
   } catch (error) {
-    console.error('AI suggestions error:', error)
+    logger.error({ err: error }, 'AI suggestions error')
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 

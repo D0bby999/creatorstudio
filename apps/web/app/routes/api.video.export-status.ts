@@ -9,6 +9,7 @@ import type { Route } from './+types/api.video.export-status'
 import { auth } from '@creator-studio/auth'
 import { prisma } from '@creator-studio/db'
 import { cacheGet } from '@creator-studio/redis'
+import { logger } from '~/lib/logger'
 
 export async function loader({ request }: Route.LoaderArgs) {
   // Auth check
@@ -69,7 +70,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       completedAt: videoExport.completedAt,
     })
   } catch (error) {
-    console.error('[Video Export Status API] Error:', error)
+    logger.error({ err: error }, '[Video Export Status API] Error')
     return Response.json(
       {
         error: 'Failed to get export status',

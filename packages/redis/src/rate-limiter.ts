@@ -11,32 +11,36 @@ export interface RateLimitResult {
   reset: number
 }
 
-// In-memory fallback for dev mode
+// In-memory fallback for dev mode with LRU eviction
+const MAX_MEMORY_ENTRIES = 10_000
 const memoryWindows = new Map<string, { count: number; resetAt: number }>()
 
-let ratelimit: Ratelimit | null = null
+// Singleton cache keyed by maxRequests-windowSeconds
+const ratelimiters = new Map<string, Ratelimit>()
 
-function getRatelimit(limit: number): Ratelimit | null {
+function getOrCreateLimiter(maxRequests: number, windowSeconds: number): Ratelimit | null {
   const redis = getRedis()
   if (!redis) return null
 
-  // Recreate if limit changed (rare)
-  if (!ratelimit) {
-    ratelimit = new Ratelimit({
+  const key = `${maxRequests}-${windowSeconds}`
+
+  if (!ratelimiters.has(key)) {
+    ratelimiters.set(key, new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(limit, '60 s'),
+      limiter: Ratelimit.slidingWindow(maxRequests, `${windowSeconds} s`),
       prefix: 'rate',
-    })
+    }))
   }
-  return ratelimit
+
+  return ratelimiters.get(key)!
 }
 
 /**
  * Check rate limit for an API key.
  * Throws 429 Response if exceeded (matches existing behavior).
  */
-export async function checkRateLimit(apiKeyId: string, limit = 10): Promise<void> {
-  const rl = getRatelimit(limit)
+export async function checkRateLimit(apiKeyId: string, limit = 10, windowSeconds = 60): Promise<void> {
+  const rl = getOrCreateLimiter(limit, windowSeconds)
 
   if (rl) {
     const result = await rl.limit(apiKeyId)
@@ -56,12 +60,20 @@ export async function checkRateLimit(apiKeyId: string, limit = 10): Promise<void
     return
   }
 
-  // Fallback: in-memory sliding window (same as original implementation)
+  // Fallback: in-memory sliding window with LRU eviction
   const now = Date.now()
+  const windowMs = windowSeconds * 1000
   const existing = memoryWindows.get(apiKeyId)
 
   if (!existing || existing.resetAt <= now) {
-    memoryWindows.set(apiKeyId, { count: 1, resetAt: now + 60_000 })
+    // LRU eviction before inserting new entry
+    if (memoryWindows.size >= MAX_MEMORY_ENTRIES) {
+      const oldestKey = memoryWindows.keys().next().value
+      if (oldestKey) {
+        memoryWindows.delete(oldestKey)
+      }
+    }
+    memoryWindows.set(apiKeyId, { count: 1, resetAt: now + windowMs })
     return
   }
 
@@ -82,28 +94,20 @@ export async function checkRateLimit(apiKeyId: string, limit = 10): Promise<void
 }
 
 /**
- * Get rate limit info without consuming a request (for headers)
+ * Get rate limit info without consuming a request (memory-only tracking)
+ * For API routes to set response headers without consuming quota
  */
-export async function getRateLimitInfo(apiKeyId: string, limit = 10): Promise<RateLimitResult> {
-  const rl = getRatelimit(limit)
-
-  if (rl) {
-    const result = await rl.limit(apiKeyId)
-    return {
-      success: result.success,
-      limit: result.limit,
-      remaining: result.remaining,
-      reset: result.reset,
-    }
-  }
-
+export async function getRateLimitInfo(apiKeyId: string, limit = 10, windowSeconds = 60): Promise<RateLimitResult> {
+  // Memory-only check - does NOT consume a request
   const existing = memoryWindows.get(apiKeyId)
   const now = Date.now()
+  const windowMs = windowSeconds * 1000
+
   return {
     success: !existing || existing.count < limit || existing.resetAt <= now,
     limit,
     remaining: existing ? Math.max(0, limit - existing.count) : limit,
-    reset: existing?.resetAt ?? now + 60_000,
+    reset: existing?.resetAt ?? now + windowMs,
   }
 }
 
@@ -111,6 +115,6 @@ export async function getRateLimitInfo(apiKeyId: string, limit = 10): Promise<Ra
  * Reset rate limiter (for testing)
  */
 export function resetRateLimiter(): void {
-  ratelimit = null
+  ratelimiters.clear()
   memoryWindows.clear()
 }

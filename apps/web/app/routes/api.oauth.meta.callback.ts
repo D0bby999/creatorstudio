@@ -4,6 +4,9 @@
 import { requireSession } from '~/lib/auth-server'
 import { META_OAUTH_CONFIG } from '~/lib/meta-oauth-config'
 import { refreshLongLivedToken } from '@creator-studio/social/meta-helpers'
+import { encryptToken } from '~/lib/token-encryption'
+import { cacheSet } from '@creator-studio/redis'
+import { logger } from '~/lib/logger'
 
 interface LoaderArgs {
   request: Request
@@ -20,6 +23,16 @@ interface MetaUserData {
   instagram_business_account?: {
     id: string
   }
+}
+
+interface DiscoveredAccount {
+  platform: 'facebook' | 'instagram' | 'threads'
+  platformUserId: string
+  name: string
+  accessToken: string
+  expiresIn: number
+  pageId?: string
+  pageAccessToken?: string
 }
 
 export async function loader({ request }: LoaderArgs) {
@@ -57,7 +70,7 @@ export async function loader({ request }: LoaderArgs) {
     const tokenResponse = await fetch(`${tokenUrl}?${tokenParams}`)
     if (!tokenResponse.ok) {
       const error = await tokenResponse.json()
-      console.error('Meta token exchange error:', error)
+      logger.error({ err: error }, 'Meta token exchange error')
       return new Response('Failed to exchange code for token', { status: 500 })
     }
 
@@ -71,8 +84,11 @@ export async function loader({ request }: LoaderArgs) {
       META_OAUTH_CONFIG.clientSecret
     )
 
-    // Discover connected platforms
-    const discoveredAccounts: any[] = []
+    // Discover connected platforms (store encrypted tokens for security)
+    const discoveredAccounts: DiscoveredAccount[] = []
+
+    // Encrypt tokens before storing
+    const encryptedAccessToken = encryptToken(longLivedResult.accessToken)
 
     // Get Facebook Pages
     const pagesResponse = await fetch(
@@ -86,8 +102,8 @@ export async function loader({ request }: LoaderArgs) {
           platform: 'facebook',
           platformUserId: page.id,
           name: page.name,
-          accessToken: longLivedResult.accessToken,
-          pageAccessToken: page.access_token,
+          accessToken: encryptedAccessToken,
+          pageAccessToken: encryptToken(page.access_token),
           expiresIn: longLivedResult.expiresIn,
         })
 
@@ -110,9 +126,9 @@ export async function loader({ request }: LoaderArgs) {
                 platform: 'instagram',
                 platformUserId: igAccountId,
                 name: igProfile.username,
-                accessToken: longLivedResult.accessToken,
+                accessToken: encryptedAccessToken,
                 pageId: page.id,
-                pageAccessToken: page.access_token,
+                pageAccessToken: encryptToken(page.access_token),
                 expiresIn: longLivedResult.expiresIn,
               })
             }
@@ -138,18 +154,28 @@ export async function loader({ request }: LoaderArgs) {
             platform: 'threads',
             platformUserId: meData.id,
             name: 'Threads',
-            accessToken: longLivedResult.accessToken,
+            accessToken: encryptedAccessToken,
             expiresIn: longLivedResult.expiresIn,
           })
         }
       }
     }
 
-    // Store discovered accounts in cookie for the picker dialog
+    // Store encrypted accounts in Redis (not cookie) for security
+    // Generate random session ID to reference the cached data
+    const discoverySessionId = crypto.randomUUID()
+    await cacheSet(
+      `meta:discover:${discoverySessionId}`,
+      JSON.stringify(discoveredAccounts),
+      300 // 5 min TTL
+    )
+
+    // Store only the session ID in cookie (not the tokens)
+    // NOTE: Picker dialog route must read from Redis using this session ID
     const headers = new Headers()
     headers.append(
       'Set-Cookie',
-      `meta_discovered_accounts=${encodeURIComponent(JSON.stringify(discoveredAccounts))}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`
+      `meta_discovery_session=${discoverySessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=300`
     )
     headers.append(
       'Set-Cookie',
@@ -162,7 +188,7 @@ export async function loader({ request }: LoaderArgs) {
       headers,
     })
   } catch (error) {
-    console.error('Meta OAuth callback error:', error)
+    logger.error({ err: error }, 'Meta OAuth callback error')
     return new Response('Failed to complete Meta OAuth flow', { status: 500 })
   }
 }

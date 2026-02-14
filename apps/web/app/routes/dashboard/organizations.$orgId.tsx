@@ -15,6 +15,7 @@ import {
 import { prisma } from '@creator-studio/db/client'
 import { canManageMembers, canDeleteOrganization } from '@creator-studio/auth'
 import { requireSession } from '~/lib/auth-server'
+import { logger } from '~/lib/logger'
 import type { Route } from './+types/organizations.$orgId'
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -97,7 +98,7 @@ export async function action({ request, params }: Route.ActionArgs) {
         return { error: 'Invalid action' }
     }
   } catch (error) {
-    console.error('Org detail action error:', error)
+    logger.error({ err: error }, 'Org detail action error')
     return { error: 'Something went wrong' }
   }
 }

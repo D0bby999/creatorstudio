@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { requireSession } from '~/lib/auth-server';
+import { logger } from '~/lib/logger';
 import {
   getSignedUploadUrl,
   generateMediaPath,
@@ -65,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
       expiresAt: result.expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error('Upload URL generation error:', error);
+    logger.error({ err: error }, 'Upload URL generation error');
     return Response.json(
       { error: 'Failed to generate upload URL' },
       { status: 500 }
