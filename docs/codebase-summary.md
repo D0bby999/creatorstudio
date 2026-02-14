@@ -173,14 +173,25 @@ creator-studio/
 ### `@creator-studio/ui`
 **Path:** `packages/ui`
 **Exports:**
-- `./globals.css` → Tailwind base styles
+- `./globals.css` → Tailwind base styles + design tokens
 - `./lib/*` → Utility functions (cn, etc.)
-- `./components/*` → 10 shadcn/ui-style components
+- `./components/base/*` → 23 shadcn/ui-style base components
+- `./components/composites/*` → 6 composite components (higher-level UI patterns)
 
-**Enhanced Components (10 Total):**
+**Design System Architecture:**
+- **Design Tokens** → CSS custom properties (`--color-primary`, `--spacing-unit`, etc.)
+- **Tailwind Integration** → `@theme` directive maps tokens to TW4 utilities
+- **CVA Pattern** → Class Variance Authority for component variants
+- **Brand Color** → Teal/Cyan (#0891B2) as primary color
+- **ThemeProvider** → Context-based theme management with localStorage persistence
+- **SSR Script** → Prevents flash of unstyled content (theme hydration)
+- **Dark Mode** → Full light/dark theme support via CSS variables
+
+**Base Components (23 Total):**
 - **Alert** → Notification and warning messages
 - **Avatar** → User profile image + fallback initials
 - **Badge** → Status/tag labels
+- **Button** → Primary, secondary, destructive variants
 - **Card** → Container component with shadow and borders
 - **Dialog** → Modal overlay component
 - **Dropdown** → Menu trigger with options
@@ -188,12 +199,31 @@ creator-studio/
 - **Select** → Dropdown select component
 - **Tabs** → Tabbed navigation interface
 - **Tooltip** → Hover information popover
+- **Breadcrumb** → Navigation hierarchy display
+- **Sidebar** → Collapsible navigation container
+- **Topbar** → Header navigation bar
+- **BottomTabs** → Mobile-optimized tab bar (iOS-style)
+- **Checkbox**, **Radio**, **Slider**, **Switch**, **Textarea**, **Label**, **Separator**, **Spinner**, **Skeleton**
+
+**Composite Components (6 Total):**
+- **Split-Screen Auth** → Two-column layout for sign-in/sign-up
+- **Collapsible Sidebar** → Responsive sidebar with expand/collapse animation
+- **Mobile Bottom Navigation** → Platform-optimized mobile tabs
+- **Breadcrumb Topbar** → Combined header + navigation path
+- **View Transition Wrapper** → Smooth page transitions with API
+- **Theme Switcher** → Light/dark mode toggle with persistence
+
+**Layout System:**
+- **Collapsible Sidebar** → Responsive desktop sidebar with mobile adaptation
+- **Mobile Bottom Tabs** → Touch-friendly navigation for small screens
+- **Breadcrumb Topbar** → Contextual navigation path + action buttons
+- **Split-Screen Auth** → Asymmetric layout for authentication pages
 
 **Dependencies:**
 - `class-variance-authority` → CVA for component variants
 - `clsx` + `tailwind-merge` → Utility class merging
 - `lucide-react` → Icon library
-- `17 Tests` → Component rendering, prop variants, accessibility
+- `23 Tests (base)` + `18 Tests (composites)` → Component rendering, variants, accessibility
 
 ### `@creator-studio/canvas`
 **Path:** `packages/canvas`
@@ -386,10 +416,10 @@ creator-studio/
 
 ## Testing Summary
 
-**Total Tests:** 246 across 31 test files
+**Total Tests:** 282 across 33 test files
 - DB: 34 tests
 - Auth: 17 tests
-- UI: 17 tests
+- UI (base + composites): 41 tests (17 base + 24 composites)
 - Canvas: 20 tests
 - Video: 23 tests
 - Crawler: 57 tests

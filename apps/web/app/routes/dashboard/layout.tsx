@@ -1,22 +1,14 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import type { Route } from './+types/layout'
 import { requireSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
 import { prisma } from '@creator-studio/db/client'
 import { OrganizationSwitcher } from '~/components/organization-switcher'
-import {
-  Image,
-  Video,
-  Share2,
-  Globe,
-  Sparkles,
-  Building2,
-  LayoutDashboard,
-  LogOut,
-  Webhook,
-  Key,
-  Puzzle,
-} from 'lucide-react'
+import { SidebarProvider } from '~/lib/sidebar-context'
+import { DashboardSidebar } from '~/components/layout/dashboard-sidebar'
+import { DashboardTopbar } from '~/components/layout/dashboard-topbar'
+import { MobileBottomTabs } from '~/components/layout/mobile-bottom-tabs'
+import { MobileSidebarSheet } from '~/components/layout/mobile-sidebar-sheet'
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireSession(request)
@@ -30,19 +22,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { user: session.user, orgMemberships }
 }
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/dashboard/canvas', label: 'Canvas', icon: Image },
-  { to: '/dashboard/video', label: 'Video', icon: Video },
-  { to: '/dashboard/social', label: 'Social', icon: Share2 },
-  { to: '/dashboard/crawler', label: 'Crawler', icon: Globe },
-  { to: '/dashboard/ai', label: 'AI Tools', icon: Sparkles },
-  { to: '/dashboard/webhooks', label: 'Webhooks', icon: Webhook },
-  { to: '/dashboard/api-keys', label: 'API Keys', icon: Key },
-  { to: '/dashboard/plugins', label: 'Plugins', icon: Puzzle },
-  { to: '/dashboard/organizations', label: 'Organizations', icon: Building2 },
-]
-
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const { user, orgMemberships } = loaderData
   const navigate = useNavigate()
@@ -53,56 +32,25 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="flex h-screen">
-      <aside className="flex w-64 flex-col border-r border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))]">
-        <div className="flex h-14 items-center border-b border-[hsl(var(--sidebar-border))] px-4">
-          <Link to="/dashboard" className="text-lg font-bold">
-            Creator Studio
-          </Link>
+    <SidebarProvider>
+      <div className="flex h-screen">
+        <DashboardSidebar
+          userName={user.name}
+          userEmail={user.email}
+          onSignOut={handleSignOut}
+          orgSwitcher={<OrganizationSwitcher memberships={orgMemberships} />}
+        />
+        <MobileSidebarSheet />
+
+        <div className="flex flex-1 flex-col min-w-0">
+          <DashboardTopbar />
+          <main id="main-content" className="flex-1 overflow-auto pb-16 lg:pb-0" tabIndex={-1}>
+            <Outlet />
+          </main>
         </div>
 
-        <OrganizationSwitcher memberships={orgMemberships} />
-
-        <nav className="flex-1 space-y-1 p-3">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/dashboard'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))]'
-                    : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
-                }`
-              }
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="border-t border-[hsl(var(--sidebar-border))] p-3">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{user.name}</p>
-              <p className="truncate text-xs text-[hsl(var(--muted-foreground))]">{user.email}</p>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="rounded-md p-2 hover:bg-[hsl(var(--sidebar-accent))]"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
-    </div>
+        <MobileBottomTabs />
+      </div>
+    </SidebarProvider>
   )
 }

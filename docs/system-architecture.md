@@ -512,32 +512,117 @@ Return Session { user, expiresAt, ... } or null
 
 ## UI Layer (packages/ui)
 
+### Design Token Architecture
+
+```
+Design System Flow:
+1. CSS Custom Properties (design-tokens.css)
+   ├─ Color tokens: --color-primary, --color-secondary, etc.
+   ├─ Spacing: --space-unit, --space-sm, --space-md, etc.
+   ├─ Typography: --font-size-sm, --font-size-base, etc.
+   └─ Brand Color: Teal/Cyan (#0891B2) for primary UI elements
+
+2. Tailwind 4 @theme Directive
+   └─ Maps tokens to TW4 utilities (bg-primary, text-muted-foreground, etc.)
+
+3. CVA (Class Variance Authority)
+   └─ Component variant patterns with token-based styling
+
+4. ThemeProvider Context
+   ├─ Light/dark mode toggle
+   ├─ localStorage persistence
+   └─ SSR hydration script prevents FOUC
+```
+
 ### Component Architecture
 
 ```
 @creator-studio/ui/
 ├── src/
 │   ├── components/
-│   │   ├── button.tsx          (shadcn/ui Button)
-│   │   ├── card.tsx            (shadcn/ui Card)
-│   │   ├── input.tsx           (shadcn/ui Input)
-│   │   └── ...
+│   │   ├── base/              (23 base shadcn/ui-style components)
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   └── ...
+│   │   ├── composites/        (6 higher-level composite components)
+│   │   │   ├── split-screen-auth.tsx
+│   │   │   ├── collapsible-sidebar.tsx
+│   │   │   ├── mobile-bottom-tabs.tsx
+│   │   │   ├── breadcrumb-topbar.tsx
+│   │   │   ├── view-transition-wrapper.tsx
+│   │   │   └── theme-switcher.tsx
 │   ├── lib/
-│   │   └── utils.ts            (cn function for class merging)
+│   │   ├── utils.ts           (cn function for class merging)
+│   │   └── theme-utils.ts     (theme context helpers)
 │   └── styles/
-│       └── globals.css         (Tailwind base styles)
+│       ├── globals.css        (Tailwind base + design tokens)
+│       └── design-tokens.css  (CSS custom properties)
 ```
 
 ### Tailwind CSS 4 Integration
 
 ```
-1. Import globals.css in app → Tailwind base styles loaded
+1. Design tokens → CSS custom properties in globals.css
          ▼
-2. Use shadcn/ui components → Pre-styled with Tailwind
+2. @theme directive → Map tokens to Tailwind utilities
+   Example: bg-primary uses --color-primary (#0891B2)
          ▼
-3. Use cn() utility → Merge custom classes with component styles
+3. Components use TW4 utilities NOT inline hsl()
+   ✅ GOOD: className="bg-primary text-muted-foreground"
+   ❌ AVOID: className="bg-[hsl(var(--color-primary))]"
          ▼
-4. Vite processes Tailwind → Generate optimized CSS bundle
+4. ThemeProvider → Switches CSS variables for light/dark mode
+         ▼
+5. Vite processes Tailwind → Generate optimized CSS bundle
+```
+
+### Theme System
+
+```typescript
+// Theme Provider Implementation
+<ThemeProvider defaultTheme="light" storageKey="creator-theme">
+  <App />
+</ThemeProvider>
+
+// Features:
+- localStorage persistence ("creator-theme")
+- System preference detection
+- SSR hydration script to prevent FOUC
+- Dark mode: Automatically swaps CSS variables
+- View transitions: Smooth theme change animations
+```
+
+### Layout System
+
+```
+┌─────────────────────────────────────────────┐
+│      Desktop Layout (>768px)                │
+├─────────────────────────────────────────────┤
+│  [Sidebar] [Content Area]                   │
+│  • Collapsible                              │
+│  • Icons visible when collapsed              │
+│  • Full labels when expanded                 │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│      Mobile Layout (<768px)                 │
+├─────────────────────────────────────────────┤
+│  [Breadcrumb Topbar]                        │
+│  [Main Content]                             │
+│  [Bottom Tabs Navigation]                   │
+│  • iOS-style swipe navigation               │
+│  • Touch-optimized spacing                  │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│      Authentication Pages                   │
+├─────────────────────────────────────────────┤
+│  [Left Side Panel] [Right Form Area]        │
+│  • Split-screen layout                      │
+│  • Responsive stacking on mobile            │
+│  • View transitions between pages           │
+└─────────────────────────────────────────────┘
 ```
 
 ### Component Composition

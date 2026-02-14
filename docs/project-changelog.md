@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-14
+
+### Added - UI/UX Design System Implementation
+
+**Design System Foundation (8-Phase Implementation)**
+- Complete CSS custom property system for design tokens
+- Tailwind CSS 4 `@theme` directive integration
+- Brand color establishment: Teal/Cyan (#0891B2)
+- 23 base shadcn/ui-style components (vs. 10 previously)
+- 6 new composite components for layout patterns
+- Full light/dark mode support with theme persistence
+
+**Component Expansion**
+- New base components: Breadcrumb, Sidebar, Button variants, Checkbox, Radio, Slider, Switch, Textarea, Label, Separator, Spinner, Skeleton
+- Composite components:
+  - Split-Screen Auth (two-column asymmetric layout)
+  - Collapsible Sidebar (responsive desktop navigation)
+  - Mobile Bottom Tabs (iOS-style touch navigation)
+  - Breadcrumb Topbar (contextual header navigation)
+  - View Transition Wrapper (smooth page transitions)
+  - Theme Switcher (light/dark mode toggle)
+
+**Layout System**
+- Responsive collapsible sidebar for desktop (with expand/collapse animation)
+- Mobile-optimized bottom navigation tabs
+- Breadcrumb navigation topbar for contextual awareness
+- Split-screen authentication pages with asymmetric layout
+- Automatic responsive stacking on small screens
+
+**Theme Architecture**
+- ThemeProvider context for centralized theme management
+- CSS variables for design tokens (colors, spacing, typography, radius)
+- localStorage persistence for user theme preference
+- SSR hydration script to prevent flash of unstyled content (FOUC)
+- Smooth view transitions when switching themes
+
+**Accessibility Improvements**
+- Full keyboard navigation support
+- Screen reader optimizations
+- ARIA labels on all interactive components
+- Proper semantic HTML structure
+- Color contrast compliance (WCAG AA+)
+- Focus indicators and visual feedback
+
+**Code Standards Updates**
+- Design token usage guidelines (use TW4 utilities, not inline hsl())
+- Composite component structure documentation
+- Theme integration patterns
+- Design system best practices
+
+**Test Coverage**
+- 24 new tests for composite components
+- 41 total UI package tests (up from 17)
+- Full variant testing for all components
+- Responsive design testing
+- Theme switching verification
+
+**Documentation**
+- Design system architecture overview
+- Component library reference
+- Theme integration guide
+- Layout system documentation
+- Brand guidelines and color palette
+- Typography system documentation
+
+### Breaking Changes
+- Components now use design tokens (bg-primary, text-muted-foreground) instead of hardcoded colors
+- Must wrap app with ThemeProvider for theme support
+- Composite components replace multiple manual layout patterns
+
+### Technical Details
+- **Design Tokens**: CSS custom properties mapped to Tailwind 4 utilities
+- **CVA Integration**: Component variants use class-variance-authority with token-based styling
+- **Performance**: Optimized CSS output via Tailwind 4 `@theme` compilation
+- **SSR Safety**: Theme hydration prevents layout shift on initial load
+
+---
+
 ## [0.5.0] - 2026-02-14
 
 ### Added - Phase 5a: Ecosystem & Integrations (commit 6fc3d5c)

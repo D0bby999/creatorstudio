@@ -1,20 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
+import { Download } from 'lucide-react'
+import { Button } from '@creator-studio/ui/components/button'
+import { EditorToolbar } from '~/components/editor/editor-toolbar'
+import { EditorSkeleton } from '~/components/editor/editor-skeleton'
 
 const VideoEditorLazy = lazy(() =>
   import('@creator-studio/video/components/video-editor').then((mod) => ({
     default: mod.VideoEditor,
   })),
 )
-
-function Loading() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Loading Video Editor...</h1>
-      </div>
-    </div>
-  )
-}
 
 export default function Video() {
   const [isClient, setIsClient] = useState(false)
@@ -24,12 +18,22 @@ export default function Video() {
   }, [])
 
   if (!isClient) {
-    return <Loading />
+    return <EditorSkeleton />
   }
 
   return (
-    <Suspense fallback={<Loading />}>
-      <VideoEditorLazy />
-    </Suspense>
+    <div className="flex h-full flex-col">
+      <EditorToolbar title="Video Editor">
+        <Button variant="ghost" size="sm">
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
+      </EditorToolbar>
+      <div className="flex-1 min-h-0">
+        <Suspense fallback={<EditorSkeleton />}>
+          <VideoEditorLazy />
+        </Suspense>
+      </div>
+    </div>
   )
 }

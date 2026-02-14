@@ -267,6 +267,103 @@ import type { Route } from './+types/dashboard'
 // - Route.ComponentProps
 ```
 
+## Design System Standards
+
+### Using Tailwind CSS 4 with Design Tokens
+
+**Golden Rule:** Use TW4 utility classes based on design tokens, NOT inline CSS custom properties.
+
+```typescript
+// ✅ GOOD: Use design token-based utilities
+className="bg-primary text-muted-foreground border border-input rounded-md"
+
+// ❌ AVOID: Inline hsl() with CSS variables
+className="bg-[hsl(var(--color-primary))] text-[hsl(var(--color-muted-foreground))]"
+
+// ✅ GOOD: Use semantic color names
+{
+  variant: {
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/90',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+  }
+}
+
+// ❌ AVOID: Hard-coded colors
+{
+  variant: {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700',
+  }
+}
+```
+
+### Design Token Categories
+
+```typescript
+// Color Tokens (available as TW4 utilities)
+- bg-primary, bg-secondary, bg-destructive, bg-muted
+- text-primary-foreground, text-secondary-foreground, text-muted-foreground
+- border-input, border-border, border-primary
+
+// Spacing Tokens
+- space-unit (base unit for all spacing)
+- gap-sm, gap-md, gap-lg, gap-xl
+- p-sm, p-md, p-lg, p-xl
+
+// Typography
+- text-sm, text-base, text-lg, text-xl, text-2xl
+- font-normal, font-semibold, font-bold
+
+// Radius
+- rounded-sm, rounded-md, rounded-lg
+```
+
+### Composite Component Structure
+
+Composite components go in `packages/ui/src/components/composites/`.
+
+```typescript
+// Example: split-screen-auth.tsx
+import { ReactNode } from 'react'
+import { cn } from '@creator-studio/ui/lib/utils'
+
+export interface SplitScreenAuthProps {
+  left: ReactNode
+  right: ReactNode
+  className?: string
+}
+
+export function SplitScreenAuth({ left, right, className }: SplitScreenAuthProps) {
+  return (
+    <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-0 min-h-screen', className)}>
+      <div className="bg-gradient-to-br from-primary to-primary/80 p-8 flex items-center justify-center">
+        {left}
+      </div>
+      <div className="p-8 flex items-center justify-center">
+        {right}
+      </div>
+    </div>
+  )
+}
+```
+
+### Theme Switching
+
+```typescript
+// Access theme context in components
+import { useTheme } from '@creator-studio/ui/lib/theme-utils'
+
+export function ThemedComponent() {
+  const { theme, setTheme } = useTheme()
+
+  return (
+    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+      Current: {theme}
+    </button>
+  )
+}
+```
+
 ## Component Standards
 
 ### Functional Components

@@ -3,6 +3,8 @@ import { Analytics } from '@vercel/analytics/react'
 import { useEffect } from 'react'
 import type { Route } from './+types/root'
 import { initSentry, captureError } from './lib/sentry-client'
+import { ThemeProvider } from '@creator-studio/ui/lib/theme-provider'
+import { themeScript } from '@creator-studio/ui/lib/theme-script'
 import './app.css'
 
 export const links: Route.LinksFunction = () => [
@@ -20,14 +22,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <Meta />
         <Links />
       </head>
-      <body className="h-full" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <body className="h-full">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+        >
+          Skip to main content
+        </a>
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -38,7 +47,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />
+  return (
+    <ThemeProvider>
+      <Outlet />
+    </ThemeProvider>
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { authClient } from '~/lib/auth-client'
+import { AuthLayout } from '~/components/auth/auth-layout'
+import { Button } from '@creator-studio/ui/components/button'
+import { Input } from '@creator-studio/ui/components/input'
+import { Label } from '@creator-studio/ui/components/label'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -25,68 +29,58 @@ export default function SignIn() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
-          <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-            Sign in to Creator Studio
-          </p>
+    <AuthLayout>
+      <div className="w-full max-w-sm space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Welcome back</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to Creator Studio</p>
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
           {error && (
-            <div className="rounded-md bg-[hsl(var(--destructive)/0.1)] p-3 text-sm text-[hsl(var(--destructive))]">
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {error}
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
-            <input
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="flex h-10 w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+              autoComplete="email"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
-            <input
+            <Label htmlFor="password">Password</Label>
+            <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               required
-              className="flex h-10 w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 text-sm placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+              autoComplete="current-password"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-[hsl(var(--primary))] px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50"
-          >
+          <Button type="submit" className="w-full press-scale" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          </Button>
         </form>
 
-        <p className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <Link to="/sign-up" className="font-medium underline underline-offset-4 hover:opacity-80">
+          <Link to="/sign-up" className="font-medium text-primary underline-offset-4 hover:underline">
             Sign up
           </Link>
         </p>
       </div>
-    </main>
+    </AuthLayout>
   )
 }

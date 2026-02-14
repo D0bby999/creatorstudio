@@ -1,36 +1,74 @@
 import { Link } from 'react-router'
+import { Image, Video, Share2, Globe, Sparkles } from 'lucide-react'
 import type { Route } from './+types/home'
+import { Button } from '@creator-studio/ui/components/button'
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: 'Creator Studio' },
-    { name: 'description', content: 'All-in-one creative toolkit for content creators' },
+    { title: 'Creator Studio — All-in-one Creative Toolkit' },
+    { name: 'description', content: 'Design, edit, publish, and analyze content — all in one place.' },
   ]
 }
 
+const features = [
+  { icon: Image, title: 'Canvas Editor', desc: 'Design images with templates, shapes, and text' },
+  { icon: Video, title: 'Video Editor', desc: 'Timeline editing, transitions, and export' },
+  { icon: Share2, title: 'Social Management', desc: 'Schedule and publish to multiple platforms' },
+  { icon: Globe, title: 'Web Crawler', desc: 'Scraping, trends, and SEO insights' },
+  { icon: Sparkles, title: 'AI Tools', desc: 'Content generation and design suggestions' },
+]
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold tracking-tight">Creator Studio</h1>
-        <p className="mt-4 text-lg text-[hsl(var(--muted-foreground))]">
-          All-in-one creative toolkit for content creators
+    <main className="min-h-screen">
+      <header className="flex items-center justify-between px-6 py-4 lg:px-12">
+        <span className="text-xl font-bold text-primary">Creator Studio</span>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" asChild>
+            <Link to="/sign-in">Sign In</Link>
+          </Button>
+          <Button asChild className="press-scale">
+            <Link to="/sign-up">Get Started</Link>
+          </Button>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-4xl px-6 py-20 text-center lg:py-32">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+          All-in-one creative toolkit
+          <span className="block text-primary">for content creators</span>
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+          Design, edit, publish, and analyze your content — all in one place.
+          Stop switching between tools and start creating.
         </p>
-      </div>
-      <div className="flex gap-4">
-        <Link
-          to="/sign-in"
-          className="rounded-md bg-[hsl(var(--primary))] px-6 py-3 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
-        >
-          Sign In
-        </Link>
-        <Link
-          to="/sign-up"
-          className="rounded-md border border-[hsl(var(--border))] px-6 py-3 text-sm font-medium hover:bg-[hsl(var(--accent))]"
-        >
-          Sign Up
-        </Link>
-      </div>
+        <div className="mt-10 flex justify-center gap-4">
+          <Button size="lg" asChild className="press-scale">
+            <Link to="/sign-up">Start Creating</Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <Link to="/sign-in">Sign In</Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 pb-20">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="hover-lift rounded-xl border bg-card p-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="mt-4 font-semibold">{title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
+        Creator Studio &copy; {new Date().getFullYear()}
+      </footer>
     </main>
   )
 }

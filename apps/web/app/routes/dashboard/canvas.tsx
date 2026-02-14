@@ -1,10 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-
-/**
- * Canvas editor route — client-only rendering.
- * Tldraw relies on browser APIs (canvas, pointer events) and cannot SSR.
- * We dynamically import the CanvasEditor component on the client.
- */
+import { Download } from 'lucide-react'
+import { Button } from '@creator-studio/ui/components/button'
+import { EditorToolbar } from '~/components/editor/editor-toolbar'
+import { EditorSkeleton } from '~/components/editor/editor-skeleton'
 
 const CanvasEditorLazy = lazy(() =>
   import('@creator-studio/canvas/components/canvas-editor').then((mod) => ({
@@ -20,30 +18,22 @@ export default function Canvas() {
   }, [])
 
   if (!isClient) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[hsl(var(--primary))] border-t-transparent mx-auto" />
-          <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">Loading canvas editor...</p>
-        </div>
-      </div>
-    )
+    return <EditorSkeleton />
   }
 
   return (
-    <div className="h-full w-full">
-      <Suspense
-        fallback={
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-[hsl(var(--primary))] border-t-transparent mx-auto" />
-              <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">Loading canvas editor...</p>
-            </div>
-          </div>
-        }
-      >
-        <CanvasEditorLazy />
-      </Suspense>
+    <div className="flex h-full flex-col">
+      <EditorToolbar title="Canvas Editor">
+        <Button variant="ghost" size="sm">
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
+      </EditorToolbar>
+      <div className="flex-1 min-h-0">
+        <Suspense fallback={<EditorSkeleton />}>
+          <CanvasEditorLazy />
+        </Suspense>
+      </div>
     </div>
   )
 }
