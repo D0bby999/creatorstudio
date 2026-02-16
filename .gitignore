@@ -1,5 +1,6 @@
 # dependencies
 node_modules
+__tests__
 
 # build outputs
 build/

@@ -62,41 +62,63 @@ Creator Studio is built as a **Turborepo monorepo** with a **React Router 7 SSR 
 ### Package Dependency Graph
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│         @creator-studio/web                              │
-│         (React Router 7 SSR Application)                 │
-└────┬──────────────┬─────────────┬────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│         @creator-studio/web                                      │
+│         (React Router 7 SSR Application)                         │
+└────┬──────────────┬─────────────┬────────────────────────────────┘
      │              │             │
-     ├──────────────┼─────────────┼──────────────┬──────────────┬──────────────┐
-     │              │             │              │              │              │
-     ▼              ▼             ▼              ▼              ▼              ▼
-┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ ┌───────────┐ ┌────────┐
-│ @creator-  │ │ @creator-  │ │ @creator-  │ │ @creator-│ │ @creator- │ │@creator│
-│ studio/ui  │ │ studio/auth│ │ studio/db  │ │studio/   │ │ studio/   │ │studio/ │
-│            │ │            │ │            │ │canvas    │ │ video     │ │crawler │
-└────────────┘ └──────┬─────┘ └────────────┘ └──────────┘ └───────────┘ └────────┘
+     ├──────────────┼─────────────┼──────────────┬──────────────┬────────────┬──────────┐
+     │              │             │              │              │            │          │
+     ▼              ▼             ▼              ▼              ▼            ▼          ▼
+┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ ┌───────────┐ ┌────────┐ ┌──────────┐
+│ @creator-  │ │ @creator-  │ │ @creator-  │ │ @creator-│ │ @creator- │ │@creator│ │ @creator-│
+│ studio/ui  │ │ studio/auth│ │ studio/db  │ │studio/   │ │ studio/   │ │studio/ │ │ studio/  │
+│            │ │            │ │            │ │canvas    │ │ video     │ │crawler │ │ utils    │
+└────────────┘ └──────┬─────┘ └────────────┘ └──────────┘ └───────────┘ └────────┘ └──────────┘
                       │
                       ▼                    ┌──────────────────┐
                    [db module]             │ @creator-studio/ │
                                           │  social          │
+                                          │ (uses utils)     │
                                           └──────────────────┘
 
                                           ┌──────────────────┐
                                           │ @creator-studio/ │
                                           │  ai              │
+                                          │ (uses utils)     │
+                                          └──────────────────┘
+
+                                          ┌──────────────────┐
+                                          │ @creator-studio/ │
+                                          │  storage         │
+                                          │ (uses utils)     │
+                                          └──────────────────┘
+
+                                          ┌──────────────────┐
+                                          │ @creator-studio/ │
+                                          │  redis           │
+                                          └──────────────────┘
+
+                                          ┌──────────────────┐
+                                          │ @creator-studio/ │
+                                          │  webhooks        │
                                           └──────────────────┘
 ```
 
 **Dependency Details:**
-- `web` depends on: `ui`, `auth`, `db`, `canvas`, `video`, `crawler`, `social`, `ai`
+- `web` depends on: `ui`, `auth`, `db`, `canvas`, `video`, `crawler`, `social`, `ai`, `utils`, `redis`, `storage`, `webhooks`
 - `auth` depends on: `db`
 - `canvas` depends on: None (standalone, lazy-loaded)
 - `video` depends on: None (standalone, lazy-loaded)
-- `crawler` depends on: None (standalone utility)
-- `social` depends on: None (standalone utility)
-- `ai` depends on: None (standalone utility)
+- `crawler` depends on: `utils` (SSRF validation)
+- `social` depends on: `utils` (SSRF validation)
+- `ai` depends on: `utils` (URL validation)
+- `storage` depends on: `utils` (URL validation)
 - `ui` depends on: None (peer deps: react, react-dom)
 - `db` depends on: None (Prisma client)
+- `utils` depends on: None (utility functions)
+- `redis` depends on: None (cache layer)
+- `webhooks` depends on: None (webhook handlers)
 
 ## Application Layer (apps/web)
 
@@ -411,36 +433,125 @@ Return Session { user, expiresAt, ... } or null
 
 ## Web Crawler Layer (packages/crawler)
 
-### Scraping & Data Extraction Engine
+### Apify/Crawlee-Grade Crawling Platform
 
 ```
-┌──────────────────────────────────┐
-│   Crawler Service                │
-└────────────┬─────────────────────┘
-             │
-             ├─── Request Management
-             │    ├─ Request queue (rate-limited)
-             │    ├─ Retry handler (exponential backoff)
-             │    └─ Session persistence (cookies)
-             │
-             ├─── Data Processing
-             │    ├─ HTML parsing (cheerio)
-             │    ├─ Full-text search
-             │    └─ SEO analysis
-             │
-             └─── Export Formats
-                  ├─ JSON export
-                  ├─ CSV export
-                  └─ Depth crawler (multi-level)
+┌─────────────────────────────────────────────┐
+│      CrawlerEngine (Orchestrator)           │
+├─────────────────────────────────────────────┤
+│ • Adaptive mode detection (static vs JS)    │
+│ • Fallback strategy (Cheerio → Browser)     │
+│ • Resource auto-scaling (CPU/memory)        │
+└────────┬────────────────────────────────────┘
+         │
+    ┌────┴──────┬──────────────┬──────────────┐
+    ▼           ▼              ▼              ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐
+│ Cheerio  │ │ Browser  │ │ Smart    │ │ Detection  │
+│ Crawler  │ │ Crawler  │ │ Detector │ │ Engine     │
+└──────────┘ └──────────┘ └──────────┘ └────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│  Queue Layer (Discovery + Management)       │
+├─────────────────────────────────────────────┤
+│ • PersistentRequestQueue (Redis-backed)     │
+│ • Unique deduplication + BFS/DFS            │
+│ • Priority scoring + depth control          │
+│ • In-memory fallback support                │
+│ • Sitemap/robots.txt parsing                │
+│ • Smart link discovery                      │
+└─────────────────────────────────────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│   Resource Management Layer                 │
+├─────────────────────────────────────────────┤
+│ AutoscaledPool (1-32 workers):              │
+│ • CPU threshold: 70%, Memory: 80%           │
+│ • Adaptive concurrency tuning               │
+│ • Session & proxy rotation                  │
+│ • Detection bypass (Cloudflare, CAPTCHA)    │
+└─────────────────────────────────────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│   Data Extraction Pipeline Layer            │
+├─────────────────────────────────────────────┤
+│ • JSON-LD (structured data)                 │
+│ • OpenGraph (social metadata)               │
+│ • Schema.org (semantic markup)              │
+│ • CSS/XPath selectors (custom)              │
+│ • Table extractor (HTML → CSV/JSON)         │
+│ • Pipeline orchestrator (multi-stage)       │
+└─────────────────────────────────────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│  Job & Dataset Management Layer             │
+├─────────────────────────────────────────────┤
+│ Jobs:                                       │
+│ • EnhancedJobManager (CRUD + status)        │
+│ • JobScheduler (cron-based recurring)       │
+│ • JobProgressTracker (real-time ETA)        │
+│ • JobResourceLimiter (quota/memory)         │
+│                                              │
+│ Datasets:                                   │
+│ • DatasetManager (versioning)               │
+│ • IncrementalCrawler (append-only)          │
+│ • DatasetDiff (change detection)            │
+└─────────────────────────────────────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│    Export & Delivery Layer                  │
+├─────────────────────────────────────────────┤
+│ • JSON (newline-delimited + arrays)         │
+│ • CSV (custom delimiter/encoding)           │
+│ • XML (schema validation)                   │
+│ • ExportFactory (auto-format detection)     │
+└─────────────────────────────────────────────┘
+
+         ▼
+┌─────────────────────────────────────────────┐
+│  Dashboard & Monitoring (20+ UI Components) │
+├─────────────────────────────────────────────┤
+│ Job Management, Config Wizard, Templates    │
+│ Schedules, Datasets, Results Viewer         │
+│ Log Stream, Status Monitor, Export Manager  │
+└─────────────────────────────────────────────┘
+```
+
+**Adaptive Rendering Flow:**
+```
+Request → SmartCrawler heuristics (JS detection)
+    ▼
+  Score < 30? Static          Score >= 30? Dynamic
+    └─ CheerioCrawler            └─ BrowserCrawler
+       (fast: 100ms)                (slow: 5-30s)
+    ▼                            ▼
+  Parse with Cheerio      Render with Puppeteer
+                               ▼
+                          Wait for hydration
+                               ▼
+           Cache in Redis (1 hour TTL)
+                ▼
+       Apply extraction pipeline
+                ▼
+        Return extracted data
 ```
 
 **Key Features:**
-- Rate-limited HTTP request queue
-- Automatic retry with exponential backoff
-- Session cookie management
-- Multi-level site traversal
-- Multiple export formats (JSON, CSV, XML)
-- 57 test coverage for all operations
+- **Engine:** Automatic mode selection (Cheerio fast vs Browser JS-capable)
+- **Queue:** Redis-backed persistent queue with URL deduplication & BFS/DFS traversal
+- **Resource:** Auto-scaling pool (1-32 workers) with CPU/memory monitoring
+- **Discovery:** Sitemap parsing, robots.txt compliance, intelligent link following
+- **Extraction:** Composable pipelines (JSON-LD, OpenGraph, Schema.org, CSS/XPath, Tables)
+- **Stealth:** Proxy rotation, user-agent pooling, Cloudflare/CAPTCHA detection
+- **Jobs:** Scheduling, templating, progress tracking, resource quotas
+- **Dataset:** Versioning, incremental crawls, change detection
+- **Export:** JSON, CSV, XML with format auto-detection
+- **100+ Tests:** Comprehensive coverage for all modules
 
 ## Social Management Layer (packages/social)
 
@@ -474,6 +585,34 @@ Return Session { user, expiresAt, ... } or null
 - Media upload with platform optimization
 - Post scheduling and publishing
 - 47 test coverage for all operations
+
+## Utilities Layer (packages/utils)
+
+### Shared Utilities Package
+
+```
+@creator-studio/utils/
+├── ssrf-validator.ts       SSRF prevention utilities
+│   ├─ isPrivateIP()        Check if IP is private/loopback
+│   ├─ resolveAndValidateUrl()  Resolve hostname and block private IPs
+│   └─ validateServerFetchUrl() Validate URL for server-side fetches
+└── index.ts                Exports
+```
+
+**Features:**
+- SSRF (Server-Side Request Forgery) prevention
+- Private IP range blocking (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, ::1)
+- HTTPS enforcement for external URLs
+- DNS resolution with IP validation
+- Used by: social, crawler, storage, ai packages
+
+**Usage:**
+```typescript
+import { validateServerFetchUrl } from '@creator-studio/utils/ssrf-validator'
+
+// Throws error if URL is private IP or not HTTPS
+await validateServerFetchUrl('https://example.com/api')
+```
 
 ## AI Agent Layer (packages/ai)
 
@@ -1190,21 +1329,30 @@ createPlatformClient('bluesky', { handle, appPassword })
 User clicks "Connect with Facebook"
          ▼
 GET /api/oauth/meta/authorize
-  - Generate state param, store in session
+  - Generate state param
+  - Store in Redis (not cookies)
   - Redirect to https://www.facebook.com/v22.0/dialog/oauth
          ▼
 User approves on Meta Login → Redirects back with code + state
          ▼
 POST /api/oauth/meta/callback
-  - Verify state param (CSRF protection)
-  - Exchange code for access_token + user_id
-  - Query /me/accounts endpoint (discovers pages)
-  - User selects page (platform picker dialog)
-  - Encrypt tokens with AES-256-GCM
-  - Store in SocialAccount with metadata (pageId, etc.)
+  - Verify state param in Redis (CSRF protection)
+  - Exchange code for access_token
+  - Query /me/accounts endpoint (discovers pages/accounts)
+  - Store discovered accounts in Redis (not cookies)
+  - User selects account (platform picker dialog)
+  - Encrypt tokens with AES-256-GCM before storage
+  - Store in SocialAccount with metadata
+  - Return Authorization header (not URL params)
          ▼
 Redirect to /dashboard/social with success message
 ```
+
+**Security Hardening (Phase 7):**
+- Tokens in Authorization header (not URL params) for /api/oauth/meta/callback
+- Discovered accounts stored in Redis cache (via api.social.meta-discovered-accounts endpoint)
+- AES-256-GCM encryption on all stored tokens before database persistence
+- State CSRF token stored in Redis with TTL (not cookies)
 
 **TikTok OAuth**
 
@@ -1307,8 +1455,17 @@ Create Web Worker instance
 Load plugin code in worker context
   - Worker has NO access to:
     - window, document, localStorage
-    - Fetch (except to plugin-provided endpoints)
-    - Network directly
+    - Fetch (except allowlisted endpoints)
+    - XMLHttpRequest (blocked)
+    - WebSocket (blocked)
+    - importScripts (blocked)
+    - EventSource (blocked)
+         ▼
+Network Allowlist
+  - Manifest specifies allowed domains
+  - Worker intercepts fetch requests
+  - Validates against allowlist
+  - Blocks private IPs and SSRF attempts
          ▼
 Send message to worker: { event, payload, context }
          ▼
@@ -1320,6 +1477,12 @@ Validate result against hook schema
          ▼
 Return to caller
 ```
+
+**Security Hardening (Phase 7):**
+- XMLHttpRequest, WebSocket, importScripts, EventSource all blocked via Worker globals
+- Network allowlist enforced from plugin manifest
+- originalFetch used for message passing validation
+- SSRF validator integrated for any network endpoints
 
 **Event Hook System (7 types)**
 
@@ -1353,20 +1516,51 @@ GET /api/v1/plugins
   - Filter by hook type, platform
   - Return marketplace metadata
 
+GET /api/v1/plugins/marketplace
+  - Full-text search with category filter
+  - Sort by rating, installs, recent
+  - Pagination support
+  - <200ms response time with GIN index
+
 POST /api/v1/plugins/:id/install
-  - User installs plugin
+  - Atomic transaction with negative count guard
   - Validate manifest
   - Store installation + config
+  - Update install count
   - Return plugin instance
 
 DELETE /api/v1/plugins/:id/uninstall
+  - Atomic transaction with unique constraint check
   - Remove plugin installation
   - Cleanup Web Workers
+  - Decrement install count
+
+POST /api/v1/plugins/:id/reviews
+  - Submit or update plugin rating (1-5 stars)
+  - Denormalized avgRating for performance
+
+GET /api/v1/plugins/:id/reviews
+  - Retrieve reviews with pagination
+
+POST /api/v1/plugins/:id/submit (developer)
+  - Submit new plugin for admin approval
+  - Status: pending → admin review
 
 PATCH /api/v1/plugins/:id/approve (admin only)
   - Change status: pending → approved
   - Make publicly available
+  - Enable marketplace search
+
+GET /api/v1/plugins/categories
+  - List 6 default categories
+  - social, analytics, design, ai, productivity, other
 ```
+
+**Atomic Operations (Phase 7):**
+- Both API route (`api.social.plugins.ts`) and marketplace-helpers use `$transaction`
+- Install: increment count with guard (count >= 0)
+- Uninstall: unique constraint prevents duplicate uninstall
+- No race conditions on concurrent installs/uninstalls
 
 ## Phase 6: Infrastructure & Advanced Features
 
@@ -1473,7 +1667,11 @@ Return download URL to client
 
 **Smart Rendering Strategy:**
 ```
-Crawl Request
+Crawl Request (requires session auth)
+    ▼
+SSRF validation on target URL
+  - Check if private IP
+  - Verify HTTPS for external URLs
     ▼
 Attempt 1: Cheerio (fast, HTML-only)
     ✓ If successful → Return results
@@ -1485,6 +1683,8 @@ Attempt 2: Browserless.io (Chrome rendering)
 ```
 
 **Features:**
+- Session authentication required (Phase 7)
+- SSRF validation on all URLs (Phase 7)
 - JavaScript rendering detection (check for `__next`, dynamic content)
 - Cookie session persistence
 - Custom headers and user-agent rotation

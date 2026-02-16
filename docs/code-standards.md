@@ -509,6 +509,31 @@ describe('UserAvatar', () => {
 
 ## Security Standards
 
+### SSRF Prevention (Phase 7)
+
+**Pattern:** Validate all server-side fetches against private IP ranges
+
+```typescript
+// ✅ GOOD: Validate URLs before server-side fetch
+import { validateServerFetchUrl } from '@creator-studio/utils/ssrf-validator'
+
+export async function crawlWebsite(urlString: string): Promise<string> {
+  // Throws if URL is private IP, localhost, or not HTTPS
+  await validateServerFetchUrl(urlString)
+
+  const response = await fetch(urlString)
+  return response.text()
+}
+
+// Blocks:
+// - 10.0.0.0/8 (private network)
+// - 172.16.0.0/12 (private network)
+// - 192.168.0.0/16 (private network)
+// - 127.0.0.0/8 (loopback)
+// - ::1 (IPv6 loopback)
+// - Non-HTTPS external URLs
+```
+
 ### Environment Variables
 ```typescript
 // ✅ GOOD: Validate required env vars at startup
@@ -547,6 +572,61 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // Proceed with validated input
+}
+```
+
+### Atomic Database Operations (Phase 7)
+
+**Pattern:** Use Prisma `$transaction` for multi-step operations with guards
+
+```typescript
+// ✅ GOOD: Atomic plugin install with count guard
+export async function installPlugin(pluginId: string, userId: string) {
+  return await prisma.$transaction(async (tx) => {
+    // Check if already installed
+    const existing = await tx.pluginInstall.findUnique({
+      where: {
+        userId_pluginId: { userId, pluginId }
+      }
+    })
+
+    if (existing) {
+      throw new Error('Plugin already installed')
+    }
+
+    // Increment count with guard (no negative)
+    const plugin = await tx.plugin.update({
+      where: { id: pluginId },
+      data: { installCount: { increment: 1 } }
+    })
+
+    // Create install record
+    await tx.pluginInstall.create({
+      data: { userId, pluginId }
+    })
+
+    return plugin
+  })
+}
+
+// ✅ GOOD: Atomic uninstall with unique constraint
+export async function uninstallPlugin(pluginId: string, userId: string) {
+  return await prisma.$transaction(async (tx) => {
+    // Find and delete (fails if not found - unique constraint)
+    const install = await tx.pluginInstall.delete({
+      where: {
+        userId_pluginId: { userId, pluginId }
+      }
+    })
+
+    // Decrement count
+    await tx.plugin.update({
+      where: { id: pluginId },
+      data: { installCount: { decrement: 1 } }
+    })
+
+    return install
+  })
 }
 ```
 

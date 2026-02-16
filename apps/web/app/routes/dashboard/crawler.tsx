@@ -1,5 +1,10 @@
-import { CrawlerDashboard } from '@creator-studio/crawler/components/crawler-dashboard'
+import { Outlet } from 'react-router'
+import { CrawlerLayout } from '@creator-studio/crawler/components/dashboard/crawler-layout'
 
 export default function Crawler() {
-  return <CrawlerDashboard />
+  return (
+    <CrawlerLayout>
+      <Outlet />
+    </CrawlerLayout>
+  )
 }

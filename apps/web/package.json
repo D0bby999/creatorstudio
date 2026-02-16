@@ -22,6 +22,7 @@
     "@creator-studio/canvas": "workspace:*",
     "@creator-studio/crawler": "workspace:*",
     "@creator-studio/db": "workspace:*",
+    "@creator-studio/utils": "workspace:*",
     "@creator-studio/redis": "workspace:*",
     "@creator-studio/social": "workspace:*",
     "@creator-studio/storage": "workspace:*",

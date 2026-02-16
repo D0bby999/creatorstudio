@@ -5,17 +5,29 @@
   "type": "module",
   "exports": {
     "./components/*": "./src/components/*.tsx",
+    "./components/dashboard/*": "./src/components/dashboard/*.tsx",
     "./lib/*": "./src/lib/*.ts",
-    "./types/*": "./src/types/*.ts"
+    "./types/*": "./src/types/*.ts",
+    "./engine": "./src/engine/index.ts",
+    "./queue": "./src/queue/index.ts",
+    "./pool": "./src/pool/index.ts",
+    "./extractors": "./src/extractors/index.ts",
+    "./stealth": "./src/stealth/index.ts",
+    "./discovery": "./src/discovery/index.ts",
+    "./export": "./src/export/index.ts",
+    "./dataset": "./src/dataset/index.ts",
+    "./jobs": "./src/jobs/index.ts"
   },
   "scripts": {
     "lint": "echo 'no lint'",
     "build": "echo 'no build needed'",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@creator-studio/redis": "workspace:*",
     "@creator-studio/utils": "workspace:*",
+    "@upstash/redis": "^1.34.0",
     "cheerio": "^1.0.0",
     "puppeteer-core": "^24.0.0"
   },
@@ -24,7 +36,11 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.18.8",
+    "@vitest/coverage-v8": "^4.0.18",
+    "msw": "^2.12.10",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18",
+    "zod": "^3.24.0"
   }
 }
