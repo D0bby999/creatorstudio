@@ -308,7 +308,8 @@ creator-studio/
 - `./jobs` → EnhancedJobManager, JobProgressTracker, JobResourceLimiter, JobPriorityQueue, JobTemplateManager, JobScheduler
 - `./export` → JsonExporter, CsvExporter, XmlExporter, ExportFactory
 - `./dataset` → DatasetManager, IncrementalCrawler, DatasetDiff
-- `./components` → 20+ UI components (layout, job mgmt, config wizard, templates, schedules, datasets, results viewer, log stream)
+- `./components` → 24+ UI components (layout, job mgmt, config wizard, templates, schedules, datasets, results viewer, log stream, Facebook dashboard)
+- `./scrapers/facebook` → Facebook Page scraper (mbasic + graphql strategies)
 
 **Engine Architecture:**
 - **CrawlerEngine** → Main orchestrator with adaptive mode selection
@@ -382,6 +383,14 @@ creator-studio/
 - **Status Monitor** → Job queue and resource metrics
 - **Export Manager** → Download results in multiple formats
 
+**Facebook Page Scraper (`src/scrapers/facebook/`):**
+- **Package export:** `@creator-studio/crawler/scrapers/facebook`
+- **Strategies:** mbasic (primary, no auth), graphql (experimental, needs cookies), auto (smart fallback)
+- **Source files (10):** `facebook-types.ts`, `facebook-url-utils.ts`, `facebook-parse-utils.ts`, `facebook-post-parser.ts`, `facebook-mbasic-scraper.ts`, `facebook-graphql-token-extractor.ts`, `facebook-graphql-scraper.ts`, `facebook-scraper-factory.ts`, `index.ts`
+- **Dashboard components (4):** Located at `src/components/dashboard/`
+- **Integrations:** UserAgentPool + stealth headers, rate-limiter, retry-handler
+- **Tests:** 45 unit + integration tests with HTML fixtures in `__fixtures__/`
+
 **Key Files:**
 - `src/engine/` → Crawler engines (cheerio, browser, smart)
 - `src/queue/` → PersistentRequestQueue implementation
@@ -392,8 +401,9 @@ creator-studio/
 - `src/jobs/` → Job management and scheduling
 - `src/export/` → Export formatters
 - `src/dataset/` → Dataset management and versioning
-- `src/components/` → Dashboard UI components
-- `src/*.test.ts` → 100+ comprehensive tests
+- `src/scrapers/facebook/` → Facebook Page scraper module
+- `src/components/` → Dashboard UI components (24+ including Facebook)
+- `src/*.test.ts` → 145+ comprehensive tests
 
 **Dependencies:**
 - `cheerio` → HTML parsing
@@ -735,7 +745,7 @@ creator-studio/
 - UI (base + composites): 41 tests (17 base + 24 composites)
 - Canvas: 20 tests
 - Video: 23 tests
-- Crawler: 57 tests
+- Crawler: 102 tests (57 core + 45 Facebook scraper)
 - Social: 70+ tests (expanded for 7 platforms + OAuth)
 - AI: 31 tests
 - SDK: 8+ tests (client generation, request validation)

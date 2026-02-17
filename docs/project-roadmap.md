@@ -99,6 +99,7 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 - [x] Cheerio HTML parser integration
 - [x] 57 comprehensive tests
 - [x] Serverless-compatible (no Puppeteer)
+- [x] **Facebook Page Scraper** (`src/scrapers/facebook/`) — mbasic (no auth) + graphql strategies, 45 tests, 4 dashboard components, stealth integration
 
 **Social Package (@creator-studio/social)**
 - [x] Platform interface (unified API)
@@ -396,6 +397,7 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 | UI/UX Design System | Feb 2026 | ✓ Complete |
 | Phase 6: Advanced Features | Feb 2026 | ✓ Complete |
 | Phase 7: Code Hardening & Marketplace Scale | Feb 2026 | ✓ Complete |
+| Facebook Page Scraper (crawler module) | Feb 2026 | ✓ Complete |
 
 ## Known Constraints & Gotchas
 

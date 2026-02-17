@@ -551,7 +551,26 @@ Request → SmartCrawler heuristics (JS detection)
 - **Jobs:** Scheduling, templating, progress tracking, resource quotas
 - **Dataset:** Versioning, incremental crawls, change detection
 - **Export:** JSON, CSV, XML with format auto-detection
-- **100+ Tests:** Comprehensive coverage for all modules
+- **Facebook Scraper:** Platform-specific scraper with mbasic + graphql strategies
+- **145+ Tests:** Comprehensive coverage for all modules
+
+**Facebook Page Scraper (`src/scrapers/facebook/`):**
+
+```
+FacebookScraperFactory (auto strategy selection)
+    ├─ MbasicScraper       → mbasic.facebook.com (no auth, primary)
+    │   ├─ UrlUtils        → Page URL construction & normalization
+    │   ├─ ParseUtils      → HTML parsing helpers
+    │   └─ PostParser      → Post extraction from mbasic DOM
+    └─ GraphQLScraper      → GraphQL API (experimental, needs cookies)
+        └─ TokenExtractor  → docID + LSD token extraction
+```
+
+- **Export:** `@creator-studio/crawler/scrapers/facebook`
+- **Stealth integration:** UserAgentPool + stealth headers from `src/stealth/`
+- **Rate limiting:** Uses shared rate-limiter + retry-handler modules
+- **Dashboard:** 4 UI components at `src/components/dashboard/`
+- **Tests:** 45 tests (unit + integration) with HTML fixtures in `__fixtures__/`
 
 ## Social Management Layer (packages/social)
 

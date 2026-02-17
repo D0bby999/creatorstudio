@@ -9,7 +9,8 @@ const tabs: Tab[] = [
   { label: 'Jobs', path: '/dashboard/crawler/jobs' },
   { label: 'Templates', path: '/dashboard/crawler/templates' },
   { label: 'Schedules', path: '/dashboard/crawler/schedules' },
-  { label: 'Datasets', path: '/dashboard/crawler/datasets' }
+  { label: 'Datasets', path: '/dashboard/crawler/datasets' },
+  { label: 'Facebook', path: '/dashboard/crawler/facebook' }
 ]
 
 export function CrawlerLayout({ children }: { children: React.ReactNode }) {

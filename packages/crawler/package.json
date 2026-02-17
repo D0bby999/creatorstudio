@@ -16,7 +16,8 @@
     "./discovery": "./src/discovery/index.ts",
     "./export": "./src/export/index.ts",
     "./dataset": "./src/dataset/index.ts",
-    "./jobs": "./src/jobs/index.ts"
+    "./jobs": "./src/jobs/index.ts",
+    "./scrapers/facebook": "./src/scrapers/facebook/index.ts"
   },
   "scripts": {
     "lint": "echo 'no lint'",
