@@ -23,6 +23,7 @@ export class TikTokClient implements SocialPlatformClient {
   platform = 'tiktok' as const
   private static CHUNK_SIZE = 10 * 1024 * 1024 // 10MB
   private static MAX_DIRECT_SIZE = 64 * 1024 * 1024 // 64MB
+  private refreshPromise: Promise<TokenRefreshResult> | null = null
 
   constructor(
     private accessToken: string,
@@ -128,6 +129,19 @@ export class TikTokClient implements SocialPlatformClient {
   }
 
   async refreshToken(): Promise<TokenRefreshResult> {
+    if (this.refreshPromise) {
+      return this.refreshPromise
+    }
+
+    this.refreshPromise = this._doRefresh()
+    try {
+      return await this.refreshPromise
+    } finally {
+      this.refreshPromise = null
+    }
+  }
+
+  private async _doRefresh(): Promise<TokenRefreshResult> {
     if (!this.clientKey || !this.clientSecret || !this.refreshTokenValue) {
       throw new Error('Client key, client secret, and refresh token required for token refresh')
     }

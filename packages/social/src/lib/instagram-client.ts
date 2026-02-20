@@ -19,10 +19,12 @@ import {
   createStory,
   INSTAGRAM_API_BASE_URL,
 } from './instagram-api-helpers'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 export class InstagramClient implements SocialPlatformClient {
   platform = 'instagram' as const
   private accessToken: string
+  private refreshPromise: Promise<TokenRefreshResult> | null = null
 
   constructor(accessToken: string) {
     this.accessToken = accessToken
@@ -94,7 +96,7 @@ export class InstagramClient implements SocialPlatformClient {
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(`Instagram API error: ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage('Instagram API error', error))
     }
 
     const data = await response.json()
@@ -131,7 +133,7 @@ export class InstagramClient implements SocialPlatformClient {
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(`Instagram API error: ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage('Instagram API error', error))
     }
 
     const data = await response.json()
@@ -146,6 +148,19 @@ export class InstagramClient implements SocialPlatformClient {
    * Refresh long-lived access token (platform interface implementation)
    */
   async refreshToken(): Promise<TokenRefreshResult> {
+    if (this.refreshPromise) {
+      return this.refreshPromise
+    }
+
+    this.refreshPromise = this._doRefresh()
+    try {
+      return await this.refreshPromise
+    } finally {
+      this.refreshPromise = null
+    }
+  }
+
+  private async _doRefresh(): Promise<TokenRefreshResult> {
     const url = `${INSTAGRAM_API_BASE_URL}/refresh_access_token`
     const params = new URLSearchParams({
       grant_type: 'ig_refresh_token',
@@ -156,7 +171,7 @@ export class InstagramClient implements SocialPlatformClient {
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(`Instagram API error: ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage('Instagram API error', error))
     }
 
     const data = await response.json()

@@ -3,6 +3,7 @@
 
 import { META_GRAPH_API_BASE, metaGraphFetch } from './meta-api-helpers'
 import type { FacebookPostInsights } from '../types/facebook-types'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 /**
  * Exchange user access token for page access token
@@ -40,7 +41,7 @@ export async function postToPageFeed(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`Facebook feed post error: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage('Facebook feed post error', error))
   }
 
   const data = await response.json()
@@ -70,7 +71,7 @@ export async function uploadPhotoToPage(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`Facebook photo upload error: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage('Facebook photo upload error', error))
   }
 
   const data = await response.json()
@@ -100,7 +101,7 @@ export async function uploadVideoToPage(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`Facebook video upload error: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage('Facebook video upload error', error))
   }
 
   const data = await response.json()

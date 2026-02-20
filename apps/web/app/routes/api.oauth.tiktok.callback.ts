@@ -1,11 +1,13 @@
 // TikTok OAuth callback endpoint
 // Handles OAuth callback and creates TikTok social account
 
+import { timingSafeEqual } from 'node:crypto'
 import { prisma } from '@creator-studio/db/client'
 import { requireSession } from '~/lib/auth-server'
 import { TIKTOK_OAUTH_CONFIG } from '~/lib/tiktok-oauth-config'
 import { fetchTikTokUserInfo } from '@creator-studio/social/tiktok-helpers'
 import { encryptToken } from '~/lib/token-encryption'
+import { checkRateLimit } from '~/lib/api-rate-limiter'
 import { logger } from '~/lib/logger'
 
 interface LoaderArgs {
@@ -14,6 +16,10 @@ interface LoaderArgs {
 
 export async function loader({ request }: LoaderArgs) {
   try {
+    // Rate limit by IP — 10 requests/min per endpoint
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    await checkRateLimit(`oauth-tiktok:${clientIp}`, 10, 60)
+
     const session = await requireSession(request)
 
     const url = new URL(request.url)
@@ -29,9 +35,20 @@ export async function loader({ request }: LoaderArgs) {
     const stateCookie = cookieHeader
       .split(';')
       .find((c) => c.trim().startsWith('tiktok_oauth_state='))
-      ?.split('=')[1]
+      ?.slice('tiktok_oauth_state='.length)
 
-    if (!stateCookie || stateCookie !== returnedState) {
+    if (!stateCookie || stateCookie.length !== returnedState.length) {
+      return new Response('Invalid state parameter', { status: 400 })
+    }
+
+    try {
+      const stateBuffer = Buffer.from(stateCookie)
+      const returnedBuffer = Buffer.from(returnedState)
+
+      if (!timingSafeEqual(stateBuffer, returnedBuffer)) {
+        return new Response('Invalid state parameter', { status: 400 })
+      }
+    } catch {
       return new Response('Invalid state parameter', { status: 400 })
     }
 

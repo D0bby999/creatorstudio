@@ -8,6 +8,23 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getR2Client, getBucketName, getPublicUrl } from './storage-client';
 import type { PresignedUrlResult, StorageFile } from './storage-types';
 
+const VALID_STORAGE_KEY = /^[a-zA-Z0-9\/!_.*'()\-]+$/;
+
+function validateStorageKey(key: string): void {
+  if (!key || typeof key !== 'string') {
+    throw new Error('Storage key must be a non-empty string');
+  }
+  if (key.length > 512) {
+    throw new Error('Storage key exceeds maximum length of 512 characters');
+  }
+  if (!VALID_STORAGE_KEY.test(key)) {
+    throw new Error('Storage key contains invalid characters');
+  }
+  if (key.includes('..') || key.startsWith('/')) {
+    throw new Error('Storage key contains forbidden path patterns');
+  }
+}
+
 /**
  * Generate presigned URL for client-side upload
  */
@@ -16,6 +33,7 @@ export async function getSignedUploadUrl(
   contentType: string,
   expiresIn: number = 900 // 15 minutes
 ): Promise<PresignedUrlResult | null> {
+  validateStorageKey(key);
   const client = getR2Client();
   const bucket = getBucketName();
 
@@ -46,6 +64,7 @@ export async function getSignedDownloadUrl(
   key: string,
   expiresIn: number = 3600 // 1 hour
 ): Promise<string | null> {
+  validateStorageKey(key);
   const client = getR2Client();
   const bucket = getBucketName();
 
@@ -70,6 +89,7 @@ export async function uploadFile(
   body: Buffer | Uint8Array | string,
   contentType: string
 ): Promise<void> {
+  validateStorageKey(key);
   const client = getR2Client();
   const bucket = getBucketName();
 
@@ -91,6 +111,7 @@ export async function uploadFile(
  * Delete file from storage
  */
 export async function deleteFile(key: string): Promise<void> {
+  validateStorageKey(key);
   const client = getR2Client();
   const bucket = getBucketName();
 
@@ -112,6 +133,7 @@ export async function deleteFile(key: string): Promise<void> {
 export async function getFileMetadata(
   key: string
 ): Promise<{ size: number; contentType: string } | null> {
+  validateStorageKey(key);
   const client = getR2Client();
   const bucket = getBucketName();
 

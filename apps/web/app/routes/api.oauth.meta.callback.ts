@@ -1,11 +1,13 @@
 // Meta OAuth callback endpoint
 // Handles OAuth callback and discovers Instagram/Facebook/Threads accounts
 
+import { timingSafeEqual } from 'node:crypto'
 import { requireSession } from '~/lib/auth-server'
 import { META_OAUTH_CONFIG } from '~/lib/meta-oauth-config'
 import { refreshLongLivedToken } from '@creator-studio/social/meta-helpers'
 import { encryptToken } from '~/lib/token-encryption'
 import { cacheSet } from '@creator-studio/redis'
+import { checkRateLimit } from '~/lib/api-rate-limiter'
 import { logger } from '~/lib/logger'
 
 interface LoaderArgs {
@@ -43,6 +45,10 @@ function metaApiFetch(url: string, token: string) {
 
 export async function loader({ request }: LoaderArgs) {
   try {
+    // Rate limit by IP — 10 requests/min per endpoint
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    await checkRateLimit(`oauth-meta:${clientIp}`, 10, 60)
+
     await requireSession(request)
 
     const url = new URL(request.url)
@@ -58,9 +64,20 @@ export async function loader({ request }: LoaderArgs) {
     const stateCookie = cookieHeader
       .split(';')
       .find((c) => c.trim().startsWith('meta_oauth_state='))
-      ?.split('=')[1]
+      ?.slice('meta_oauth_state='.length)
 
-    if (!stateCookie || stateCookie !== returnedState) {
+    if (!stateCookie || stateCookie.length !== returnedState.length) {
+      return new Response('Invalid state parameter', { status: 400 })
+    }
+
+    try {
+      const stateBuffer = Buffer.from(stateCookie)
+      const returnedBuffer = Buffer.from(returnedState)
+
+      if (!timingSafeEqual(stateBuffer, returnedBuffer)) {
+        return new Response('Invalid state parameter', { status: 400 })
+      }
+    } catch {
       return new Response('Invalid state parameter', { status: 400 })
     }
 

@@ -2,6 +2,7 @@
 // Common functions for Facebook, Instagram, and Threads APIs
 
 import type { TokenRefreshResult } from './platform-interface'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 export const META_GRAPH_API_VERSION = 'v22.0'
 export const META_GRAPH_API_BASE = `https://graph.facebook.com/${META_GRAPH_API_VERSION}`
@@ -58,7 +59,8 @@ export async function metaGraphFetch<T>(
 
   if (!response.ok) {
     const error = await parseMetaError(response)
-    throw new Error(`Meta API error: ${error.message} (code: ${error.code}, trace: ${error.fbTraceId})`)
+    const errorData = { message: error.message, code: error.code, trace: error.fbTraceId }
+    throw new Error(createSafeErrorMessage('Meta API error', errorData))
   }
 
   return await response.json()

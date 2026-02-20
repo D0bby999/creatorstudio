@@ -3,6 +3,7 @@
 
 import { META_GRAPH_API_BASE, pollContainerStatus } from './meta-api-helpers'
 import type { ThreadsMediaParams } from '../types/threads-types'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 /**
  * Create Threads media container
@@ -42,7 +43,7 @@ export async function createThreadsContainer(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`Threads container creation error: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage('Threads container creation error', error))
   }
 
   const data = await response.json()
@@ -78,7 +79,7 @@ export async function publishThread(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`Threads publish error: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage('Threads publish error', error))
   }
 
   const data = await response.json()

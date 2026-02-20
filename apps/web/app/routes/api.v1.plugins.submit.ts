@@ -30,6 +30,15 @@ export async function action({ request }: { request: Request }) {
       return Response.json({ error: 'Missing required fields: manifestUrl, name, displayName' }, { status: 400 })
     }
 
+    try {
+      validateServerFetchUrl(manifestUrl)
+    } catch (error) {
+      return Response.json(
+        { error: 'Invalid manifestUrl: blocked IP or protocol' },
+        { status: 400 }
+      )
+    }
+
     if (!isValidUrl(manifestUrl)) {
       return Response.json({ error: 'Invalid manifestUrl format' }, { status: 400 })
     }
@@ -40,7 +49,6 @@ export async function action({ request }: { request: Request }) {
 
     let manifest = null
     try {
-      validateServerFetchUrl(manifestUrl)
       const manifestRes = await fetch(manifestUrl)
       if (!manifestRes.ok) {
         return Response.json({ error: 'Failed to fetch manifest from URL' }, { status: 400 })
@@ -81,7 +89,13 @@ export async function action({ request }: { request: Request }) {
     if ((error as { code?: string }).code === 'P2002') {
       return Response.json({ error: 'Plugin with this name already exists' }, { status: 409 })
     }
-    logger.error({ error }, 'Failed to submit plugin')
+    logger.error(
+      {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as { code?: string }).code,
+      },
+      'Failed to submit plugin'
+    )
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

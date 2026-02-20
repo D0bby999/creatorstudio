@@ -2,6 +2,7 @@ import type { Route } from './+types/api.crawler'
 import { createJob, getJobs } from '@creator-studio/crawler/lib/crawl-job-manager'
 import { requireSession } from '~/lib/auth-server'
 import { logger } from '~/lib/logger'
+import { validateServerFetchUrl } from '@creator-studio/utils/ssrf-validator'
 
 /**
  * POST handler: creates a new crawl job
@@ -22,6 +23,15 @@ export async function action({ request }: Route.ActionArgs) {
     if (!type || !['url', 'seo'].includes(type)) {
       return Response.json(
         { error: 'Invalid job type. Must be "url" or "seo"' },
+        { status: 400 }
+      )
+    }
+
+    try {
+      validateServerFetchUrl(url)
+    } catch (error) {
+      return Response.json(
+        { error: 'Invalid URL: private IP or unsupported protocol' },
         { status: 400 }
       )
     }

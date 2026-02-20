@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@creator-studio/db/client'
 import { signPayload } from './webhook-signer'
+import { resolveAndValidateUrl } from '@creator-studio/utils/ssrf-validator'
 
 export async function trigger(
   eventType: string,
@@ -42,6 +43,20 @@ export async function deliverWebhook(eventId: string, prisma: PrismaClient): Pro
   })
 
   if (!event || !event.endpoint.enabled) return
+
+  try {
+    await resolveAndValidateUrl(event.endpoint.url)
+  } catch (error) {
+    await prisma.webhookEvent.update({
+      where: { id: eventId },
+      data: {
+        attempts: { increment: 1 },
+        lastError: 'SSRF validation failed: blocked IP or protocol',
+        status: 'failed',
+      },
+    })
+    return
+  }
 
   const payload = JSON.stringify(event.payload)
 

@@ -3,6 +3,19 @@ import { cacheGet, cacheSet, cacheDel, cacheGetByPrefix } from '@creator-studio/
 
 const SESSION_PREFIX = 'ai:session:'
 const SESSION_TTL = 86400 // 24 hours
+const VALID_SESSION_ID = /^[a-zA-Z0-9_\-]+$/
+
+function validateSessionId(id: string): void {
+  if (!id || typeof id !== 'string') {
+    throw new Error('Session ID must be a non-empty string')
+  }
+  if (id.length > 128) {
+    throw new Error('Session ID exceeds maximum length')
+  }
+  if (!VALID_SESSION_ID.test(id)) {
+    throw new Error('Session ID contains invalid characters')
+  }
+}
 
 /**
  * Creates a new agent session
@@ -25,6 +38,7 @@ export async function createSession(agentRole: AgentRole): Promise<AgentSession>
  * Gets a session by ID
  */
 export async function getSession(id: string): Promise<AgentSession | null> {
+  validateSessionId(id)
   return cacheGet<AgentSession>(`${SESSION_PREFIX}${id}`)
 }
 
@@ -43,6 +57,7 @@ export async function addMessage(
   sessionId: string,
   message: Omit<ChatMessage, 'id' | 'timestamp'>
 ): Promise<ChatMessage> {
+  validateSessionId(sessionId)
   const session = await cacheGet<AgentSession>(`${SESSION_PREFIX}${sessionId}`)
   if (!session) {
     throw new Error(`Session ${sessionId} not found`)
@@ -65,6 +80,7 @@ export async function addMessage(
  * Deletes a session
  */
 export async function deleteSession(id: string): Promise<boolean> {
+  validateSessionId(id)
   await cacheDel(`${SESSION_PREFIX}${id}`)
   return true
 }

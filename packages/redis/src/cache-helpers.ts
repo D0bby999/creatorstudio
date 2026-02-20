@@ -7,7 +7,22 @@ import { getRedis } from './redis-client'
 const MAX_MEMORY_ENTRIES = 10_000
 const memoryStore = new Map<string, { value: string; expiresAt?: number }>()
 
+const VALID_KEY_PATTERN = /^[a-zA-Z0-9:_\-]+$/
+
+function validateCacheKey(key: string): void {
+  if (!key || typeof key !== 'string') {
+    throw new Error('Cache key must be a non-empty string')
+  }
+  if (key.length > 256) {
+    throw new Error('Cache key exceeds maximum length of 256 characters')
+  }
+  if (!VALID_KEY_PATTERN.test(key)) {
+    throw new Error('Cache key contains invalid characters (allowed: alphanumeric, :, _, -)')
+  }
+}
+
 export async function cacheGet<T>(key: string): Promise<T | null> {
+  validateCacheKey(key)
   const redis = getRedis()
 
   if (redis) {
@@ -28,6 +43,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 }
 
 export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+  validateCacheKey(key)
   const redis = getRedis()
 
   if (redis) {
@@ -54,6 +70,7 @@ export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): P
 }
 
 export async function cacheDel(key: string): Promise<void> {
+  validateCacheKey(key)
   const redis = getRedis()
 
   if (redis) {
@@ -69,6 +86,7 @@ export async function cacheDel(key: string): Promise<void> {
  * Uses SCAN in Redis, prefix filter in memory fallback.
  */
 export async function cacheGetByPrefix<T>(prefix: string): Promise<T[]> {
+  validateCacheKey(prefix)
   const redis = getRedis()
 
   if (redis) {

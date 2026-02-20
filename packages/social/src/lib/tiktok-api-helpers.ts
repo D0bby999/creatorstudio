@@ -8,13 +8,14 @@ import type {
   TikTokVideoInitParams,
 } from '../types/tiktok-types'
 import type { TokenRefreshResult } from './platform-interface'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 const TIKTOK_API_BASE = 'https://open.tiktokapis.com'
 
 async function handleTikTokResponse<T = any>(response: Response, errorPrefix: string): Promise<T> {
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(`${errorPrefix}: ${JSON.stringify(error)}`)
+    throw new Error(createSafeErrorMessage(errorPrefix, error))
   }
   const data = await response.json() as any
   if (data.error?.code) {

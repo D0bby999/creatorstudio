@@ -19,6 +19,7 @@ import { refreshLongLivedToken, metaGraphFetch } from './meta-api-helpers'
 
 export class FacebookClient implements SocialPlatformClient {
   platform = 'facebook' as const
+  private refreshPromise: Promise<TokenRefreshResult> | null = null
 
   constructor(
     private userAccessToken: string,
@@ -124,6 +125,19 @@ export class FacebookClient implements SocialPlatformClient {
    * Refresh Facebook access token (exchange for long-lived token)
    */
   async refreshToken(): Promise<TokenRefreshResult> {
+    if (this.refreshPromise) {
+      return this.refreshPromise
+    }
+
+    this.refreshPromise = this._doRefresh()
+    try {
+      return await this.refreshPromise
+    } finally {
+      this.refreshPromise = null
+    }
+  }
+
+  private async _doRefresh(): Promise<TokenRefreshResult> {
     if (!this.appId || !this.appSecret) {
       throw new Error('App ID and App Secret required for token refresh')
     }

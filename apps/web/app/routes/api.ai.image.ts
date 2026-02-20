@@ -37,10 +37,33 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: 'Prompt cannot be empty' }, { status: 400 })
     }
 
+    // Validate dimensions to prevent resource exhaustion
+    const MIN_DIM = 256
+    const MAX_DIM = 2048
+    const MAX_ASPECT = 4
+
+    const parsedWidth = Math.floor(Number(width || 1024))
+    const parsedHeight = Math.floor(Number(height || 1024))
+
+    if (!Number.isFinite(parsedWidth) || !Number.isFinite(parsedHeight)) {
+      return Response.json({ error: 'Invalid width or height' }, { status: 400 })
+    }
+
+    const clampedWidth = Math.max(MIN_DIM, Math.min(parsedWidth, MAX_DIM))
+    const clampedHeight = Math.max(MIN_DIM, Math.min(parsedHeight, MAX_DIM))
+
+    const aspect = clampedWidth / clampedHeight
+    if (aspect > MAX_ASPECT || aspect < 1 / MAX_ASPECT) {
+      return Response.json(
+        { error: `Aspect ratio must be between 1:${MAX_ASPECT} and ${MAX_ASPECT}:1` },
+        { status: 400 }
+      )
+    }
+
     // Generate image
     const result = await generateImage(sanitizedPrompt, {
-      width: width || 1024,
-      height: height || 1024,
+      width: clampedWidth,
+      height: clampedHeight,
     })
 
     return Response.json({
