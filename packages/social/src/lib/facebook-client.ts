@@ -16,18 +16,27 @@ import {
   getPagePostInsights,
 } from './facebook-api-helpers'
 import { refreshLongLivedToken, metaGraphFetch } from './meta-api-helpers'
+import type { ClientOptions } from './client-options'
+import { noopLogger, type SocialLogger } from './social-logger'
+import { auditLog } from './audit-logger'
 
 export class FacebookClient implements SocialPlatformClient {
   platform = 'facebook' as const
   private refreshPromise: Promise<TokenRefreshResult> | null = null
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
 
   constructor(
     private userAccessToken: string,
     private pageId: string,
     private pageAccessToken: string,
     private appId?: string,
-    private appSecret?: string
-  ) {}
+    private appSecret?: string,
+    options?: ClientOptions
+  ) {
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? noopLogger
+  }
 
   /**
    * Post to Facebook Page feed
@@ -78,6 +87,14 @@ export class FacebookClient implements SocialPlatformClient {
 
     // Extract post ID (format: pageId_postId)
     const postIdPart = postId.split('_')[1] || postId
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'facebook',
+      accountId: this.pageId,
+      contentPreview: content,
+    })
 
     return {
       id: postId,
@@ -142,11 +159,21 @@ export class FacebookClient implements SocialPlatformClient {
       throw new Error('App ID and App Secret required for token refresh')
     }
 
-    return await refreshLongLivedToken(
+    const result = await refreshLongLivedToken(
       this.userAccessToken,
       this.appId,
-      this.appSecret
+      this.appSecret,
+      this.fetchFn
     )
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'facebook',
+      accountId: this.pageId,
+    })
+
+    return result
   }
 
   /**

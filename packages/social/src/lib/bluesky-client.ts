@@ -9,6 +9,10 @@ import type {
   PlatformProfile,
   TokenRefreshResult,
 } from './platform-interface'
+import { createLogger, noopLogger, type SocialLogger } from './social-logger'
+import type { ClientOptions } from './client-options'
+import { auditLog } from './audit-logger'
+import { createSafeErrorMessage } from './error-sanitizer'
 
 const BSKY_API_BASE = 'https://bsky.social/xrpc'
 
@@ -17,24 +21,30 @@ export class BlueskyClient implements SocialPlatformClient {
   private accessJwt = ''
   private refreshJwt = ''
   private did = ''
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
 
   constructor(
     private handle: string,
-    private appPassword: string
-  ) {}
+    private appPassword: string,
+    options?: ClientOptions
+  ) {
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? createLogger('social:bluesky')
+  }
 
   /**
    * Create authenticated session with Bluesky
    */
   async createSession(): Promise<void> {
-    const res = await fetch(`${BSKY_API_BASE}/com.atproto.server.createSession`, {
+    const res = await this.fetchFn(`${BSKY_API_BASE}/com.atproto.server.createSession`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier: this.handle, password: this.appPassword }),
     })
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(`Bluesky auth failed: ${res.status} ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage(`Bluesky auth failed (${res.status})`, error))
     }
     const data = await res.json()
     this.accessJwt = data.accessJwt
@@ -61,11 +71,11 @@ export class BlueskyClient implements SocialPlatformClient {
     const images = []
     for (const url of params.mediaUrls.slice(0, 4)) {
       try {
-        const imgRes = await fetch(url)
+        const imgRes = await this.fetchFn(url)
         if (!imgRes.ok) continue
         const blob = await imgRes.arrayBuffer()
 
-        const uploadRes = await fetch(`${BSKY_API_BASE}/com.atproto.repo.uploadBlob`, {
+        const uploadRes = await this.fetchFn(`${BSKY_API_BASE}/com.atproto.repo.uploadBlob`, {
           method: 'POST',
           headers: {
             'Content-Type': 'image/jpeg',
@@ -79,7 +89,7 @@ export class BlueskyClient implements SocialPlatformClient {
           images.push({ image: uploadData.blob, alt: '' })
         }
       } catch (err) {
-        console.error('Failed to upload image to Bluesky:', err)
+        this.logger.warn('Image upload failed', { error: String(err) })
       }
     }
 
@@ -95,7 +105,7 @@ export class BlueskyClient implements SocialPlatformClient {
     }
 
     // Create post record
-    const res = await fetch(`${BSKY_API_BASE}/com.atproto.repo.createRecord`, {
+    const res = await this.fetchFn(`${BSKY_API_BASE}/com.atproto.repo.createRecord`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,11 +120,19 @@ export class BlueskyClient implements SocialPlatformClient {
 
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(`Bluesky post failed: ${res.status} ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage(`Bluesky post failed (${res.status})`, error))
     }
 
     const data = await res.json()
     const rkey = data.uri?.split('/').pop() ?? ''
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'bluesky',
+      contentPreview: params.content,
+    })
+
     return {
       id: data.uri,
       url: `https://bsky.app/profile/${this.handle}/post/${rkey}`,
@@ -143,13 +161,13 @@ export class BlueskyClient implements SocialPlatformClient {
   async getUserProfile(_userId: string): Promise<PlatformProfile> {
     await this.ensureSession()
 
-    const res = await fetch(`${BSKY_API_BASE}/app.bsky.actor.getProfile?actor=${this.did}`, {
+    const res = await this.fetchFn(`${BSKY_API_BASE}/app.bsky.actor.getProfile?actor=${this.did}`, {
       headers: { Authorization: `Bearer ${this.accessJwt}` },
     })
 
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(`Failed to fetch Bluesky profile: ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage('Failed to fetch Bluesky profile', error))
     }
 
     const data = await res.json()
@@ -164,19 +182,25 @@ export class BlueskyClient implements SocialPlatformClient {
    * Refresh session token
    */
   async refreshToken(): Promise<TokenRefreshResult> {
-    const res = await fetch(`${BSKY_API_BASE}/com.atproto.server.refreshSession`, {
+    const res = await this.fetchFn(`${BSKY_API_BASE}/com.atproto.server.refreshSession`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.refreshJwt}` },
     })
 
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(`Failed to refresh Bluesky session: ${JSON.stringify(error)}`)
+      throw new Error(createSafeErrorMessage('Failed to refresh Bluesky session', error))
     }
 
     const data = await res.json()
     this.accessJwt = data.accessJwt
     this.refreshJwt = data.refreshJwt
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'bluesky',
+    })
 
     return {
       accessToken: data.accessJwt,

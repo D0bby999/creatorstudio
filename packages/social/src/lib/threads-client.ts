@@ -16,16 +16,25 @@ import {
   enforceHashtagLimit,
 } from './threads-api-helpers'
 import { refreshLongLivedToken, metaGraphFetch } from './meta-api-helpers'
+import type { ClientOptions } from './client-options'
+import { noopLogger, type SocialLogger } from './social-logger'
+import { auditLog } from './audit-logger'
 
 export class ThreadsClient implements SocialPlatformClient {
   platform = 'threads' as const
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
 
   constructor(
     private accessToken: string,
     private userId?: string,
     private appId?: string,
-    private appSecret?: string
-  ) {}
+    private appSecret?: string,
+    options?: ClientOptions
+  ) {
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? noopLogger
+  }
 
   /**
    * Post to Threads using container-based workflow
@@ -73,6 +82,13 @@ export class ThreadsClient implements SocialPlatformClient {
 
     // Publish (includes polling)
     const published = await publishThread(this.accessToken, this.userId, container.id)
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'threads',
+      contentPreview: processedContent,
+    })
 
     return {
       id: published.id,
@@ -152,7 +168,15 @@ export class ThreadsClient implements SocialPlatformClient {
       throw new Error('App ID and App Secret required for token refresh')
     }
 
-    return await refreshLongLivedToken(this.accessToken, this.appId, this.appSecret)
+    const result = await refreshLongLivedToken(this.accessToken, this.appId, this.appSecret, this.fetchFn)
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'threads',
+    })
+
+    return result
   }
 
   /**

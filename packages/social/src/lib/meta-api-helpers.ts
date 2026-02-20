@@ -3,6 +3,9 @@
 
 import type { TokenRefreshResult } from './platform-interface'
 import { createSafeErrorMessage } from './error-sanitizer'
+import { createLogger } from './social-logger'
+
+const logger = createLogger('social:meta')
 
 export const META_GRAPH_API_VERSION = 'v22.0'
 export const META_GRAPH_API_BASE = `https://graph.facebook.com/${META_GRAPH_API_VERSION}`
@@ -23,9 +26,10 @@ export async function metaGraphFetch<T>(
     accessToken: string
     method?: string
     body?: Record<string, string>
+    fetchFn?: typeof fetch
   }
 ): Promise<T> {
-  const { accessToken, method = 'GET', body } = options
+  const { accessToken, method = 'GET', body, fetchFn = fetch } = options
 
   const url = new URL(`${META_GRAPH_API_BASE}${path}`)
   const fetchOptions: RequestInit = {
@@ -49,12 +53,12 @@ export async function metaGraphFetch<T>(
     }
   }
 
-  const response = await fetch(url.toString(), fetchOptions)
+  const response = await fetchFn(url.toString(), fetchOptions)
 
   // Log rate limit headers if present
   const rateLimitRemaining = response.headers.get('x-business-use-case-usage')
   if (rateLimitRemaining) {
-    console.log('Meta API rate limit usage:', rateLimitRemaining)
+    logger.info('Rate limit usage', { usage: rateLimitRemaining })
   }
 
   if (!response.ok) {
@@ -72,7 +76,8 @@ export async function metaGraphFetch<T>(
 export async function refreshLongLivedToken(
   accessToken: string,
   appId: string,
-  appSecret: string
+  appSecret: string,
+  fetchFn: typeof fetch = fetch
 ): Promise<TokenRefreshResult> {
   const url = `${META_GRAPH_API_BASE}/oauth/access_token`
   const params = new URLSearchParams({
@@ -82,11 +87,11 @@ export async function refreshLongLivedToken(
     fb_exchange_token: accessToken,
   })
 
-  const response = await fetch(`${url}?${params}`, { method: 'GET' })
+  const response = await fetchFn(`${url}?${params}`, { method: 'GET' })
 
   if (!response.ok) {
     const error = await parseMetaError(response)
-    throw new Error(`Token refresh failed: ${error.message}`)
+    throw new Error(createSafeErrorMessage('Token refresh failed', { code: error.code, type: error.type }))
   }
 
   const data = await response.json()

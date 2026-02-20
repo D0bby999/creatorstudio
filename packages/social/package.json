@@ -17,7 +17,13 @@
     "./factory": "./src/lib/platform-factory.ts",
     "./composer": "./src/lib/unified-post-composer.ts",
     "./upload": "./src/lib/media-upload-handler.ts",
-    "./interface": "./src/lib/platform-interface.ts"
+    "./interface": "./src/lib/platform-interface.ts",
+    "./resilience": "./src/lib/resilience/index.ts",
+    "./errors": "./src/lib/error-taxonomy.ts",
+    "./logger": "./src/lib/social-logger.ts",
+    "./context": "./src/lib/request-context.ts",
+    "./audit": "./src/lib/audit-logger.ts",
+    "./health": "./src/lib/platform-health-tracker.ts"
   },
   "scripts": {
     "build": "echo 'no build needed'",

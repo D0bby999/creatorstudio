@@ -18,20 +18,29 @@ import {
   fetchTikTokUserInfo,
 } from './tiktok-api-helpers'
 import { resolveAndValidateUrl } from '@creator-studio/utils/ssrf-validator'
+import type { ClientOptions } from './client-options'
+import { noopLogger, type SocialLogger } from './social-logger'
+import { auditLog } from './audit-logger'
 
 export class TikTokClient implements SocialPlatformClient {
   platform = 'tiktok' as const
   private static CHUNK_SIZE = 10 * 1024 * 1024 // 10MB
   private static MAX_DIRECT_SIZE = 64 * 1024 * 1024 // 64MB
   private refreshPromise: Promise<TokenRefreshResult> | null = null
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
 
   constructor(
     private accessToken: string,
     private openId?: string,
     private clientKey?: string,
     private clientSecret?: string,
-    private refreshTokenValue?: string
-  ) {}
+    private refreshTokenValue?: string,
+    options?: ClientOptions
+  ) {
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? noopLogger
+  }
 
   /**
    * Post video to TikTok
@@ -55,7 +64,7 @@ export class TikTokClient implements SocialPlatformClient {
     await resolveAndValidateUrl(videoUrl)
 
     // Fetch video data
-    const videoResponse = await fetch(videoUrl)
+    const videoResponse = await this.fetchFn(videoUrl)
     if (!videoResponse.ok) {
       throw new Error(`Failed to fetch video from ${videoUrl}`)
     }
@@ -95,6 +104,13 @@ export class TikTokClient implements SocialPlatformClient {
     }
 
     const postId = result.publiclyAvailablePostId?.[0] || publishId
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'tiktok',
+      contentPreview: content,
+    })
 
     return {
       id: postId,
@@ -153,6 +169,12 @@ export class TikTokClient implements SocialPlatformClient {
     )
 
     this.refreshTokenValue = result.refreshToken
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'tiktok',
+    })
 
     return {
       accessToken: result.accessToken,

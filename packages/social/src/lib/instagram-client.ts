@@ -20,14 +20,21 @@ import {
   INSTAGRAM_API_BASE_URL,
 } from './instagram-api-helpers'
 import { createSafeErrorMessage } from './error-sanitizer'
+import type { ClientOptions } from './client-options'
+import { noopLogger, type SocialLogger } from './social-logger'
+import { auditLog } from './audit-logger'
 
 export class InstagramClient implements SocialPlatformClient {
   platform = 'instagram' as const
   private accessToken: string
   private refreshPromise: Promise<TokenRefreshResult> | null = null
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
 
-  constructor(accessToken: string) {
+  constructor(accessToken: string, options?: ClientOptions) {
     this.accessToken = accessToken
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? noopLogger
   }
 
   /**
@@ -45,6 +52,13 @@ export class InstagramClient implements SocialPlatformClient {
       caption: params.content,
       imageUrl: isVideo ? undefined : firstMediaUrl,
       videoUrl: isVideo ? firstMediaUrl : undefined,
+    })
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'instagram',
+      contentPreview: params.content,
     })
 
     return {
@@ -92,7 +106,7 @@ export class InstagramClient implements SocialPlatformClient {
       access_token: this.accessToken,
     })
 
-    const response = await fetch(`${url}?${params}`)
+    const response = await this.fetchFn(`${url}?${params}`)
 
     if (!response.ok) {
       const error = await response.json()
@@ -129,7 +143,7 @@ export class InstagramClient implements SocialPlatformClient {
       access_token: this.accessToken,
     })
 
-    const response = await fetch(`${url}?${params}`)
+    const response = await this.fetchFn(`${url}?${params}`)
 
     if (!response.ok) {
       const error = await response.json()
@@ -167,7 +181,7 @@ export class InstagramClient implements SocialPlatformClient {
       access_token: this.accessToken,
     })
 
-    const response = await fetch(`${url}?${params}`)
+    const response = await this.fetchFn(`${url}?${params}`)
 
     if (!response.ok) {
       const error = await response.json()
@@ -175,6 +189,13 @@ export class InstagramClient implements SocialPlatformClient {
     }
 
     const data = await response.json()
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'instagram',
+    })
+
     return {
       accessToken: data.access_token,
       expiresIn: data.expires_in,
