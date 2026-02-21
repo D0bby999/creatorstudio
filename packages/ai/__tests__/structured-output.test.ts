@@ -6,8 +6,8 @@ vi.mock('ai', () => ({
   generateObject: vi.fn(),
 }))
 
-vi.mock('@ai-sdk/openai', () => ({
-  openai: vi.fn(() => 'mocked-model'),
+vi.mock('../src/lib/model-resolver', () => ({
+  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v1' })),
 }))
 
 const { generateObject } = await import('ai')
@@ -37,7 +37,7 @@ describe('structured-output', () => {
       const result = await generateContentPlan('Create a content plan for tech startup')
 
       expect(generateObject).toHaveBeenCalledWith({
-        model: 'mocked-model',
+        model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
         schema: ContentPlanSchema,
         prompt: 'Create a content plan: Create a content plan for tech startup',
       })
@@ -63,7 +63,7 @@ describe('structured-output', () => {
       const result = await generatePostDraft('Promote new product launch', 'instagram')
 
       expect(generateObject).toHaveBeenCalledWith({
-        model: 'mocked-model',
+        model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
         schema: PostDraftSchema,
         prompt: 'Write a instagram post: Promote new product launch',
       })
@@ -89,7 +89,7 @@ describe('structured-output', () => {
       const result = await generateDesignBrief('Create a design for product launch')
 
       expect(generateObject).toHaveBeenCalledWith({
-        model: 'mocked-model',
+        model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
         schema: DesignBriefSchema,
         prompt: 'Create a design brief: Create a design for product launch',
       })

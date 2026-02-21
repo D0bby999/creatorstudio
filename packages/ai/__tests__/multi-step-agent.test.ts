@@ -5,8 +5,8 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }))
 
-vi.mock('@ai-sdk/openai', () => ({
-  openai: vi.fn(() => 'mocked-model'),
+vi.mock('../src/lib/model-resolver', () => ({
+  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v1' })),
 }))
 
 vi.mock('../src/lib/agent-config', () => ({
@@ -32,7 +32,7 @@ describe('multi-step-agent', () => {
   })
 
   describe('runMultiStepAgent', () => {
-    it('should yield text step', async () => {
+    it('should yield text step and usage step', async () => {
       vi.mocked(generateText).mockResolvedValue({
         text: 'This is a response',
         steps: [],
@@ -50,10 +50,14 @@ describe('multi-step-agent', () => {
         steps.push(step)
       }
 
-      expect(steps).toHaveLength(1)
+      expect(steps).toHaveLength(2)
       expect(steps[0]).toEqual({
         type: 'text',
         content: 'This is a response',
+      })
+      expect(steps[1]).toEqual({
+        type: 'usage',
+        content: JSON.stringify({ promptTokens: 10, completionTokens: 20, totalTokens: 30 }),
       })
     })
 
@@ -90,7 +94,7 @@ describe('multi-step-agent', () => {
         steps.push(step)
       }
 
-      expect(steps).toHaveLength(3)
+      expect(steps).toHaveLength(4)
       expect(steps[0]).toEqual({
         type: 'text',
         content: 'Here are the trends',
@@ -104,6 +108,10 @@ describe('multi-step-agent', () => {
         type: 'tool-result',
         content: JSON.stringify({ results: ['result1', 'result2'] }),
         toolName: 'searchWeb',
+      })
+      expect(steps[3]).toEqual({
+        type: 'usage',
+        content: JSON.stringify({ promptTokens: 10, completionTokens: 20, totalTokens: 30 }),
       })
     })
 
