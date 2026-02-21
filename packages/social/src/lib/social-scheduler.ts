@@ -1,15 +1,14 @@
 // Social media post scheduler using Inngest
-// Handles scheduled post publishing with retries and error handling
+// Multi-platform publishing with health checks and retry tracking
 
 import { prisma } from '@creator-studio/db/client'
-import { InstagramClient } from './instagram-client'
-import type { ScheduledPostJob } from '../types/social-types'
+import { getPlatformClient } from './platform-factory'
+import { PlatformHealthTracker } from './platform-health-tracker'
+import { createSafeErrorMessage } from './error-sanitizer'
+import { adaptContent } from './content-adapter'
+import type { SocialPlatform, ScheduledPostJob } from '../types/social-types'
 
-/**
- * Send social post scheduled event to Inngest
- */
 export async function sendScheduledPostEvent(postId: string, scheduledAt: Date): Promise<void> {
-  // Skip if INNGEST_EVENT_KEY not configured
   if (!process.env.INNGEST_EVENT_KEY) {
     console.warn('INNGEST_EVENT_KEY not set, scheduled posts will not auto-publish')
     return
@@ -24,45 +23,30 @@ export async function sendScheduledPostEvent(postId: string, scheduledAt: Date):
       },
       body: JSON.stringify({
         name: 'social/post.scheduled',
-        data: {
-          postId,
-          scheduledAt: scheduledAt.toISOString(),
-        },
+        data: { postId, scheduledAt: scheduledAt.toISOString() },
       }),
     })
 
     if (!response.ok) {
       throw new Error(`Inngest API error: ${response.status}`)
     }
-
-    console.log(`Sent Inngest event for post ${postId}`)
   } catch (error) {
     console.error('Failed to send Inngest event:', error)
-    // Don't throw - post is still scheduled in DB
   }
 }
 
-/**
- * Get posts that are due to be published
- */
 export async function getDuePosts(): Promise<ScheduledPostJob[]> {
-  const now = new Date()
-
   const posts = await prisma.socialPost.findMany({
     where: {
       status: 'scheduled',
-      scheduledAt: {
-        lte: now,
-      },
+      scheduledAt: { lte: new Date() },
     },
     select: {
       id: true,
       socialAccountId: true,
       scheduledAt: true,
     },
-    orderBy: {
-      scheduledAt: 'asc',
-    },
+    orderBy: { scheduledAt: 'asc' },
   })
 
   return posts.map((post) => ({
@@ -72,97 +56,106 @@ export async function getDuePosts(): Promise<ScheduledPostJob[]> {
   }))
 }
 
-/**
- * Publish a scheduled post to social media
- */
-export async function publishPost(postId: string): Promise<void> {
-  // Fetch post and account details
-  const post = await prisma.socialPost.findUnique({
+// Extract platform-specific params from socialAccount metadata
+function extractPlatformParams(metadata: Record<string, string> | null) {
+  if (!metadata) return {}
+  return {
+    handle: metadata.handle,
+    appPassword: metadata.appPassword,
+    pageId: metadata.pageId,
+    pageAccessToken: metadata.pageAccessToken,
+    openId: metadata.openId,
+    userId: metadata.userId,
+    appId: metadata.appId,
+    appSecret: metadata.appSecret,
+    clientKey: metadata.clientKey,
+    clientSecret: metadata.clientSecret,
+    refreshToken: metadata.refreshToken,
+  }
+}
+
+async function markForRetry(postId: string, reason: string): Promise<void> {
+  await prisma.socialPost.update({
     where: { id: postId },
-    include: {
-      socialAccount: true,
+    data: {
+      retryCount: { increment: 1 },
+      failureReason: reason,
     },
   })
+}
 
-  if (!post) {
-    throw new Error(`Post not found: ${postId}`)
-  }
+export async function publishPost(postId: string): Promise<void> {
+  const post = await prisma.socialPost.findUnique({
+    where: { id: postId },
+    include: { socialAccount: true },
+  })
 
+  if (!post) throw new Error(`Post not found: ${postId}`)
   if (post.status !== 'scheduled') {
     throw new Error(`Post is not scheduled: ${postId} (status: ${post.status})`)
   }
 
+  // Health check before publish
+  const health = PlatformHealthTracker.getInstance().getMetrics(post.platform)
+  if (health.status === 'unhealthy') {
+    await markForRetry(postId, `Platform unhealthy: ${post.platform}`)
+    return
+  }
+
   try {
-    // Update status to publishing
     await prisma.socialPost.update({
       where: { id: postId },
       data: { status: 'publishing' },
     })
 
-    // Publish based on platform
-    let platformPostId: string
+    const metadata = post.socialAccount.metadata as Record<string, string> | null
+    const client = getPlatformClient(
+      post.platform as SocialPlatform,
+      post.socialAccount.accessToken,
+      extractPlatformParams(metadata)
+    )
 
-    if (post.platform === 'instagram') {
-      const client = new InstagramClient(post.socialAccount.accessToken)
+    const response = await client.post({
+      userId: post.socialAccount.platformUserId,
+      content: post.content,
+      mediaUrls: post.mediaUrls,
+    })
 
-      // Instagram requires media URL (first URL in mediaUrls array)
-      const mediaUrl = post.mediaUrls[0]
-      if (!mediaUrl) {
-        throw new Error('Instagram posts require at least one media URL')
-      }
-
-      const response = await client.post({
-        userId: post.socialAccount.platformUserId,
-        imageUrl: mediaUrl.endsWith('.mp4') ? undefined : mediaUrl,
-        videoUrl: mediaUrl.endsWith('.mp4') ? mediaUrl : undefined,
-        caption: post.content,
-      })
-
-      platformPostId = response.id
-    } else {
-      throw new Error(`Unsupported platform: ${post.platform}`)
-    }
-
-    // Update post status to published
     await prisma.socialPost.update({
       where: { id: postId },
       data: {
         status: 'published',
         publishedAt: new Date(),
-        platformPostId,
+        platformPostId: response.id,
       },
     })
-
-    console.log(`Successfully published post ${postId} to ${post.platform}`)
   } catch (error) {
-    // Update status to failed
+    const safeMessage = createSafeErrorMessage('Publish failed', error)
     await prisma.socialPost.update({
       where: { id: postId },
-      data: { status: 'failed' },
+      data: {
+        status: 'failed',
+        failureReason: safeMessage,
+        retryCount: { increment: 1 },
+      },
     })
-
-    console.error(`Failed to publish post ${postId}:`, error)
     throw error
   }
 }
 
-/**
- * Schedule a post for future publishing
- */
 export async function schedulePost(params: {
   content: string
   mediaUrls: string[]
   scheduledAt: Date
   socialAccountId: string
+  postGroupId?: string
 }): Promise<string> {
-  const { content, mediaUrls, scheduledAt, socialAccountId } = params
+  const { content, mediaUrls, scheduledAt, socialAccountId, postGroupId } = params
 
-  // Validate scheduled time is in the future
   if (scheduledAt <= new Date()) {
     throw new Error('Scheduled time must be in the future')
   }
 
-  // Get social account to determine platform
   const socialAccount = await prisma.socialAccount.findUnique({
     where: { id: socialAccountId },
   })
@@ -171,7 +164,6 @@ export async function schedulePost(params: {
     throw new Error(`Social account not found: ${socialAccountId}`)
   }
 
-  // Create scheduled post
   const post = await prisma.socialPost.create({
     data: {
       content,
@@ -180,12 +172,10 @@ export async function schedulePost(params: {
       scheduledAt,
       status: 'scheduled',
       socialAccountId,
+      ...(postGroupId && { postGroupId }),
     },
   })
 
-  console.log(`Scheduled post ${post.id} for ${scheduledAt.toISOString()}`)
-
-  // Send Inngest event for background publishing
   await sendScheduledPostEvent(post.id, scheduledAt).catch((error) => {
     console.error('Failed to schedule via Inngest:', error)
   })
@@ -193,18 +183,12 @@ export async function schedulePost(params: {
   return post.id
 }
 
-/**
- * Cancel a scheduled post
- */
 export async function cancelScheduledPost(postId: string): Promise<void> {
   const post = await prisma.socialPost.findUnique({
     where: { id: postId },
   })
 
-  if (!post) {
-    throw new Error(`Post not found: ${postId}`)
-  }
-
+  if (!post) throw new Error(`Post not found: ${postId}`)
   if (post.status !== 'scheduled') {
     throw new Error(`Cannot cancel post with status: ${post.status}`)
   }
@@ -213,30 +197,47 @@ export async function cancelScheduledPost(postId: string): Promise<void> {
     where: { id: postId },
     data: { status: 'draft' },
   })
-
-  console.log(`Cancelled scheduled post ${postId}`)
 }
 
-/**
- * Inngest function definition (for production use)
- * This would be registered in apps/web with Inngest
- */
+export async function scheduleBatchPost(params: {
+  content: string
+  mediaUrls: string[]
+  platforms: Array<{ socialAccountId: string }>
+  scheduledAt: Date
+}): Promise<string[]> {
+  const postGroupId = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+  const postIds = await Promise.all(
+    params.platforms.map(async (p) => {
+      const account = await prisma.socialAccount.findUniqueOrThrow({
+        where: { id: p.socialAccountId },
+      })
+      const adapted = adaptContent(params.content, account.platform as SocialPlatform)
+
+      return schedulePost({
+        content: adapted.content,
+        mediaUrls: params.mediaUrls,
+        scheduledAt: params.scheduledAt,
+        socialAccountId: p.socialAccountId,
+        postGroupId,
+      })
+    })
+  )
+
+  return postIds
+}
+
 export const inngestSchedulerConfig = {
   id: 'social-post-scheduler',
   name: 'Publish Scheduled Social Posts',
-  // Run every minute to check for due posts
   cron: '* * * * *',
   handler: async () => {
     const duePosts = await getDuePosts()
 
-    console.log(`Found ${duePosts.length} posts due for publishing`)
-
-    // Process posts with error handling
     const results = await Promise.allSettled(
       duePosts.map((job) => publishPost(job.postId))
     )
 
-    // Log any failures
     const failures = results.filter((r) => r.status === 'rejected')
     if (failures.length > 0) {
       console.error(`${failures.length} posts failed to publish`)

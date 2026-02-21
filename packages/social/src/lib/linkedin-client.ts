@@ -1,4 +1,4 @@
-// LinkedIn Marketing API v2 client for Creator Studio
+// LinkedIn Marketing API v2 client with resilient fetch support
 // Requires LinkedIn Developer app approval and OAuth2 tokens
 
 import type {
@@ -9,6 +9,9 @@ import type {
   PlatformProfile,
   TokenRefreshResult,
 } from './platform-interface'
+import type { ClientOptions } from './client-options'
+import { noopLogger, type SocialLogger } from './social-logger'
+import { auditLog } from './audit-logger'
 
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
 const LINKEDIN_OAUTH_BASE = 'https://www.linkedin.com/oauth/v2'
@@ -16,19 +19,27 @@ const LINKEDIN_OAUTH_BASE = 'https://www.linkedin.com/oauth/v2'
 export class LinkedInClient implements SocialPlatformClient {
   platform = 'linkedin' as const
   private accessToken: string
+  private readonly fetchFn: typeof fetch
+  private readonly logger: SocialLogger
   private clientId?: string
   private clientSecret?: string
   private refreshTokenValue?: string
 
-  constructor(accessToken: string, config?: {
-    clientId?: string
-    clientSecret?: string
-    refreshToken?: string
-  }) {
+  constructor(
+    accessToken: string,
+    config?: {
+      clientId?: string
+      clientSecret?: string
+      refreshToken?: string
+    },
+    options?: ClientOptions
+  ) {
     this.accessToken = accessToken
     this.clientId = config?.clientId
     this.clientSecret = config?.clientSecret
     this.refreshTokenValue = config?.refreshToken
+    this.fetchFn = options?.fetchFn ?? fetch
+    this.logger = options?.logger ?? noopLogger
   }
 
   async post(params: PostParams): Promise<PlatformPostResponse> {
@@ -38,9 +49,7 @@ export class LinkedInClient implements SocialPlatformClient {
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
-          shareCommentary: {
-            text: params.content,
-          },
+          shareCommentary: { text: params.content },
           shareMediaCategory: 'NONE',
         },
       },
@@ -49,7 +58,7 @@ export class LinkedInClient implements SocialPlatformClient {
       },
     }
 
-    const response = await fetch(url, {
+    const response = await this.fetchFn(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
@@ -66,6 +75,14 @@ export class LinkedInClient implements SocialPlatformClient {
 
     const data = await response.json()
     const postId = data.id
+
+    auditLog({
+      action: 'post.create',
+      userId: params.userId,
+      platform: 'linkedin',
+      contentPreview: params.content,
+    })
+
     return {
       id: postId,
       url: `https://www.linkedin.com/feed/update/${postId}`,
@@ -73,34 +90,29 @@ export class LinkedInClient implements SocialPlatformClient {
   }
 
   async getPostInsights(postId: string): Promise<PlatformInsights> {
-    // Fetch likes count
-    const likesUrl = `${LINKEDIN_API_BASE}/socialActions/${encodeURIComponent(postId)}/likes`
-    const likesResponse = await fetch(likesUrl, {
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'X-Restli-Protocol-Version': '2.0.0',
-      },
-    })
-
-    let likes = 0
-    if (likesResponse.ok) {
-      const likesData = await likesResponse.json()
-      likes = likesData.paging?.total ?? 0
+    const headers = {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'X-Restli-Protocol-Version': '2.0.0',
     }
 
-    // Fetch comments count
+    const likesUrl = `${LINKEDIN_API_BASE}/socialActions/${encodeURIComponent(postId)}/likes`
     const commentsUrl = `${LINKEDIN_API_BASE}/socialActions/${encodeURIComponent(postId)}/comments`
-    const commentsResponse = await fetch(commentsUrl, {
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'X-Restli-Protocol-Version': '2.0.0',
-      },
-    })
+
+    const [likesRes, commentsRes] = await Promise.all([
+      this.fetchFn(likesUrl, { headers }),
+      this.fetchFn(commentsUrl, { headers }),
+    ])
+
+    let likes = 0
+    if (likesRes.ok) {
+      const data = await likesRes.json()
+      likes = data.paging?.total ?? 0
+    }
 
     let comments = 0
-    if (commentsResponse.ok) {
-      const commentsData = await commentsResponse.json()
-      comments = commentsData.paging?.total ?? 0
+    if (commentsRes.ok) {
+      const data = await commentsRes.json()
+      comments = data.paging?.total ?? 0
     }
 
     return {
@@ -115,7 +127,7 @@ export class LinkedInClient implements SocialPlatformClient {
 
   async getUserProfile(userId: string): Promise<PlatformProfile> {
     const url = `${LINKEDIN_API_BASE}/me?projection=(id,firstName,lastName)`
-    const response = await fetch(url, {
+    const response = await this.fetchFn(url, {
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
         'X-Restli-Protocol-Version': '2.0.0',
@@ -149,11 +161,9 @@ export class LinkedInClient implements SocialPlatformClient {
       client_secret: this.clientSecret,
     })
 
-    const response = await fetch(url, {
+    const response = await this.fetchFn(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     })
 
@@ -163,6 +173,19 @@ export class LinkedInClient implements SocialPlatformClient {
     }
 
     const data = await response.json()
+
+    // Update internal state with refreshed tokens
+    this.accessToken = data.access_token
+    if (data.refresh_token) {
+      this.refreshTokenValue = data.refresh_token
+    }
+
+    auditLog({
+      action: 'token.refresh',
+      userId: 'system',
+      platform: 'linkedin',
+    })
+
     return {
       accessToken: data.access_token,
       expiresIn: data.expires_in,

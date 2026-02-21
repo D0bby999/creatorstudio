@@ -19,9 +19,11 @@ export {
 // Pre-configured platform rate limit configs
 // capacity = max requests per window, refillRate = tokens per ms
 export const PLATFORM_RATE_LIMITS: Record<string, { capacity: number; refillRate: number }> = {
-  instagram: { capacity: 200, refillRate: 200 / 3600000 },   // 200/hr
-  facebook:  { capacity: 200, refillRate: 200 / 3600000 },   // 200/hr
-  threads:   { capacity: 200, refillRate: 200 / 3600000 },   // 200/hr
-  tiktok:    { capacity: 600, refillRate: 600 / 86400000 },   // 600/day
-  bluesky:   { capacity: 3000, refillRate: 3000 / 300000 },   // 3000/5min
+  instagram: { capacity: 200, refillRate: 200 / 3600000 },     // 200/hr
+  facebook:  { capacity: 200, refillRate: 200 / 3600000 },     // 200/hr
+  threads:   { capacity: 200, refillRate: 200 / 3600000 },     // 200/hr
+  tiktok:    { capacity: 600, refillRate: 600 / 86400000 },    // 600/day
+  bluesky:   { capacity: 3000, refillRate: 3000 / 300000 },    // 3000/5min
+  twitter:   { capacity: 300, refillRate: 300 / 10800000 },    // 300 tweets/3hr
+  linkedin:  { capacity: 100, refillRate: 100 / 86400000 },    // 100/day
 }

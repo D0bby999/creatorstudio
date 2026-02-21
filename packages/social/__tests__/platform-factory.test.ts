@@ -12,14 +12,22 @@ describe('platform-factory', () => {
       expect(client.platform).toBe('instagram')
     })
 
-    it('returns TwitterClient for twitter platform', () => {
-      const client = getPlatformClient('twitter', 'test-token')
+    it('returns TwitterClient for twitter platform with ClientOptions', () => {
+      const client = getPlatformClient('twitter', 'test-token', {
+        clientKey: 'test-client-key',
+        clientSecret: 'test-client-secret',
+        refreshToken: 'test-refresh-token',
+      })
       expect(client).toBeInstanceOf(TwitterClient)
       expect(client.platform).toBe('twitter')
     })
 
-    it('returns LinkedInClient for linkedin platform', () => {
-      const client = getPlatformClient('linkedin', 'test-token')
+    it('returns LinkedInClient for linkedin platform with ClientOptions', () => {
+      const client = getPlatformClient('linkedin', 'test-token', {
+        clientKey: 'test-linkedin-key',
+        clientSecret: 'test-linkedin-secret',
+        refreshToken: 'test-linkedin-refresh',
+      })
       expect(client).toBeInstanceOf(LinkedInClient)
       expect(client.platform).toBe('linkedin')
     })

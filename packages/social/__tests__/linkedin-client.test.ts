@@ -3,10 +3,12 @@ import { LinkedInClient } from '../src/lib/linkedin-client'
 
 describe('linkedin-client', () => {
   let client: LinkedInClient
+  let mockFetch: ReturnType<typeof vi.fn>
   const mockToken = 'test-linkedin-token'
 
   beforeEach(() => {
-    client = new LinkedInClient(mockToken)
+    mockFetch = vi.fn()
+    client = new LinkedInClient(mockToken, undefined, { fetchFn: mockFetch })
     vi.restoreAllMocks()
   })
 
@@ -16,7 +18,7 @@ describe('linkedin-client', () => {
         id: 'urn:li:share:1234567890',
       }
 
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
       })
@@ -27,7 +29,7 @@ describe('linkedin-client', () => {
         userId: 'user123',
       })
 
-      expect(fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         'https://api.linkedin.com/v2/ugcPosts',
         expect.objectContaining({
           method: 'POST',
@@ -44,7 +46,7 @@ describe('linkedin-client', () => {
     })
 
     it('throws error on API failure', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: false,
         json: async () => ({ error: 'Invalid request' }),
       })
@@ -61,8 +63,7 @@ describe('linkedin-client', () => {
 
   describe('getPostInsights', () => {
     it('parses likes and comments correctly', async () => {
-      global.fetch = vi
-        .fn()
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ paging: { total: 100 } }),
@@ -83,8 +84,7 @@ describe('linkedin-client', () => {
     })
 
     it('handles missing metrics gracefully', async () => {
-      global.fetch = vi
-        .fn()
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({}),
@@ -101,8 +101,7 @@ describe('linkedin-client', () => {
     })
 
     it('handles API errors gracefully', async () => {
-      global.fetch = vi
-        .fn()
+      mockFetch
         .mockResolvedValueOnce({
           ok: false,
           status: 403,
@@ -127,7 +126,7 @@ describe('linkedin-client', () => {
         lastName: { localized: { en_US: 'Doe' } },
       }
 
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
       })
@@ -146,7 +145,7 @@ describe('linkedin-client', () => {
         lastName: {},
       }
 
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
       })
@@ -158,7 +157,7 @@ describe('linkedin-client', () => {
     })
 
     it('throws error on API failure', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 401,
       })
@@ -177,18 +176,23 @@ describe('linkedin-client', () => {
     })
 
     it('refreshes token successfully with credentials', async () => {
-      const clientWithCreds = new LinkedInClient(mockToken, {
-        clientId: 'test-client-id',
-        clientSecret: 'test-client-secret',
-        refreshToken: 'test-refresh-token',
-      })
+      const mockRefreshFetch = vi.fn()
+      const clientWithCreds = new LinkedInClient(
+        mockToken,
+        {
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret',
+          refreshToken: 'test-refresh-token',
+        },
+        { fetchFn: mockRefreshFetch }
+      )
 
       const mockResponse = {
         access_token: 'new-access-token',
         expires_in: 5184000,
       }
 
-      global.fetch = vi.fn().mockResolvedValue({
+      mockRefreshFetch.mockResolvedValue({
         ok: true,
         json: async () => mockResponse,
       })
@@ -198,7 +202,7 @@ describe('linkedin-client', () => {
       expect(result.accessToken).toBe('new-access-token')
       expect(result.expiresIn).toBe(5184000)
 
-      expect(fetch).toHaveBeenCalledWith(
+      expect(mockRefreshFetch).toHaveBeenCalledWith(
         'https://www.linkedin.com/oauth/v2/accessToken',
         expect.objectContaining({
           method: 'POST',
@@ -210,13 +214,18 @@ describe('linkedin-client', () => {
     })
 
     it('throws error on OAuth failure', async () => {
-      const clientWithCreds = new LinkedInClient(mockToken, {
-        clientId: 'test-client-id',
-        clientSecret: 'test-client-secret',
-        refreshToken: 'invalid-refresh-token',
-      })
+      const mockFailFetch = vi.fn()
+      const clientWithCreds = new LinkedInClient(
+        mockToken,
+        {
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret',
+          refreshToken: 'invalid-refresh-token',
+        },
+        { fetchFn: mockFailFetch }
+      )
 
-      global.fetch = vi.fn().mockResolvedValue({
+      mockFailFetch.mockResolvedValue({
         ok: false,
         json: async () => ({ error: 'invalid_grant' }),
       })

@@ -103,19 +103,21 @@ model Project {
 }
 
 model SocialAccount {
-  id             String       @id @default(cuid())
-  platform       String       // instagram | facebook | threads | tiktok | bluesky | twitter | linkedin
-  platformUserId String
-  username       String
-  accessToken    String
-  refreshToken   String?
-  expiresAt      DateTime?
-  metadata       Json?        // Platform-specific data (pageId, pageAccessToken, openId, etc.)
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posts          SocialPost[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id               String       @id @default(cuid())
+  platform         String       // instagram | facebook | threads | tiktok | bluesky | twitter | linkedin
+  platformUserId   String
+  username         String
+  accessToken      String
+  refreshToken     String?
+  expiresAt        DateTime?
+  metadata         Json?        // Platform-specific data (pageId, pageAccessToken, openId, etc.)
+  tokenRefreshedAt DateTime?
+  scopesGranted    String[]     @default([])
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts            SocialPost[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@unique([userId, platform, platformUserId])
   @@index([userId])
@@ -123,23 +125,31 @@ model SocialAccount {
 }
 
 model SocialPost {
-  id             String          @id @default(cuid())
-  content        String
-  mediaUrls      String[]
-  platform       String          // instagram
-  scheduledAt    DateTime?
-  publishedAt    DateTime?
-  status         String          // draft | scheduled | publishing | published | failed
-  platformPostId String?
+  id              String          @id @default(cuid())
+  content         String
+  mediaUrls       String[]
+  platform        String          // instagram | facebook | threads | tiktok | bluesky | twitter | linkedin
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  status          String          // draft | scheduled | publishing | published | failed
+  platformPostId  String?
+  parentPostId    String?
+  parentPost      SocialPost?     @relation("PostThread", fields: [parentPostId], references: [id])
+  childPosts      SocialPost[]    @relation("PostThread")
+  postGroupId     String?
+  failureReason   String?
+  retryCount      Int             @default(0)
   socialAccountId String
-  socialAccount  SocialAccount   @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
-  analytics      PostAnalytics?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  socialAccount   SocialAccount   @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  analytics       PostAnalytics?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([socialAccountId])
   @@index([status])
   @@index([scheduledAt])
+  @@index([parentPostId])
+  @@index([postGroupId])
   @@map("social_post")
 }
 
@@ -154,6 +164,7 @@ model PostAnalytics {
   shares         Int        @default(0)
   saves          Int        @default(0)
   engagementRate Float      @default(0)
+  snapshots      Json[]     @default([])
   fetchedAt      DateTime   @default(now())
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

@@ -5,6 +5,7 @@ export { socialPostPublisher } from './functions/social-post-publisher'
 export { webhookDelivery } from './functions/webhook-delivery'
 export { crawlJobExecutor } from './functions/crawl-job-executor'
 export { videoExportTrigger } from './functions/video-export-trigger'
+export { tokenRefreshCron } from './functions/token-refresh-cron'
 
 /**
  * All registered Inngest functions
@@ -15,4 +16,5 @@ export const functions = [
   webhookDelivery,
   crawlJobExecutor,
   videoExportTrigger,
+  tokenRefreshCron,
 ]

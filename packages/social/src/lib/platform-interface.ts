@@ -38,6 +38,7 @@ export interface TokenRefreshResult {
 export interface SocialPlatformClient {
   platform: SocialPlatform
   post(params: PostParams): Promise<PlatformPostResponse>
+  postThread?(posts: PostParams[]): Promise<PlatformPostResponse[]>
   getPostInsights(postId: string): Promise<PlatformInsights>
   getUserProfile(userId: string): Promise<PlatformProfile>
   refreshToken(): Promise<TokenRefreshResult>

@@ -86,9 +86,22 @@ export function getPlatformClient(
     case 'instagram':
       return new InstagramClient(accessToken, clientOpts)
     case 'twitter':
-      return new TwitterClient(accessToken)
+      return new TwitterClient(accessToken, {
+        ...clientOpts,
+        clientId: additionalParams?.clientKey,
+        clientSecret: additionalParams?.clientSecret,
+        refreshToken: additionalParams?.refreshToken,
+      })
     case 'linkedin':
-      return new LinkedInClient(accessToken)
+      return new LinkedInClient(
+        accessToken,
+        {
+          clientId: additionalParams?.appId,
+          clientSecret: additionalParams?.appSecret,
+          refreshToken: additionalParams?.refreshToken,
+        },
+        clientOpts
+      )
     case 'bluesky':
       if (!additionalParams?.handle || !additionalParams?.appPassword) {
         throw new Error('Bluesky requires handle and appPassword')
