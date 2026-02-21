@@ -343,6 +343,10 @@ creator-studio/
 - **CaptchaDetector** → Detects CAPTCHA challenges
 - **CloudflareDetector** → Identifies Cloudflare protection
 - **SessionPool** → Multi-session management for bypassing blocks
+- **FingerprintPool** → Browser fingerprinting (HTTP/2 + TLS mimicking via got-scraping, Apify-grade)
+- **ErrorSnapshotter** → Screenshot + HTML capture to R2 for error investigation
+- **ErrorTracker** → Signature-based error grouping with placeholder normalization
+- **StatePersister** → Redis-backed state serialization on SIGTERM/SIGINT (crash recovery)
 
 **Discovery Features:**
 - **SitemapParser** → XML and index sitemaps
@@ -383,7 +387,9 @@ creator-studio/
 - **Status Monitor** → Job queue and resource metrics
 - **Export Manager** → Download results in multiple formats
 
-**Facebook Page Scraper (`src/scrapers/facebook/`):**
+**Social Media Scrapers (Production Upgrade):**
+
+*Facebook Page Scraper (`src/scrapers/facebook/`):*
 - **Package export:** `@creator-studio/crawler/scrapers/facebook`
 - **Strategies:** mbasic (primary, no auth), graphql (experimental, needs cookies), auto (smart fallback)
 - **Source files (10):** `facebook-types.ts`, `facebook-url-utils.ts`, `facebook-parse-utils.ts`, `facebook-post-parser.ts`, `facebook-mbasic-scraper.ts`, `facebook-graphql-token-extractor.ts`, `facebook-graphql-scraper.ts`, `facebook-scraper-factory.ts`, `index.ts`
@@ -391,26 +397,58 @@ creator-studio/
 - **Integrations:** UserAgentPool + stealth headers, rate-limiter, retry-handler
 - **Tests:** 45 unit + integration tests with HTML fixtures in `__fixtures__/`
 
+*Instagram Scraper (`src/scrapers/instagram/`):*
+- **Strategies:** Mobile web + GraphQL API (auto-detection)
+- **Features:** Handle extraction, profile info, post content, metadata
+- **Security:** SSRF validation on URL entry points
+
+*Twitter/X Scraper (`src/scrapers/twitter/`):*
+- **Strategies:** Syndication feed + guest API (fallback)
+- **Features:** Tweet extraction, engagement metrics, thread reconstruction
+
+*TikTok Scraper (`src/scrapers/tiktok/`):*
+- **Strategies:** Web scraping + oEmbed API (fallback)
+- **Features:** Video metadata, user profiles, trending content
+
+*YouTube Scraper (`src/scrapers/youtube/`):*
+- **Strategies:** Innertube API + Data API v3 (fallback)
+- **Features:** Video metadata, channel info, transcript support
+
+*Social Handle Extractor (`src/scrapers/social-handle-extractor.ts`):*
+- **Platforms:** Instagram, Twitter, Facebook, YouTube, TikTok, LinkedIn, Pinterest, Discord
+- **Method:** Regex-based handle detection (8 patterns)
+- **Usage:** Extract platform handles from text/URLs
+
+**Dashboard Components:**
+- Generic SocialScraperPanel for unified scraper management
+- Platform-specific cards for Instagram, Twitter, TikTok, YouTube
+- Result viewer with extracted metadata display
+
 **Key Files:**
-- `src/engine/` → Crawler engines (cheerio, browser, smart)
+- `src/engine/` → Crawler engines (cheerio, browser, smart) with enqueueLinks strategies
 - `src/queue/` → PersistentRequestQueue implementation
-- `src/pool/` → AutoscaledPool and ResourceMonitor
+- `src/pool/` → AutoscaledPool, ResourceMonitor, Snapshotter (lag monitoring)
 - `src/extractors/` → Data extraction pipelines
-- `src/stealth/` → Detection bypass modules
-- `src/discovery/` → URL discovery and robots.txt parsing
+- `src/stealth/` → Detection bypass modules, FingerprintPool, ErrorSnapshotter, StatePersister, ErrorTracker
+- `src/discovery/` → URL discovery, robots.txt parsing with minimatch
 - `src/jobs/` → Job management and scheduling
 - `src/export/` → Export formatters
 - `src/dataset/` → Dataset management and versioning
-- `src/scrapers/facebook/` → Facebook Page scraper module
-- `src/components/` → Dashboard UI components (24+ including Facebook)
+- `src/scrapers/` → Facebook, Instagram, Twitter, TikTok, YouTube scrapers + social-handle-extractor
+- `src/components/` → Dashboard UI components (30+ including social scrapers)
 - `src/*.test.ts` → 145+ comprehensive tests
 
-**Dependencies:**
+**Dependencies (Production Upgrade):**
 - `cheerio` → HTML parsing
 - `puppeteer-core` → Headless Chrome automation
 - `axios` → HTTP client with retry
 - `redis` → Queue persistence (optional)
 - `zod` → Config validation
+- `fingerprint-generator` → Browser fingerprinting profiles
+- `fingerprint-injector` → HTTP/2 + TLS header injection (Apify-grade)
+- `got-scraping` → Stealth HTTP client with FP support
+- `minimatch` → Glob pattern matching for robots.txt
+- `youtubei.js` → YouTube Innertube API client
 
 ### `@creator-studio/social`
 **Path:** `packages/social`

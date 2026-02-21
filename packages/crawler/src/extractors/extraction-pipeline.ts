@@ -5,6 +5,9 @@ import { extractSchemaOrg } from './schema-org-extractor'
 import { extractTables } from './table-extractor'
 import { extractByCssSelector } from './css-selector-extractor'
 import { extractByXPath } from './xpath-extractor'
+import { SocialHandleExtractor } from './social-handle-extractor'
+
+const socialExtractor = new SocialHandleExtractor()
 
 /**
  * Runs multiple extractors based on configuration
@@ -59,10 +62,19 @@ export function runExtractionPipeline(html: string, config: ExtractionConfig): E
  * @returns Complete extracted data with all extractors enabled
  */
 export function extractAll(html: string): ExtractedData {
-  return runExtractionPipeline(html, {
+  const result = runExtractionPipeline(html, {
     jsonLd: true,
     openGraph: true,
     schemaOrg: true,
     tables: true,
   })
+
+  // Always extract social handles
+  try {
+    result.social = socialExtractor.extract(html)
+  } catch {
+    // Non-blocking
+  }
+
+  return result
 }

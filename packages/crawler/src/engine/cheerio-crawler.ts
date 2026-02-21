@@ -1,9 +1,12 @@
 import { CrawlerEngine } from './crawler-engine.js'
 import { scrapeUrl } from '../lib/url-scraper.js'
+import { HttpClient } from '../lib/http-client.js'
 import type { CrawlRequest, CrawlResult, CrawlerEngineConfig } from '../types/crawler-types.js'
 
+const httpClient = new HttpClient()
+
 /**
- * Cheerio-based crawler for static HTML content
+ * Cheerio-based crawler with fingerprint-aware HTTP/2 requests
  * Fast and lightweight, ideal for server-rendered pages
  */
 export class CheerioCrawler extends CrawlerEngine {
@@ -11,63 +14,55 @@ export class CheerioCrawler extends CrawlerEngine {
     super(config)
   }
 
-  /**
-   * Handle request using Cheerio for HTML parsing
-   * @param request - Crawl request to process
-   * @returns Crawl result with scraped content
-   */
   async handleRequest(request: CrawlRequest): Promise<CrawlResult> {
-    // Extract session data from request if available
-    const session = {
-      cookies: request.headers?.['Cookie'],
-      userAgent: request.headers?.['User-Agent'],
+    const session = this.sessionPool.getSession(new URL(request.url).hostname)
+    const fpManager = this.sessionPool.getFingerprintManager()
+    const fingerprint = session.fingerprintId
+      ? fpManager.get(session.fingerprintId)
+      : undefined
+
+    const requestHeaders: Record<string, string> = {
+      ...(fingerprint?.headers ?? {}),
+      ...(request.headers ?? {}),
     }
 
-    // Scrape URL with timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      this.config.requestTimeoutMs
-    )
-
     try {
-      // Fetch the page
-      const response = await fetch(request.url, {
-        method: request.method ?? 'GET',
-        headers: request.headers ?? {},
-        signal: controller.signal,
+      const response = await httpClient.get(request.url, {
+        headers: requestHeaders,
+        timeout: this.config.requestTimeoutMs,
       })
 
-      clearTimeout(timeoutId)
+      // Anti-bot detection: retire session on 403/429
+      if (response.statusCode === 403 || response.statusCode === 429) {
+        this.sessionPool.retire(session.id)
+        throw new Error(`Anti-bot detected: HTTP ${response.statusCode}`)
+      }
 
-      // Get response headers
-      const responseHeaders: Record<string, string> = {}
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value
-      })
+      const scrapedContent = await scrapeUrl(
+        request.url,
+        { cookies: request.headers?.['Cookie'], userAgent: fingerprint?.userAgent },
+        fingerprint?.headers
+      )
 
-      const contentType = response.headers.get('content-type') ?? 'text/html'
-      const body = await response.text()
-
-      // Scrape content using existing scrapeUrl logic
-      const scrapedContent = await scrapeUrl(request.url, session)
+      this.sessionPool.markGood(session.id)
 
       return {
         url: request.url,
-        statusCode: response.status,
-        body,
-        headers: responseHeaders,
-        contentType,
+        statusCode: response.statusCode,
+        body: response.body,
+        headers: response.headers,
+        contentType: response.headers['content-type'] ?? 'text/html',
         scrapedContent,
         request,
       }
     } catch (error) {
-      clearTimeout(timeoutId)
+      this.sessionPool.markBad(session.id)
 
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Request timeout: ${request.url} took longer than ${this.config.requestTimeoutMs}ms`)
+        throw new Error(
+          `Request timeout: ${request.url} took longer than ${this.config.requestTimeoutMs}ms`
+        )
       }
-
       throw error
     }
   }

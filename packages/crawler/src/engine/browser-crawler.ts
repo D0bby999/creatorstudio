@@ -3,7 +3,7 @@ import { scrapeWithBrowser } from '../lib/browserless-scraper.js'
 import type { CrawlRequest, CrawlResult, CrawlerEngineConfig } from '../types/crawler-types.js'
 
 /**
- * Browser-based crawler using Browserless.io and Puppeteer
+ * Browser-based crawler with fingerprint injection via CDP
  * Handles JavaScript-heavy sites requiring full browser rendering
  */
 export class BrowserCrawler extends CrawlerEngine {
@@ -11,32 +11,37 @@ export class BrowserCrawler extends CrawlerEngine {
     super(config)
   }
 
-  /**
-   * Handle request using headless browser
-   * @param request - Crawl request to process
-   * @returns Crawl result with scraped content
-   */
   async handleRequest(request: CrawlRequest): Promise<CrawlResult> {
+    const session = this.sessionPool.getSession(new URL(request.url).hostname)
+
     try {
-      // Scrape using browserless with timeout config
       const scrapedContent = await scrapeWithBrowser(request.url, {
         timeout: this.config.requestTimeoutMs,
+        fingerprintId: session.fingerprintId,
+        fingerprintManager: this.sessionPool.getFingerprintManager(),
       })
 
-      // Browser scraping doesn't expose raw response data
-      // Return minimal valid CrawlResult structure
+      this.sessionPool.markGood(session.id)
+
       return {
         url: request.url,
-        statusCode: 200, // Assume success if no error thrown
-        body: '', // Body not available in browser mode
+        statusCode: 200,
+        body: '',
         headers: {},
         contentType: 'text/html',
         scrapedContent,
         request,
       }
     } catch (error) {
-      // Re-throw with context
+      this.sessionPool.markBad(session.id)
+
       const message = error instanceof Error ? error.message : String(error)
+
+      // Retire session on anti-bot detection
+      if (message.includes('403') || message.includes('429')) {
+        this.sessionPool.retire(session.id)
+      }
+
       throw new Error(`Browser crawl failed for ${request.url}: ${message}`)
     }
   }

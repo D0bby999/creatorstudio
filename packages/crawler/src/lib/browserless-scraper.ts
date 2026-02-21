@@ -2,10 +2,14 @@ import puppeteer from 'puppeteer-core'
 import type { ScrapedContent } from '../types/crawler-types'
 import { resolveAndValidateUrl } from '@creator-studio/utils/ssrf-validator'
 
+import type { FingerprintManager } from '../stealth/fingerprint-manager.js'
+
 interface BrowserlessConfig {
   apiUrl?: string
   apiToken?: string
   timeout?: number
+  fingerprintId?: string
+  fingerprintManager?: FingerprintManager
 }
 
 /**
@@ -43,6 +47,15 @@ export async function scrapeWithBrowser(
     })
 
     page = await browser.newPage()
+
+    // Apply fingerprint if available
+    if (config.fingerprintId && config.fingerprintManager) {
+      try {
+        await config.fingerprintManager.applyToPage(page, config.fingerprintId)
+      } catch {
+        // Fallback: continue without fingerprint injection
+      }
+    }
 
     await page.goto(normalizedUrl, {
       waitUntil: 'networkidle0',

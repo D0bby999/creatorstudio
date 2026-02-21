@@ -7,20 +7,28 @@ import { randomUUID } from 'node:crypto'
 import type { CrawlSession, SessionPoolConfig } from '../types/crawler-types.js'
 import { UserAgentPool } from './user-agent-pool.js'
 import { ProxyRotator } from './proxy-rotator.js'
+import { FingerprintManager } from './fingerprint-manager.js'
+import type { FingerprintOptions } from './fingerprint-manager.js'
 
 export class SessionPool {
   private sessions = new Map<string, CrawlSession>()
   private userAgentPool = new UserAgentPool()
   private proxyRotator = new ProxyRotator()
+  private fingerprintManager: FingerprintManager
   private config: Required<SessionPoolConfig>
 
-  constructor(config?: SessionPoolConfig) {
+  constructor(config?: SessionPoolConfig, fingerprintOptions?: FingerprintOptions) {
     this.config = {
       maxSessions: config?.maxSessions ?? 10,
       maxErrorScore: config?.maxErrorScore ?? 3,
       maxUsageCount: config?.maxUsageCount ?? 50,
       sessionRotationEnabled: config?.sessionRotationEnabled ?? true,
     }
+    this.fingerprintManager = new FingerprintManager(fingerprintOptions)
+  }
+
+  getFingerprintManager(): FingerprintManager {
+    return this.fingerprintManager
   }
 
   /**
@@ -69,30 +77,40 @@ export class SessionPool {
 
       // Auto-retire if error score exceeds threshold
       if (session.errorScore >= this.config.maxErrorScore) {
-        this.sessions.delete(sessionId)
+        this.retire(sessionId)
       }
     }
   }
 
   /**
-   * Create new session
+   * Retire session by ID — invalidates fingerprint and removes session
    */
+  retire(sessionId: string): void {
+    const session = this.sessions.get(sessionId)
+    if (session) {
+      session.isUsable = false
+      if (session.fingerprintId) {
+        this.fingerprintManager.invalidate(session.fingerprintId)
+      }
+      this.sessions.delete(sessionId)
+    }
+  }
+
   private createSession(hostname?: string): CrawlSession {
     const id = randomUUID()
-    const userAgent = hostname
-      ? this.userAgentPool.getAgentForDomain(hostname)
-      : this.userAgentPool.getAgent()
+    const fingerprint = this.fingerprintManager.generate()
     const proxy = hostname ? this.proxyRotator.getProxy(hostname) : null
 
     const session: CrawlSession = {
       id,
       cookies: {},
-      userAgent,
+      userAgent: fingerprint.userAgent,
       proxy: proxy ?? undefined,
       errorScore: 0,
       usageCount: 0,
       createdAt: Date.now(),
       isUsable: true,
+      fingerprintId: fingerprint.id,
     }
 
     this.sessions.set(id, session)
@@ -129,7 +147,7 @@ export class SessionPool {
     }
 
     if (worstSession) {
-      this.sessions.delete(worstSession.id)
+      this.retire(worstSession.id)
     }
   }
 

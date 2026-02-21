@@ -1,4 +1,5 @@
 import { ResourceMonitor } from './resource-monitor.js'
+import { Snapshotter } from './snapshotter.js'
 
 /**
  * Configuration for AutoscaledPool
@@ -22,6 +23,7 @@ export interface AutoscaledPoolConfig {
 export class AutoscaledPool {
   private config: Required<AutoscaledPoolConfig>
   private resourceMonitor: ResourceMonitor
+  private snapshotter: Snapshotter
   private _desiredConcurrency = 1
   private _isRunning = false
   private isPaused = false
@@ -42,6 +44,7 @@ export class AutoscaledPool {
     }
 
     this.resourceMonitor = new ResourceMonitor()
+    this.snapshotter = new Snapshotter()
     this._desiredConcurrency = this.config.minConcurrency
   }
 
@@ -55,6 +58,7 @@ export class AutoscaledPool {
 
     this._isRunning = true
     this.resourceMonitor.start()
+    this.snapshotter.start()
 
     // Start scaling interval
     this.scaleIntervalId = setInterval(() => {
@@ -88,6 +92,7 @@ export class AutoscaledPool {
 
     // Cleanup
     this.resourceMonitor.stop()
+    this.snapshotter.stop()
     if (this.scaleIntervalId) {
       clearInterval(this.scaleIntervalId)
       this.scaleIntervalId = null
@@ -158,14 +163,14 @@ export class AutoscaledPool {
    * Adjust desired concurrency based on resource monitor
    */
   private adjustConcurrency(): void {
-    const isOverloaded = this.resourceMonitor.isOverloaded()
+    const memoryOverloaded = this.resourceMonitor.isOverloaded()
+    const eventLoopOverloaded = this.snapshotter.isEventLoopOverloaded()
 
-    if (isOverloaded) {
-      // Scale down
+    if (memoryOverloaded || eventLoopOverloaded) {
       const decrease = Math.ceil(this._desiredConcurrency * this.config.scaleDownStepRatio)
       this._desiredConcurrency = Math.max(this.config.minConcurrency, this._desiredConcurrency - decrease)
-    } else {
-      // Scale up
+    } else if (!this.snapshotter.isEventLoopOverloaded(5000, 0.1)) {
+      // Scale up only when event loop is clearly under-utilized
       const increase = Math.ceil(this._desiredConcurrency * this.config.scaleUpStepRatio)
       this._desiredConcurrency = Math.min(this.config.maxConcurrency, this._desiredConcurrency + increase)
     }

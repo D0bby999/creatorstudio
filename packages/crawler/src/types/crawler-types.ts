@@ -178,6 +178,19 @@ export interface ExtractionConfig {
   xpathExpressions?: XPathConfig[]
 }
 
+export interface SocialHandlesData {
+  instagram: string[]
+  twitter: string[]
+  facebook: string[]
+  youtube: string[]
+  tiktok: string[]
+  linkedin: string[]
+  pinterest: string[]
+  discord: string[]
+  emails: { certain: string[]; uncertain: string[] }
+  phones: { certain: string[]; uncertain: string[] }
+}
+
 export interface ExtractedData {
   jsonLd?: JsonLdData[]
   openGraph?: OpenGraphData
@@ -185,6 +198,7 @@ export interface ExtractedData {
   tables?: TableData[]
   cssSelectors?: Record<string, string | string[]>
   xpath?: Record<string, string | string[]>
+  social?: SocialHandlesData
 }
 
 // Stealth & Anti-Bot types
@@ -209,6 +223,7 @@ export interface CrawlSession {
   usageCount: number
   createdAt: number
   isUsable: boolean
+  fingerprintId?: string
 }
 
 export interface SessionPoolConfig {
