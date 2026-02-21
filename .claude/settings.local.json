@@ -55,7 +55,29 @@
       "Bash(pnpm --filter @creator-studio/web exec tsc:*)",
       "Bash(pnpm --filter @creator-studio/web exec react-router typegen:*)",
       "Bash(pnpm --filter @creator-studio/web exec vite build:*)",
-      "Bash(pnpm exec tsc:*)"
+      "Bash(pnpm exec tsc:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm -F @creator-studio/db exec prisma generate:*)",
+      "Bash(SKIP_ENV_VALIDATION=true pnpm exec tsc:*)",
+      "Bash(npx react-router typegen:*)",
+      "Bash(pnpm turbo build:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(repomix:*)",
+      "Bash(npm run build:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(pnpm --filter @creator-studio/crawler test -- --reporter=verbose src/scrapers/facebook/__tests__/)",
+      "Bash(pnpm --filter @creator-studio/crawler test -- src/scrapers/facebook/__tests__/)",
+      "Bash(do if [ -d \"$pkg/src\" ])",
+      "Bash(then echo \"=== $pkg ===\" find \"$pkg/src\" -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\))",
+      "Bash(pnpm exec vitest run:*)",
+      "Bash(npm info:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(git status:*)",
+      "Bash(pnpm run test)",
+      "Bash(git rm:*)",
+      "Bash(head:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(command -v:*)"
     ]
   }
 }
