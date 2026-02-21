@@ -709,38 +709,150 @@ await validateServerFetchUrl('https://example.com/api')
 
 ## AI Agent Layer (packages/ai)
 
-### Vercel AI SDK Integration
+### Multi-Provider AI Architecture (v0.14.0 - AI Mega-Upgrade)
 
 ```
-┌──────────────────────────────────┐
-│   AI Agent Service               │
-│   (OpenAI + Tools)               │
-└────────────┬─────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│   AI Agent Service (Multi-Provider + Advanced Features)          │
+│   (OpenAI → Anthropic → Google Fallback Chain)                   │
+└────────────┬─────────────────────────────────────────────────────┘
+             │
+             ├─── Model Registry & Resolver
+             │    ├─ Provider detection (env vars)
+             │    ├─ Fallback chain (OpenAI → Anthropic → Google)
+             │    ├─ Task-to-model mapping (20+ tasks)
+             │    └─ Per-task env overrides (AI_MODEL_*)
+             │
+             ├─── Content Repurposing Engine
+             │    ├─ Platform adaptation rules (7 platforms)
+             │    ├─ Multi-platform repurposer (parallel)
+             │    └─ Platform-specific formatting
+             │
+             ├─── Writing Assistant v2
+             │    ├─ Tone adjuster (formality/humor/detail sliders)
+             │    ├─ Caption variant generator (A/B/C variants)
+             │    └─ Content translator (11 languages)
+             │
+             ├─── AI Content Moderation
+             │    ├─ Content moderator (3 sensitivity levels)
+             │    ├─ Keyword blocklist (case-insensitive)
+             │    └─ Safety flags (violence, hate, NSFW, spam)
+             │
+             ├─── Sentiment Analytics
+             │    ├─ Batch sentiment analyzer (50/batch)
+             │    ├─ Competitor analyzer (SSRF-protected)
+             │    └─ Posting time predictor (data + static)
+             │
+             ├─── RAG Brand Knowledge
+             │    ├─ Cosine similarity (vector comparison)
+             │    ├─ Embedding generator (text-embedding-3-small)
+             │    ├─ Brand knowledge store (Redis + FIFO)
+             │    ├─ Brand context retriever (RAG)
+             │    └─ Optional brandContext in structured outputs
+             │
+             ├─── AI Video Generation
+             │    ├─ Video generator (LumaVideoProvider)
+             │    ├─ Thumbnail generator (platform-aware)
+             │    └─ Video script generator (Remotion)
+             │
+             ├─── Middleware Layer
+             │    ├─ AI Cache Middleware (Redis, sha256 keys, 1h TTL)
+             │    ├─ AI Logging Middleware (structured logs, no PII)
+             │    └─ Conditional middleware (cache for structured/prediction only)
              │
              ├─── Agents
-             │    ├─ Multi-step reasoning
-             │    ├─ Tool calling
-             │    └─ Structured output (Zod)
+             │    ├─ Multi-step reasoning with usage yield
+             │    ├─ Tool calling support
+             │    ├─ Structured output (generateObject + Zod)
+             │    └─ AbortSignal support for streaming
              │
              ├─── Session Management
-             │    ├─ Conversation persistence
+             │    ├─ Conversation persistence (Redis-ready)
              │    ├─ State tracking
              │    └─ Load/save sessions
              │
-             └─── Monitoring
-                  ├─ Token tracker (API usage)
-                  ├─ Cost calculation
-                  └─ Content templates
+             └─── Monitoring & Cost Tracking
+                  ├─ Enhanced token tracker (Redis-backed, per-call breakdown)
+                  ├─ MODEL_PRICING cost estimation
+                  ├─ Cost calculation per operation
+                  └─ Content templates library
 ```
 
-**Key Features:**
-- Structured outputs with Zod schema validation
-- Multi-step agent execution with reasoning
-- Conversation persistence to database
+**Multi-Provider Fallback Flow:**
+```
+AI Request → Model Resolver
+    ▼
+Check task type (streaming, structured, image, performance)
+    ▼
+Apply per-task env override if present
+    ▼
+Load model from registry
+    ├─ OpenAI API available? → Use OpenAI (primary)
+    ├─ Fallback: Anthropic API available? → Use Claude
+    └─ Fallback: Google API available? → Use Gemini (last resort)
+    ▼
+Apply middleware:
+    ├─ Logging middleware (always)
+    └─ Cache middleware (structured/prediction tasks only)
+    ▼
+Execute AI operation with AbortSignal
+    ▼
+Track token usage (Redis-backed, cost estimation)
+    ▼
+Return result + usage info
+```
+
+**Model Pricing & Task Mapping:**
+```
+Task Type        Default Model       Pricing (per 1M tokens)
+───────────────────────────────────────────────────────────
+streaming        gpt-4o-mini         $0.15 / $0.60
+structured       gpt-4o-mini         $0.15 / $0.60
+image            claude-3-5-sonnet   $3.00 / $15.00
+performance      gpt-4o              $5.00 / $15.00
+adapt            gpt-4o-mini         $0.15 / $0.60
+adjust-tone      gpt-4o-mini         $0.15 / $0.60
+variants         gpt-4o-mini         $0.15 / $0.60
+translate        gpt-4o-mini         $0.15 / $0.60
+moderate         gpt-4o-mini         $0.15 / $0.60
+sentiment        gpt-4o-mini         $0.15 / $0.60
+competitor       gpt-4o              $5.00 / $15.00
+posting-time     gpt-4o              $5.00 / $15.00
+video            gpt-4o              $5.00 / $15.00
+thumbnail        gpt-4o-mini         $0.15 / $0.60
+script           gpt-4o              $5.00 / $15.00
+```
+
+**Key Features (v0.14.0 - AI Mega-Upgrade):**
+- **Content Repurposing** → Multi-platform adaptation (7 platforms), parallel processing
+- **Writing Assistant v2** → Tone adjustment, A/B/C variants, 11-language translation
+- **AI Moderation** → 3 sensitivity levels, keyword blocklist, safety flags
+- **Sentiment Analytics** → Batch sentiment, competitor analysis, posting time prediction
+- **RAG Brand Knowledge** → Vector embeddings, Redis storage, cosine similarity retrieval
+- **AI Video Generation** → Luma video provider, platform thumbnails, Remotion scripts
+- Multi-provider support (OpenAI, Anthropic, Google) with automatic fallback
+- Model registry with provider detection from env vars
+- Task-to-model mapping with per-task env overrides (20+ tasks)
+- Redis-backed AI cache middleware (1h TTL, sha256 key hashing)
+- Structured logging middleware (model, tokens, latency — no PII)
+- Enhanced token tracking (per-call breakdown, cost estimation)
+- AbortSignal support for streaming cancellation
+- Structured outputs with generateObject + Zod schema validation
+- Multi-step agent execution with usage info yield
+- Conversation persistence to Redis (in-memory fallback)
 - 10+ content templates for common tasks
-- Token tracking for cost monitoring
-- In-memory session storage (swappable to Redis)
-- 31 test coverage for all operations
+- 194 test coverage (27/31 source files tested, 87%+ coverage)
+
+**Environment Variables:**
+- `OPENAI_API_KEY` → Required for OpenAI provider (embeddings + chat)
+- `ANTHROPIC_API_KEY` → Optional for Anthropic fallback
+- `GOOGLE_GENERATIVE_AI_API_KEY` → Optional for Google fallback
+- `AI_MODEL_DEFAULT` → Override default model (optional)
+- `AI_MODEL_STREAMING` → Override streaming model (optional)
+- `AI_MODEL_STRUCTURED` → Override structured output model (optional)
+- `AI_MODEL_IMAGE` → Override image generation model (optional)
+- `AI_MODEL_PERFORMANCE` → Override performance prediction model (optional)
+- `LUMA_API_KEY` → Optional for Luma video generation (phase 6)
 
 ## UI Layer (packages/ui)
 

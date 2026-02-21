@@ -508,27 +508,100 @@ creator-studio/
 - `./agents` → Agent implementations
 - `./tools` → Tool definitions
 - `./sessions` → Session management
+- `./lib/model-registry` → Multi-provider model registry
+- `./lib/model-resolver` → Task-to-model mapping
+- `./lib/content-repurposer` → Multi-platform content adapter
+- `./lib/tone-adjuster` → Tone adjustment (formality/humor/detail)
+- `./lib/caption-variants` → A/B/C variant generation
+- `./lib/content-translator` → 11-language translator
+- `./lib/content-moderator` → AI content moderation
+- `./lib/sentiment-analyzer` → Batch sentiment analysis
+- `./lib/competitor-analyzer` → Content pattern comparison
+- `./lib/posting-time-predictor` → Best posting time prediction
+- `./lib/brand-knowledge-store` → RAG brand knowledge (Redis)
+- `./lib/brand-context-retriever` → RAG retrieval + formatting
+- `./lib/video-generator` → AI video generation (Luma)
+- `./lib/thumbnail-generator` → Platform-aware thumbnails
+- `./lib/video-script-generator` → Remotion script generation
 
-**Enhanced Capabilities:**
-- **Structured Output** → Type-safe AI responses with Zod validation
-- **Multi-step Agent** → Sequential reasoning and planning
-- **Session Persistence** → Save/load agent conversation state
+**Enhanced Capabilities (v0.14.0 - AI Features Mega-Upgrade):**
+- **Content Repurposing** → Multi-platform adaptation (7 platforms, parallel processing)
+- **Writing Assistant v2** → Tone adjustment, variant generation, 11-language translation
+- **AI Moderation** → 3 sensitivity levels, keyword blocklist, safety flags
+- **Sentiment Analytics** → Batch sentiment, competitor analysis, posting time prediction
+- **RAG Brand Knowledge** → Vector embeddings, Redis storage, cosine similarity retrieval
+- **AI Video Generation** → Luma video provider, platform thumbnails, Remotion scripts
+- **Multi-Provider Support** → OpenAI + Anthropic + Google with automatic fallback
+- **Model Registry** → Provider detection, env-based config, fallback chain
+- **Model Resolver** → Task-to-model mapping (20+ tasks including new AI features)
+- **AI Cache Middleware** → Redis-backed, sha256 key hashing, 1h TTL, in-memory fallback
+- **AI Logging Middleware** → Structured logs (model, tokens, latency) — no PII
+- **Enhanced Token Tracking** → Redis-backed, per-call breakdown, MODEL_PRICING cost estimation
+- **AbortSignal Support** → Streaming cancellation via request.signal
+- **Structured Output** → Type-safe AI responses with Zod validation (generateObject)
+- **Multi-step Agent** → Sequential reasoning and planning with usage info yield
+- **Session Persistence** → Save/load agent conversation state (Redis-ready)
 - **Content Templates** → Prompt templates for common tasks
-- **Token Tracker** → Monitor API usage and costs
-- **31 Tests** → Agent execution, tool calls, session management
+- **194 Tests** → Comprehensive coverage (27/31 source files tested, 87%+)
 
-**Key Files:**
+**Key Files (AI Mega-Upgrade):**
+- `src/lib/platform-adaptation-rules.ts` → Shared platform config (7 platforms)
+- `src/lib/content-repurposer.ts` → Multi-platform content adapter
+- `src/lib/tone-adjuster.ts` → Formality/humor/detail sliders
+- `src/lib/caption-variants.ts` → A/B/C variant generation
+- `src/lib/content-translator.ts` → 11 languages, preserves hashtags/@mentions
+- `src/lib/content-moderator.ts` → Safety checks + blocklist
+- `src/lib/sentiment-analyzer.ts` → Batch sentiment (50/batch)
+- `src/lib/competitor-analyzer.ts` → Content pattern comparison (SSRF-protected)
+- `src/lib/posting-time-predictor.ts` → Data-driven + static best practices
+- `src/lib/cosine-similarity.ts` → Pure math vector comparison
+- `src/lib/embedding-generator.ts` → text-embedding-3-small wrapper
+- `src/lib/brand-knowledge-store.ts` → Redis CRUD + FIFO pruning
+- `src/lib/brand-context-retriever.ts` → RAG retrieval + prompt formatting
+- `src/lib/video-generator.ts` → VideoProvider + LumaVideoProvider
+- `src/lib/thumbnail-generator.ts` → Platform-aware dimensions
+- `src/lib/video-script-generator.ts` → Remotion script structure
+- `src/lib/model-registry.ts` → Multi-provider detection, fallback chain
+- `src/lib/model-resolver.ts` → Task-to-model mapping with env overrides (20+ tasks)
+- `src/lib/ai-cache-middleware.ts` → Redis-backed caching middleware
+- `src/lib/ai-logging-middleware.ts` → Structured logging middleware
+- `src/lib/ai-stream-handler.ts` → Enhanced streaming with AbortSignal
+- `src/lib/token-usage-tracker.ts` → Redis-backed token tracking + cost estimation
+- `src/lib/multi-step-agent.ts` → Multi-step agent with usage info
+- `src/lib/structured-output.ts` → Type-safe structured outputs (with optional brandContext)
+- `src/lib/hashtag-suggestions.ts` → Hashtag generation (with optional brandContext)
+- `src/lib/content-performance-predictor.ts` → Performance prediction (with optional brandContext)
+- `src/types/ai-types.ts` → Extended AiTask union (20+ tasks), BrandEntry/BrandEntryType
 - `src/agents/` → AI agent implementations
 - `src/tools/` → Tool function definitions
 - `src/session-manager.ts` → Conversation persistence
-- `src/token-tracker.ts` → Usage monitoring
 - `src/templates/` → Prompt templates
-- `src/*.test.ts` → 31 comprehensive tests
+- `__tests__/*.test.ts` → 194 comprehensive tests (24 test files)
 
 **Dependencies:**
-- `ai` + `@ai-sdk/openai` → Vercel AI SDK and OpenAI provider
+- `ai` → Vercel AI SDK core
+- `@ai-sdk/openai` → OpenAI provider (primary)
+- `@ai-sdk/anthropic@^3.0.46` → Anthropic provider (Claude models)
+- `@ai-sdk/google@^3.0.30` → Google provider (Gemini models)
 - `zod` → Schema validation for structured outputs
-- In-memory session storage (swappable to Redis)
+- `@creator-studio/redis` → Caching and token tracking
+- Redis-backed session storage (in-memory fallback)
+
+**Model Pricing (estimated):**
+- gpt-4o-mini: $0.15/$0.60 per 1M tokens (input/output)
+- gpt-4o: $5/$15 per 1M tokens
+- claude-3-5-sonnet: $3/$15 per 1M tokens
+- gemini-1.5-flash: $0.075/$0.30 per 1M tokens
+
+**Environment Variables:**
+- `OPENAI_API_KEY` → OpenAI API access (required)
+- `ANTHROPIC_API_KEY` → Anthropic API access (optional, fallback)
+- `GOOGLE_GENERATIVE_AI_API_KEY` → Google AI access (optional, fallback)
+- `AI_MODEL_DEFAULT` → Override default model (optional)
+- `AI_MODEL_STREAMING` → Override streaming model (optional)
+- `AI_MODEL_STRUCTURED` → Override structured output model (optional)
+- `AI_MODEL_IMAGE` → Override image generation model (optional)
+- `AI_MODEL_PERFORMANCE` → Override performance prediction model (optional)
 
 ### `@creator-studio/utils`
 **Path:** `packages/utils`
@@ -777,7 +850,7 @@ creator-studio/
 
 ## Testing Summary
 
-**Total Tests:** 400+ across 40+ test files
+**Total Tests:** 566+ across 62+ test files
 - DB: 34 tests
 - Auth: 17 tests
 - UI (base + composites): 41 tests (17 base + 24 composites)
@@ -785,11 +858,34 @@ creator-studio/
 - Video: 23 tests
 - Crawler: 102 tests (57 core + 45 Facebook scraper)
 - Social: 70+ tests (expanded for 7 platforms + OAuth)
-- AI: 31 tests
+- AI: 194 tests (v0.14.0 mega-upgrade — 27/31 files tested, 87%+)
 - SDK: 8+ tests (client generation, request validation)
 - Plugins: 12+ tests (manifest validation, sandbox, registry)
 - Redis: 18+ tests (cache operations, rate limiting, fallback)
 - Storage: 15+ tests (uploads, presigned URLs, fallback)
+
+**AI Package v0.14.0 Test Coverage (Mega-Upgrade):**
+- [x] Multi-provider model registry (OpenAI, Anthropic, Google)
+- [x] Model resolver with task-to-model mapping (20+ tasks)
+- [x] AI cache middleware (Redis-backed + in-memory fallback)
+- [x] AI logging middleware (structured logs)
+- [x] Enhanced token tracking (per-call breakdown + cost estimation)
+- [x] AbortSignal streaming cancellation
+- [x] Structured output with generateObject + Zod
+- [x] Multi-step agent with usage info yield
+- [x] Content repurposing (7 platforms)
+- [x] Tone adjuster (formality/humor/detail sliders)
+- [x] Caption variants (A/B/C generation)
+- [x] Content translator (11 languages)
+- [x] Content moderator (3 sensitivity levels)
+- [x] Sentiment analyzer (batch processing)
+- [x] Competitor analyzer (SSRF-protected)
+- [x] Posting time predictor (data-driven + static)
+- [x] RAG brand knowledge (embeddings + cosine similarity)
+- [x] Video generator (Luma integration)
+- [x] Thumbnail generator (platform-aware)
+- [x] Video script generator (Remotion structure)
+- [x] 194 tests passing, 27/31 files tested, 87%+ coverage
 
 **Phase 5b Test Coverage:**
 - [x] Facebook/Instagram/Threads clients (Meta API integration)
