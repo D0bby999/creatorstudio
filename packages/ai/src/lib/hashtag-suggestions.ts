@@ -4,7 +4,7 @@
  */
 
 import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { resolveModelForTask } from './model-resolver'
 
 interface PlatformRules {
   maxHashtags: number
@@ -41,16 +41,16 @@ const PLATFORM_RULES: Record<string, PlatformRules> = {
 export async function suggestHashtags(
   content: string,
   platform: string,
-  count?: number
+  count?: number,
+  brandContext?: string
 ): Promise<string[]> {
   const rules = PLATFORM_RULES[platform.toLowerCase()] || PLATFORM_RULES.instagram
   const targetCount = count || rules.recommended
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is not set')
-  }
+  // Provider availability is checked by model-registry at resolution time
 
-  const prompt = `Generate ${targetCount} hashtags for this ${platform} post.
+  const brandPrefix = brandContext ? `Brand context:\n${brandContext}\n\n` : ''
+  const prompt = `${brandPrefix}Generate ${targetCount} hashtags for this ${platform} post.
 
 Content: "${content}"
 
@@ -73,7 +73,7 @@ SocialMediaTips`
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: resolveModelForTask('hashtags'),
       prompt,
       temperature: 0.7,
     })

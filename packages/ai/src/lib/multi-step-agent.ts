@@ -1,11 +1,11 @@
 import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { resolveModelForTask } from './model-resolver'
 import { getAgentConfig } from './agent-config'
 import { searchWeb, analyzeTrends, suggestDesign } from './ai-tools'
 import type { AgentRole } from '../types/ai-types'
 
 export interface AgentStep {
-  type: 'text' | 'tool-call' | 'tool-result'
+  type: 'text' | 'tool-call' | 'tool-result' | 'usage'
   content: string
   toolName?: string
 }
@@ -26,7 +26,7 @@ export async function* runMultiStepAgent(params: {
   const tools = TOOL_MAP[params.role] ?? {}
 
   const result = await generateText({
-    model: openai('gpt-4o-mini'),
+    model: resolveModelForTask('chat'),
     system: config.systemPrompt,
     prompt: params.prompt,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
@@ -51,5 +51,10 @@ export async function* runMultiStepAgent(params: {
     for (const toolResult of toolResults) {
       yield { type: 'tool-result', content: JSON.stringify(toolResult.result), toolName: toolResult.toolName }
     }
+  }
+
+  // Yield usage info if available
+  if (result.usage) {
+    yield { type: 'usage', content: JSON.stringify(result.usage) }
   }
 }

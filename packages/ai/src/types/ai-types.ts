@@ -82,6 +82,35 @@ export interface TokenUsage {
   totalTokens: number
 }
 
+// Multi-provider types
+export type ProviderName = 'openai' | 'anthropic' | 'google'
+export type ModelAlias = 'fast' | 'smart' | 'creative'
+export type AiTask =
+  | 'chat' | 'structured' | 'hashtags' | 'prediction' | 'image-prompt'
+  | 'repurpose' | 'tone-adjust' | 'caption-variant' | 'translate'
+  | 'moderation' | 'sentiment' | 'competitor-analysis'
+  | 'embedding' | 'video-script'
+
+// Token tracking types
+export interface TokenUsageRecord {
+  sessionId: string
+  provider: ProviderName
+  model: string
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCostUsd: number
+  timestamp: number
+}
+
+// Performance prediction schema for structured output
+export const PerformancePredictionSchema = z.object({
+  score: z.number().min(0).max(100),
+  positiveFactors: z.array(z.string()),
+  negativeFactors: z.array(z.string()),
+  suggestions: z.array(z.string()),
+})
+
 // Image generation types
 export interface ImageGenerationOptions {
   model?: string
@@ -99,6 +128,18 @@ export interface PostingTime {
   day: string
   hour: number
   score: number
+}
+
+// Brand knowledge types (shared across RAG modules)
+export type BrandEntryType = 'guideline' | 'example' | 'voice' | 'audience'
+
+export interface BrandEntry {
+  id: string
+  userId: string
+  type: BrandEntryType
+  content: string
+  embedding: number[]
+  createdAt: number
 }
 
 // Performance prediction types

@@ -1,86 +1,47 @@
 /**
- * Content performance prediction using heuristic analysis
- * Provides engagement score and actionable suggestions
+ * Content performance prediction using AI structured output + heuristic fallback
  */
 
-import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
-
-interface PerformancePrediction {
-  score: number
-  factors: string[]
-  suggestions: string[]
-}
+import { generateObject } from 'ai'
+import { resolveModelForTask } from './model-resolver'
+import { PerformancePredictionSchema } from '../types/ai-types'
+import type { PerformancePrediction } from '../types/ai-types'
 
 /**
- * Predict content performance using AI analysis
- * Returns score (0-100), positive/negative factors, and improvement suggestions
+ * Predict content performance using AI structured output
+ * Falls back to heuristic analysis when AI is unavailable
  */
 export async function predictPerformance(
   content: string,
-  platform: string
+  platform: string,
+  brandContext?: string
 ): Promise<PerformancePrediction> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is not set')
-  }
-
-  const prompt = `Analyze this ${platform} post and predict its engagement performance.
+  try {
+    const { object } = await generateObject({
+      model: resolveModelForTask('prediction'),
+      schema: PerformancePredictionSchema,
+      prompt: `${brandContext ? `${brandContext}\n\n` : ''}Analyze this ${platform} post and predict its engagement performance.
 
 Content: "${content}"
 
-Evaluate these factors:
-1. Content length (optimal for platform)
-2. Hashtag usage and relevance
-3. Emoji presence (moderate is good)
-4. Question or engagement hook
-5. Call-to-action presence
-6. Visual appeal indicators
-7. Authenticity and tone
-
-Provide:
-1. Overall engagement score (0-100)
-2. List of positive factors (what works well)
-3. List of negative factors (what could improve)
-4. Actionable improvement suggestions
-
-Format your response as JSON:
-{
-  "score": 85,
-  "positiveFactors": ["Strong CTA", "Engaging question"],
-  "negativeFactors": ["Too many hashtags"],
-  "suggestions": ["Reduce hashtags to 5-7", "Add more personality"]
-}`
-
-  try {
-    const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
-      prompt,
+Evaluate: content length, hashtag usage, emoji presence, engagement hooks, CTA, visual appeal, tone.
+Provide a score 0-100, positive factors, negative factors, and actionable suggestions.`,
       temperature: 0.5,
     })
 
-    // Parse JSON response
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Invalid response format from AI')
-    }
-
-    const analysis = JSON.parse(jsonMatch[0])
-
-    // Combine positive and negative factors
-    const allFactors = [
-      ...(analysis.positiveFactors || []).map((f: string) => `✓ ${f}`),
-      ...(analysis.negativeFactors || []).map((f: string) => `✗ ${f}`),
+    // Map structured output to unified factors format
+    const factors = [
+      ...object.positiveFactors.map((f: string) => `✓ ${f}`),
+      ...object.negativeFactors.map((f: string) => `✗ ${f}`),
     ]
 
     return {
-      score: Math.min(100, Math.max(0, analysis.score || 50)),
-      factors: allFactors,
-      suggestions: analysis.suggestions || [],
+      score: Math.min(100, Math.max(0, object.score)),
+      factors,
+      suggestions: object.suggestions,
     }
   } catch (error) {
     console.error('Performance prediction error:', error)
-
-    // Fallback to basic heuristic analysis
     return analyzeContentHeuristic(content, platform)
   }
 }
@@ -88,36 +49,32 @@ Format your response as JSON:
 /**
  * Fallback heuristic analysis when AI is unavailable
  */
-function analyzeContentHeuristic(content: string, platform: string): PerformancePrediction {
+export function analyzeContentHeuristic(content: string, platform: string): PerformancePrediction {
   const factors: string[] = []
   const suggestions: string[] = []
   let score = 50
 
   // Content length analysis
   if (platform === 'twitter') {
-    // Twitter uses character limit (280 max)
     const charCount = content.length
-    const optimalCharCount = 280
-    if (charCount > 0 && charCount <= optimalCharCount) {
+    if (charCount > 0 && charCount <= 280) {
       score += 10
       factors.push('✓ Good content length for Twitter')
-    } else if (charCount > optimalCharCount) {
+    } else if (charCount > 280) {
       factors.push('✗ Content exceeds Twitter character limit')
-      suggestions.push(`Reduce content to ${optimalCharCount} characters for Twitter`)
+      suggestions.push('Reduce content to 280 characters for Twitter')
     } else {
       factors.push('✗ Content too short')
       suggestions.push('Add more content for better engagement')
     }
   } else {
-    // Other platforms use word count
     const wordCount = content.split(/\s+/).length
-    const optimalLength = 150
-    if (wordCount >= optimalLength * 0.5 && wordCount <= optimalLength * 1.5) {
+    if (wordCount >= 75 && wordCount <= 225) {
       score += 10
       factors.push('✓ Good content length')
     } else {
       factors.push('✗ Content length could be optimized')
-      suggestions.push(`Aim for ${optimalLength} words for ${platform}`)
+      suggestions.push(`Aim for 150 words for ${platform}`)
     }
   }
 

@@ -1,11 +1,12 @@
 import { streamText } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { resolveModelForTask } from './model-resolver'
+import { getCurrentProvider } from './model-registry'
 import { getAgentConfig } from './agent-config'
 import { searchWeb, analyzeTrends, suggestDesign } from './ai-tools'
 import { addMessage, getSession } from './session-memory'
+import { trackUsage, estimateCost } from './token-usage-tracker'
 import type { AgentRole } from '../types/ai-types'
 
-// Map agent roles to their available tools
 const TOOL_MAP = {
   researcher: { searchWeb, analyzeTrends },
   writer: {},
@@ -15,15 +16,13 @@ const TOOL_MAP = {
 
 /**
  * Handles AI streaming for a chat session
- * @param sessionId - Session identifier
- * @param userMessage - User's message content
- * @param agentRole - Active agent role
- * @returns Streaming text result from Vercel AI SDK
+ * Supports abort via AbortSignal and tracks token usage on completion
  */
 export async function handleAiStream(
   sessionId: string,
   userMessage: string,
-  agentRole: AgentRole
+  agentRole: AgentRole,
+  options?: { abortSignal?: AbortSignal }
 ) {
   const config = getAgentConfig(agentRole)
   const session = await getSession(sessionId)
@@ -32,32 +31,47 @@ export async function handleAiStream(
     throw new Error(`Session ${sessionId} not found`)
   }
 
-  // Add user message to session
   await addMessage(sessionId, { role: 'user', content: userMessage })
 
-  // Build message history from session
   const messages = session.messages.map(m => ({
     role: m.role as 'user' | 'assistant',
     content: m.content
   }))
 
-  // Get tools for this agent
   const tools = TOOL_MAP[agentRole]
+  const model = resolveModelForTask('chat')
 
-  // Stream response from OpenAI
   const result = streamText({
-    model: openai('gpt-4o-mini'),
+    model,
     system: config.systemPrompt,
     messages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: 3,
-    onFinish: async ({ text }) => {
-      // Save assistant's response to session
+    abortSignal: options?.abortSignal,
+    onFinish: async ({ text, usage }) => {
       await addMessage(sessionId, {
         role: 'assistant',
         content: text,
         agentRole
       })
+
+      // Track token usage (non-blocking)
+      if (usage) {
+        const provider = getCurrentProvider()
+        const modelId = model.modelId ?? 'unknown'
+        trackUsage(sessionId, {
+          provider,
+          model: modelId,
+          promptTokens: usage.promptTokens ?? 0,
+          completionTokens: usage.completionTokens ?? 0,
+          totalTokens: (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0),
+          estimatedCostUsd: estimateCost(
+            { promptTokens: usage.promptTokens ?? 0, completionTokens: usage.completionTokens ?? 0 },
+            modelId
+          ),
+          timestamp: Date.now(),
+        }).catch(() => {}) // non-blocking
+      }
     },
   })
 

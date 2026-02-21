@@ -1,31 +1,34 @@
 import { generateObject } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { resolveModelForTask } from './model-resolver'
 import { ContentPlanSchema, PostDraftSchema, DesignBriefSchema } from '../types/ai-types'
 import type { ContentPlan, PostDraft, DesignBrief } from '../types/ai-types'
 
-export async function generateContentPlan(prompt: string): Promise<ContentPlan> {
+export async function generateContentPlan(prompt: string, brandContext?: string): Promise<ContentPlan> {
+  const brandPrefix = brandContext ? `${brandContext}\n\n` : ''
   const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: resolveModelForTask('structured'),
     schema: ContentPlanSchema,
-    prompt: `Create a content plan: ${prompt}`,
+    prompt: `${brandPrefix}Create a content plan: ${prompt}`,
   })
   return object
 }
 
-export async function generatePostDraft(prompt: string, platform: string): Promise<PostDraft> {
+export async function generatePostDraft(prompt: string, platform: string, brandContext?: string): Promise<PostDraft> {
+  const brandPrefix = brandContext ? `${brandContext}\n\n` : ''
   const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: resolveModelForTask('structured'),
     schema: PostDraftSchema,
-    prompt: `Write a ${platform} post: ${prompt}`,
+    prompt: `${brandPrefix}Write a ${platform} post: ${prompt}`,
   })
   return object
 }
 
-export async function generateDesignBrief(prompt: string): Promise<DesignBrief> {
+export async function generateDesignBrief(prompt: string, brandContext?: string): Promise<DesignBrief> {
+  const brandPrefix = brandContext ? `${brandContext}\n\n` : ''
   const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: resolveModelForTask('structured'),
     schema: DesignBriefSchema,
-    prompt: `Create a design brief: ${prompt}`,
+    prompt: `${brandPrefix}Create a design brief: ${prompt}`,
   })
   return object
 }
