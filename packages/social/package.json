@@ -29,7 +29,13 @@
     "./logger": "./src/lib/social-logger.ts",
     "./context": "./src/lib/request-context.ts",
     "./audit": "./src/lib/audit-logger.ts",
-    "./health": "./src/lib/platform-health-tracker.ts"
+    "./health": "./src/lib/platform-health-tracker.ts",
+    "./preview": "./src/lib/post-preview-validator.ts",
+    "./drafts": "./src/lib/draft-persistence.ts",
+    "./media-rules": "./src/lib/platform-media-rules.ts",
+    "./media-validator": "./src/lib/media-validator.ts",
+    "./media-processor": "./src/lib/media-processor.ts",
+    "./approval": "./src/lib/approval-workflow.ts"
   },
   "scripts": {
     "build": "echo 'no build needed'",
@@ -39,6 +45,9 @@
     "@creator-studio/db": "workspace:*",
     "@creator-studio/redis": "workspace:*",
     "@creator-studio/utils": "workspace:*"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

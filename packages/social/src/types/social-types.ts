@@ -116,6 +116,120 @@ export type ContentWarning =
   | { type: 'hashtags_stripped'; removed: string[]; maxAllowed: number }
   | { type: 'links_counted_as_shortened'; platform: string; charsPer: number }
 
+// Post preview & validation types
+export interface ValidationError {
+  code: 'empty_content' | 'over_char_limit' | 'over_hashtag_limit' | 'over_media_count'
+  message: string
+  field?: string
+}
+
+export interface ValidationWarning {
+  code: 'near_char_limit' | 'hashtags_will_strip' | 'links_not_clickable'
+  message: string
+  platform: SocialPlatform
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+  warnings: ValidationWarning[]
+}
+
+export interface CharacterBudget {
+  used: number
+  remaining: number
+  max: number
+  percentage: number
+}
+
+export interface PostPreview {
+  platform: SocialPlatform
+  content: string
+  characterBudget: CharacterBudget
+  metadata: AdaptedContent['metadata']
+  warnings: ContentWarning[]
+}
+
+export interface DraftPost {
+  id: string
+  userId: string
+  content: string
+  mediaUrls: string[]
+  platforms: SocialPlatform[]
+  createdAt: number
+  updatedAt: number
+}
+
+// Media processing types
+export interface MediaRules {
+  maxFileSize: number // bytes
+  acceptedFormats: string[]
+  maxWidth: number
+  maxHeight: number
+  minWidth?: number
+  minHeight?: number
+  recommendedWidth?: number
+  recommendedHeight?: number
+}
+
+export interface MediaValidationError {
+  code: 'file_too_large' | 'unsupported_format' | 'dimensions_too_large' | 'dimensions_too_small' | 'empty_file'
+  message: string
+  field: string
+}
+
+export interface MediaValidationResult {
+  valid: boolean
+  errors: MediaValidationError[]
+}
+
+export interface MediaMetadata {
+  width?: number
+  height?: number
+  format?: string
+  size: number
+  hasAlpha?: boolean
+}
+
+export interface ProcessedMedia {
+  buffer: Buffer
+  metadata: MediaMetadata
+  originalSize: number
+  processedSize: number
+}
+
+// Approval workflow types
+export type ApprovalStatus = 'none' | 'pending_approval' | 'approved' | 'rejected'
+
+export interface ApprovalEvent {
+  id: string
+  postId: string
+  fromStatus: ApprovalStatus
+  toStatus: ApprovalStatus
+  userId: string
+  comment?: string
+  timestamp: number
+}
+
+export interface ApprovalablePost {
+  id: string
+  userId: string
+  approvalStatus: ApprovalStatus
+  approvalRequired: boolean
+  approvedBy?: string
+  approvedAt?: number
+  approvalEvents: ApprovalEvent[]
+}
+
+export interface ApprovalTransitionResult {
+  post: ApprovalablePost
+  event: ApprovalEvent
+}
+
+export interface ApprovalWorkflowOptions {
+  allowSelfApproval?: boolean
+}
+
 // Threading types
 export interface ThreadParams {
   posts: Array<{ content: string; mediaUrls: string[] }>

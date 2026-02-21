@@ -10,6 +10,7 @@ export type AuditAction =
   | 'post.create' | 'post.update' | 'post.delete' | 'post.schedule'
   | 'account.connect' | 'account.disconnect'
   | 'token.refresh' | 'token.revoke'
+  | 'approval.submit' | 'approval.approve' | 'approval.reject' | 'approval.revoke'
 
 export interface AuditEvent {
   action: AuditAction
