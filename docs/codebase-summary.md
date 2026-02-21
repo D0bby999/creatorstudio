@@ -542,7 +542,8 @@ creator-studio/
 - **Multi-step Agent** → Sequential reasoning and planning with usage info yield
 - **Session Persistence** → Save/load agent conversation state (Redis-ready)
 - **Content Templates** → Prompt templates for common tasks
-- **194 Tests** → Comprehensive coverage (27/31 source files tested, 87%+)
+- **240 Unit Tests** → 32/33 source files tested (97% file coverage)
+- **Testing Note** → All tests use mocked AI APIs (vi.mock). No integration tests with real API keys exist yet. AI response quality and prompt effectiveness are NOT verified by the test suite.
 
 **Key Files (AI Mega-Upgrade):**
 - `src/lib/platform-adaptation-rules.ts` → Shared platform config (7 platforms)
@@ -576,7 +577,7 @@ creator-studio/
 - `src/tools/` → Tool function definitions
 - `src/session-manager.ts` → Conversation persistence
 - `src/templates/` → Prompt templates
-- `__tests__/*.test.ts` → 194 comprehensive tests (24 test files)
+- `__tests__/*.test.ts` → 240 unit tests (32 test files, all mocked — no real API calls)
 
 **Dependencies:**
 - `ai` → Vercel AI SDK core
