@@ -5,6 +5,7 @@
  */
 
 import { getRedis } from '@creator-studio/redis'
+import { safeParseJSON } from '@ai-sdk/provider-utils'
 import { generateEmbedding } from './embedding-generator'
 import { cosineSimilarity } from './cosine-similarity'
 import type { BrandEntry, BrandEntryType } from '../types/ai-types'
@@ -115,7 +116,10 @@ async function loadAllEntries(userId: string): Promise<BrandEntry[]> {
   for (const id of entryIds) {
     const raw = await redis.get(brandKey(userId, id))
     if (raw) {
-      entries.push(JSON.parse(raw as string) as BrandEntry)
+      const parsed = await safeParseJSON({ text: raw as string })
+      if (parsed.success) {
+        entries.push(parsed.value as unknown as BrandEntry)
+      }
     }
   }
 

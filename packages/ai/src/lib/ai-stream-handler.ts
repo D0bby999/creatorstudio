@@ -1,4 +1,4 @@
-import { streamText, stepCountIs } from 'ai'
+import { streamText, stepCountIs, smoothStream } from 'ai'
 import { resolveModelForTask } from './model-resolver'
 import { getCurrentProvider } from './model-registry'
 import { getAgentConfig } from './agent-config'
@@ -49,6 +49,7 @@ export async function handleAiStream(
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     stopWhen: stepCountIs(3),
     abortSignal: options?.abortSignal,
+    experimental_transform: smoothStream({ chunking: 'word' }),
     onFinish: async ({ text, usage }) => {
       await addMessage(sessionId, {
         role: 'assistant',

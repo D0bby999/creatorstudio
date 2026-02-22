@@ -92,3 +92,20 @@ export async function clearSessions(): Promise<void> {
   const sessions = await cacheGetByPrefix<AgentSession>(SESSION_PREFIX)
   await Promise.all(sessions.map((s) => cacheDel(`${SESSION_PREFIX}${s.id}`)))
 }
+
+const PRUNE_THRESHOLD = 50
+
+/**
+ * Trims older messages when session exceeds threshold.
+ * Keeps first system message + most recent messages. When we adopt multipart
+ * ModelMessage format, SDK pruneMessages can be wired in for tool/reasoning pruning.
+ */
+export function pruneSessionMessages(messages: ChatMessage[]): ChatMessage[] {
+  if (messages.length <= PRUNE_THRESHOLD) return messages
+
+  const systemMessages = messages.filter(m => m.role === 'system')
+  const nonSystem = messages.filter(m => m.role !== 'system')
+  const kept = nonSystem.slice(-PRUNE_THRESHOLD)
+
+  return [...systemMessages, ...kept]
+}

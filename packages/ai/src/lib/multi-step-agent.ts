@@ -2,7 +2,7 @@ import { generateText, stepCountIs } from 'ai'
 import { resolveModelForTask } from './model-resolver'
 import { getAgentConfig } from './agent-config'
 import { searchWeb, analyzeTrends, suggestDesign } from './ai-tools'
-import type { AgentRole } from '../types/ai-types'
+import type { AgentRole, AgentCallbacks } from '../types/ai-types'
 
 export interface AgentStep {
   type: 'text' | 'tool-call' | 'tool-result' | 'usage'
@@ -21,6 +21,7 @@ export async function* runMultiStepAgent(params: {
   role: AgentRole
   prompt: string
   maxSteps?: number
+  callbacks?: AgentCallbacks
 }): AsyncGenerator<AgentStep> {
   const config = getAgentConfig(params.role)
   const tools = TOOL_MAP[params.role] ?? {}
@@ -31,6 +32,7 @@ export async function* runMultiStepAgent(params: {
     prompt: params.prompt,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     stopWhen: stepCountIs(params.maxSteps ?? 5),
+    onStepFinish: params.callbacks?.onStepFinish,
   })
 
   // Yield text response
