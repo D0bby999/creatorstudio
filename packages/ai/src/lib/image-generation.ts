@@ -1,7 +1,10 @@
 /**
- * Image generation via Replicate API
+ * Image generation via @ai-sdk/replicate official provider
  * Uses Stability AI SDXL model for text-to-image generation
  */
+
+import { generateImage as sdkGenerateImage } from 'ai'
+import { createReplicate } from '@ai-sdk/replicate'
 
 interface ImageGenerationOptions {
   model?: string
@@ -14,94 +17,35 @@ interface ImageGenerationResult {
   id: string
 }
 
-const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions'
-const DEFAULT_MODEL = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b'
-const MAX_POLL_ATTEMPTS = 300 // 5 minutes at 1s intervals
+const DEFAULT_MODEL = 'stability-ai/sdxl'
 
-/**
- * Generate image from text prompt using Replicate API
- */
 export async function generateImage(
   prompt: string,
   options?: ImageGenerationOptions
 ): Promise<ImageGenerationResult> {
-  const token = process.env.REPLICATE_API_TOKEN
-
-  if (!token) {
+  if (!process.env.REPLICATE_API_TOKEN) {
     throw new Error('REPLICATE_API_TOKEN environment variable is not set')
   }
 
+  const replicate = createReplicate()
   const model = options?.model || DEFAULT_MODEL
   const width = options?.width || 1024
   const height = options?.height || 1024
 
-  // Create prediction
-  const response = await fetch(REPLICATE_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Token ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      version: model,
-      input: {
-        prompt,
-        width,
-        height,
-        num_outputs: 1,
-      },
-    }),
+  const result = await sdkGenerateImage({
+    model: replicate.image(model),
+    prompt,
+    size: `${width}x${height}`,
   })
 
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Replicate API error: ${error}`)
+  const image = result.image
+  if (!image) {
+    throw new Error('No image generated from Replicate')
   }
 
-  const prediction = await response.json()
-  const predictionId = prediction.id
+  // SDK returns Uint8Array data — convert to base64 data URL
+  const base64 = image.base64
+  const url = base64 ? `data:${image.mediaType};base64,${base64}` : ''
 
-  // Poll for completion with timeout
-  let result = prediction
-  let attempts = 0
-
-  while (result.status !== 'succeeded' && result.status !== 'failed') {
-    if (attempts >= MAX_POLL_ATTEMPTS) {
-      throw new Error('Image generation timed out after 5 minutes')
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10_000)
-    const pollResponse = await fetch(`${REPLICATE_API_URL}/${predictionId}`, {
-      headers: {
-        'Authorization': `Token ${token}`,
-      },
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-
-    if (!pollResponse.ok) {
-      throw new Error('Failed to poll prediction status')
-    }
-
-    result = await pollResponse.json()
-    attempts++
-  }
-
-  if (result.status === 'failed') {
-    throw new Error(`Image generation failed: ${result.error || 'Unknown error'}`)
-  }
-
-  const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output
-
-  if (!imageUrl) {
-    throw new Error('No image URL returned from Replicate')
-  }
-
-  return {
-    url: imageUrl,
-    id: predictionId,
-  }
+  return { url, id: 'generated' }
 }

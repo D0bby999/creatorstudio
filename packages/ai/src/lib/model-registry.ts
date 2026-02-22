@@ -1,8 +1,9 @@
 /**
  * Multi-provider model registry
- * Manages available AI providers and resolves model aliases to provider-specific models
+ * Uses SDK createProviderRegistry for centralized provider management
  */
 
+import { createProviderRegistry } from 'ai'
 import type { LanguageModel } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
@@ -41,10 +42,24 @@ const PROVIDER_ENV_KEYS: Record<ProviderName, string> = {
 
 const PROVIDER_PRIORITY: ProviderName[] = ['openai', 'anthropic', 'google']
 
-const MODEL_CREATORS: Record<ProviderName, (modelId: string) => LanguageModel> = {
-  openai: (id) => openai(id),
-  anthropic: (id) => anthropic(id),
-  google: (id) => google(id),
+const PROVIDERS = { openai, anthropic, google } as Record<string, any>
+
+let _registry: ReturnType<typeof createProviderRegistry> | null = null
+
+function getRegistry() {
+  if (_registry) return _registry
+  const available = getAvailableProviders()
+  const providers: Record<string, any> = {}
+  for (const name of available) {
+    providers[name] = PROVIDERS[name]
+  }
+  _registry = createProviderRegistry(providers)
+  return _registry
+}
+
+/** Reset registry — for test isolation only */
+export function resetRegistry(): void {
+  _registry = null
 }
 
 /** Returns list of providers with API keys configured */
@@ -56,7 +71,7 @@ export function getAvailableProviders(): ProviderName[] {
 
 /** Creates a LanguageModel instance for a specific provider + model ID */
 export function createProviderModel(provider: ProviderName, modelId: string): LanguageModel {
-  return MODEL_CREATORS[provider](modelId)
+  return getRegistry().languageModel(`${provider}:${modelId}`)
 }
 
 /**
@@ -67,10 +82,9 @@ export function resolveModel(alias: ModelAlias = 'fast'): LanguageModel {
   const defaultProvider = process.env.AI_DEFAULT_PROVIDER as ProviderName | undefined
   const defaultModel = process.env.AI_DEFAULT_MODEL
 
-  // If specific model override is set, parse "provider:model" format
   if (defaultModel?.includes(':')) {
     const [providerStr, modelId] = defaultModel.split(':') as [ProviderName, string]
-    if (MODEL_CREATORS[providerStr] && modelId) {
+    if (PROVIDERS[providerStr] && modelId) {
       return createProviderModel(providerStr, modelId)
     }
   }
@@ -82,7 +96,6 @@ export function resolveModel(alias: ModelAlias = 'fast'): LanguageModel {
     )
   }
 
-  // Use default provider if available, otherwise first in priority
   const provider = defaultProvider && available.includes(defaultProvider)
     ? defaultProvider
     : available[0]

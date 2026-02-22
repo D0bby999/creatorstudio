@@ -18,6 +18,8 @@
     "@ai-sdk/google": "^3.0.30",
     "@ai-sdk/openai": "^3.0.0",
     "@ai-sdk/provider": "^3.0.0",
+    "@ai-sdk/provider-utils": "^4.0.15",
+    "@ai-sdk/replicate": "^2.0.20",
     "@creator-studio/canvas": "workspace:*",
     "@creator-studio/crawler": "workspace:*",
     "@creator-studio/db": "workspace:*",

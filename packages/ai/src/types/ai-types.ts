@@ -113,6 +113,13 @@ export const PerformancePredictionSchema = z.object({
   suggestions: z.array(z.string()),
 })
 
+// Agent callback types for observability
+export interface AgentCallbacks {
+  onStepFinish?: (event: { stepNumber: number; text: string; usage?: Record<string, unknown> }) => void | Promise<void>
+  onToolCallStart?: (event: { toolName: string; args: unknown }) => void | Promise<void>
+  onToolCallFinish?: (event: { toolName: string; result: unknown }) => void | Promise<void>
+}
+
 // Image generation types
 export interface ImageGenerationOptions {
   model?: string
