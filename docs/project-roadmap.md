@@ -4,10 +4,10 @@
 
 Creator Studio is a comprehensive creative toolkit for content creators. This roadmap tracks the project evolution from foundation through scaling phases.
 
-## Current Status: AI Package Production Hardening Complete
+## Current Status: AI SDK Official Provider Adoption Complete
 
 **Project Completion:** 100% (All phases + upgrades complete)
-**Latest Phase:** AI Package Production Hardening (v0.16.0) - 2026-02-22 - COMPLETE
+**Latest Phase:** AI SDK Official Provider Adoption (v0.17.0) - 2026-02-22 - COMPLETE
 
 ## Phase Timeline
 
@@ -759,6 +759,84 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 - [x] Streaming: partial JSON yielded as chunks arrive
 - [x] Backward compatible: all existing AI API unchanged
 - [x] Zero TypeScript errors, full strict mode
+
+---
+
+### AI SDK Official Provider Adoption (COMPLETE) ✓
+**Timeline:** Completed Feb 2026
+**Status:** Production-ready with official Replicate provider
+**Version:** 0.17.0
+
+**Deliverables:**
+
+**Image Generation (@ai-sdk/replicate)**
+- [x] Migrated to `@ai-sdk/replicate` with `generateImage()` API
+- [x] Returns base64 data URLs directly
+- [x] Supports Stability AI SDXL model
+- [x] Platform-aware thumbnail dimension integration
+- [x] Maintains consistent image generator interface
+
+**Video Generation (@ai-sdk/replicate)**
+- [x] Migrated to `@ai-sdk/replicate` with `experimental_generateVideo()` API
+- [x] Polling-based completion tracking retained
+- [x] Env var migration: `LUMA_API_KEY` → `REPLICATE_API_TOKEN`
+- [x] Maintains backward compatibility with existing video generator
+
+**Data Safety & Parsing**
+- [x] Brand knowledge store: Use `safeParseJSON` from `@ai-sdk/provider-utils`
+- [x] Prototype pollution prevention at storage boundaries
+- [x] Safe error handling for malformed JSON
+
+**Stream & Session Optimization**
+- [x] Stream handler: Added `smoothStream({ chunking: 'word' })` transform
+- [x] Session management: Added `pruneSessionMessages()` for context window management
+- [x] Prevents token usage runaway in long-running conversations
+
+**Model Registry Evolution**
+- [x] Model registry: Refactored to use SDK `createProviderRegistry()` internally
+- [x] Exported API unchanged (full backward compatibility)
+- [x] Added `resetRegistry()` utility for test isolation
+
+**Multi-Step Agent Instrumentation**
+- [x] Multi-step agent: Added optional `AgentCallbacks` support
+  - `onStepFinish(step, result)` — Called after step completion
+  - `onToolCallStart(toolName, input)` — Called before tool invocation
+  - `onToolCallFinish(toolName, result)` — Called after tool execution
+- [x] Useful for instrumentation and progress tracking
+
+**Files Modified (6)**
+- image-generator.ts — Use @ai-sdk/replicate generateImage()
+- video-generator.ts — Use @ai-sdk/replicate experimental_generateVideo()
+- brand-knowledge-store.ts — Use safeParseJSON for safety
+- model-registry.ts — Internal refactor to createProviderRegistry()
+- multi-step-agent.ts — Added AgentCallbacks support
+- ai-stream-handler.ts — Added smoothStream() transform
+
+**New Dependencies (2)**
+- @ai-sdk/replicate@^1.0.0 → Official Replicate provider
+- @ai-sdk/provider-utils@^1.0.0 → Safe JSON parsing utilities
+
+**Test Coverage**
+- [x] 12 new tests for Replicate integration
+- [x] All 473 existing tests continue passing
+- [x] Mock @ai-sdk/replicate for deterministic testing
+- [x] Edge cases: network failures, timeout handling
+
+**Backward Compatibility**
+- [x] All external AI APIs unchanged
+- [x] Image and video generation interfaces identical
+- [x] Model resolver queries work identically
+- [x] No breaking changes to streaming or structured output
+
+**Success Metrics Achieved**
+- [x] Image generation: Uses official provider with data URLs
+- [x] Video generation: Polling-based completion with new provider
+- [x] Data safety: Safe JSON parsing prevents injection attacks
+- [x] Stream handling: Word-level chunking for better responsiveness
+- [x] Session optimization: Context window managed automatically
+- [x] Instrumentation: Agent callbacks enable observability
+- [x] Zero TypeScript errors, full strict mode
+- [x] 100% backward compatible with v0.16.0
 
 ---
 

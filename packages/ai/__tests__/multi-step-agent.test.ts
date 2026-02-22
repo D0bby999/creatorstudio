@@ -140,5 +140,58 @@ describe('multi-step-agent', () => {
         })
       )
     })
+
+    it('should pass onStepFinish callback to generateText', async () => {
+      const onStepFinish = vi.fn()
+
+      vi.mocked(generateText).mockResolvedValue({
+        text: 'Response with callbacks',
+        steps: [],
+        usage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
+        finishReason: 'stop',
+      } as any)
+
+      const generator = runMultiStepAgent({
+        role: 'writer',
+        prompt: 'Write with callbacks',
+        callbacks: { onStepFinish },
+      })
+
+      for await (const step of generator) {
+        // Consume generator
+      }
+
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          onStepFinish,
+        })
+      )
+    })
+
+    it('should work without callbacks (backward compat)', async () => {
+      vi.mocked(generateText).mockResolvedValue({
+        text: 'No callbacks',
+        steps: [],
+        usage: { inputTokens: 5, outputTokens: 10, totalTokens: 15 },
+        finishReason: 'stop',
+      } as any)
+
+      const generator = runMultiStepAgent({
+        role: 'writer',
+        prompt: 'No callbacks test',
+      })
+
+      const steps = []
+      for await (const step of generator) {
+        steps.push(step)
+      }
+
+      expect(steps.length).toBeGreaterThan(0)
+      expect(generateText).toHaveBeenCalledWith(
+        expect.objectContaining({
+          onStepFinish: undefined,
+        })
+      )
+    })
   })
 })

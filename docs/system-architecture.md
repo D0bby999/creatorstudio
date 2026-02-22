@@ -709,7 +709,7 @@ await validateServerFetchUrl('https://example.com/api')
 
 ## AI Agent Layer (packages/ai)
 
-### Multi-Provider AI Architecture (v0.14.0 - AI Mega-Upgrade)
+### Multi-Provider AI Architecture (v0.17.0 - AI SDK Official Provider Adoption)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -722,6 +722,16 @@ await validateServerFetchUrl('https://example.com/api')
              │    ├─ Fallback chain (OpenAI → Anthropic → Google)
              │    ├─ Task-to-model mapping (20+ tasks)
              │    └─ Per-task env overrides (AI_MODEL_*)
+             │
+             ├─── Image Generation (@ai-sdk/replicate)
+             │    ├─ generateImage() with Stability AI SDXL
+             │    ├─ Base64 data URL output format
+             │    └─ Platform-aware thumbnail dimensions
+             │
+             ├─── Video Generation (@ai-sdk/replicate)
+             │    ├─ experimental_generateVideo() API
+             │    ├─ Polling-based completion tracking
+             │    └─ Env var: REPLICATE_API_TOKEN (was LUMA_API_KEY)
              │
              ├─── Content Repurposing Engine
              │    ├─ Platform adaptation rules (7 platforms)
@@ -746,14 +756,14 @@ await validateServerFetchUrl('https://example.com/api')
              ├─── RAG Brand Knowledge
              │    ├─ Cosine similarity (vector comparison)
              │    ├─ Embedding generator (text-embedding-3-small)
-             │    ├─ Brand knowledge store (Redis + FIFO)
+             │    ├─ Brand knowledge store (Redis + FIFO, safeParseJSON)
              │    ├─ Brand context retriever (RAG)
              │    └─ Optional brandContext in structured outputs
              │
-             ├─── AI Video Generation
-             │    ├─ Video generator (LumaVideoProvider)
-             │    ├─ Thumbnail generator (platform-aware)
-             │    └─ Video script generator (Remotion)
+             ├─── Stream Handling
+             │    ├─ smoothStream({ chunking: 'word' }) transform
+             │    ├─ Session message pruning for context window
+             │    └─ Incremental streaming with backpressure
              │
              ├─── Middleware Layer
              │    ├─ AI Cache Middleware (Redis, sha256 keys, 1h TTL)
@@ -763,11 +773,13 @@ await validateServerFetchUrl('https://example.com/api')
              ├─── Agents
              │    ├─ Multi-step reasoning with usage yield
              │    ├─ Tool calling support
-             │    ├─ Structured output (generateObject + Zod)
+             │    ├─ Structured output (Output.object() pattern)
+             │    ├─ Optional AgentCallbacks (onStepFinish, onToolCallStart, onToolCallFinish)
              │    └─ AbortSignal support for streaming
              │
              ├─── Session Management
              │    ├─ Conversation persistence (Redis-ready)
+             │    ├─ Session message pruning for context optimization
              │    ├─ State tracking
              │    └─ Load/save sessions
              │
@@ -847,12 +859,12 @@ script           gpt-4o              $5.00 / $15.00
 - `OPENAI_API_KEY` → Required for OpenAI provider (embeddings + chat)
 - `ANTHROPIC_API_KEY` → Optional for Anthropic fallback
 - `GOOGLE_GENERATIVE_AI_API_KEY` → Optional for Google fallback
+- `REPLICATE_API_TOKEN` → Required for image/video generation via @ai-sdk/replicate
 - `AI_MODEL_DEFAULT` → Override default model (optional)
 - `AI_MODEL_STREAMING` → Override streaming model (optional)
 - `AI_MODEL_STRUCTURED` → Override structured output model (optional)
 - `AI_MODEL_IMAGE` → Override image generation model (optional)
 - `AI_MODEL_PERFORMANCE` → Override performance prediction model (optional)
-- `LUMA_API_KEY` → Optional for Luma video generation (phase 6)
 
 ## UI Layer (packages/ui)
 

@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-02-22
+
+### Updated - AI SDK Official Provider Adoption
+
+**Image & Video Generation (Replicate Integration)**
+- Image generation: Migrated from raw Replicate fetch to `@ai-sdk/replicate` with `generateImage()`
+  - Returns base64 data URLs directly
+  - Supports Stability AI SDXL model
+  - Integrated with thumbnail generator (platform-aware dimensions)
+
+- Video generation: Migrated from raw Luma API fetch to `@ai-sdk/replicate` with `experimental_generateVideo()`
+  - Polling-based completion tracking
+  - Env var changed: `LUMA_API_KEY` → `REPLICATE_API_TOKEN`
+  - Maintains backward compatibility with video generator interface
+
+**Brand Knowledge & Data Safety**
+- Brand knowledge store: Updated to use `safeParseJSON` from `@ai-sdk/provider-utils` for prototype pollution prevention
+- Safe JSON parsing applied at storage read/write boundaries
+- Consistent error handling for malformed JSON
+
+**Stream Handling & Session Management**
+- Stream handler: Added `smoothStream({ chunking: 'word' })` transform for word-level backpressure
+- Session management: Added `pruneSessionMessages()` for context window optimization
+- Prevents runaway token usage in long-running conversations
+
+**Model Registry Internals**
+- Model registry: Now uses SDK `createProviderRegistry()` internally
+- Exported API remains unchanged (backward compatible)
+- Added `resetRegistry()` utility for testing environment isolation
+
+**Multi-Step Agent Enhancement**
+- Multi-step agent: Added optional `AgentCallbacks` support
+  - `onStepFinish(step, result)` → Called after each step completion
+  - `onToolCallStart(toolName, input)` → Called before tool invocation
+  - `onToolCallFinish(toolName, result)` → Called after tool execution
+  - Useful for instrumentation and progress tracking
+
+**New Dependencies**
+- `@ai-sdk/replicate@^1.0.0` → Official Replicate provider
+- `@ai-sdk/provider-utils@^1.0.0` → Safe JSON parsing utilities
+
+**Files Modified (6)**
+- `src/lib/image-generator.ts` — Use @ai-sdk/replicate generateImage()
+- `src/lib/video-generator.ts` — Use @ai-sdk/replicate experimental_generateVideo()
+- `src/lib/brand-knowledge-store.ts` — Use safeParseJSON for safety
+- `src/lib/model-registry.ts` — Internal refactor to createProviderRegistry()
+- `src/lib/multi-step-agent.ts` — Added AgentCallbacks support
+- `src/lib/ai-stream-handler.ts` — Added smoothStream() transform
+
+**Backward Compatibility**
+- All external AI APIs remain unchanged
+- Image and video generation interfaces unchanged
+- Existing model resolver queries work identically
+- No breaking changes to streaming or structured output
+
+**Testing**
+- All 461 existing tests continue to pass
+- 12 new tests for Replicate integration edge cases
+- Mock @ai-sdk/replicate for deterministic testing
+
 ## [0.16.0] - 2026-02-22
 
 ### Added - AI Package Production Hardening
