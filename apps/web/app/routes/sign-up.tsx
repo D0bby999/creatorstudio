@@ -6,6 +6,7 @@ import { getSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
 import { AuthLayout } from '~/components/auth/auth-layout'
 import { AuthDivider } from '~/components/auth/auth-divider'
+import { OAuthButtons } from '~/components/auth/oauth-buttons'
 import { Button } from '@creator-studio/ui/components/button'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
@@ -23,6 +24,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,11 +34,41 @@ export default function SignUp() {
     await authClient.signUp.email(
       { name, email, password },
       {
-        onSuccess: () => navigate('/dashboard'),
+        onSuccess: () => setEmailSent(true),
         onError: (ctx) => setError(ctx.error.message ?? 'Sign up failed'),
       },
     )
     setLoading(false)
+  }
+
+  if (emailSent) {
+    return (
+      <AuthLayout>
+        <div className="w-full max-w-sm space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold">Check your email</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We've sent a verification link to <strong>{email}</strong>.
+              Please verify your email to complete sign up.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              await authClient.sendVerificationEmail({ email })
+            }}
+          >
+            Resend verification email
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            <Link to="/sign-in" className="font-medium text-primary underline-offset-4 hover:underline">
+              Back to sign in
+            </Link>
+          </p>
+        </div>
+      </AuthLayout>
+    )
   }
 
   return (
@@ -100,6 +132,8 @@ export default function SignUp() {
         </form>
 
         <AuthDivider />
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}

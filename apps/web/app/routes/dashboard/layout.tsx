@@ -19,11 +19,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     orderBy: { createdAt: 'desc' },
   })
 
-  return { user: session.user, orgMemberships }
+  return { user: session.user, orgMemberships, isAdmin: session.user.role === 'admin' }
 }
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
-  const { user, orgMemberships } = loaderData
+  const { user, orgMemberships, isAdmin } = loaderData
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -37,6 +37,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
         <DashboardSidebar
           userName={user.name}
           userEmail={user.email}
+          isAdmin={isAdmin}
           onSignOut={handleSignOut}
           orgSwitcher={<OrganizationSwitcher memberships={orgMemberships} />}
         />

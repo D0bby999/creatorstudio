@@ -1,22 +1,16 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { redirect } from 'react-router'
 import type { Route } from './+types/sign-in'
 import { getSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
+import { sanitizeReturnTo } from '~/lib/url-helpers'
 import { AuthLayout } from '~/components/auth/auth-layout'
 import { AuthDivider } from '~/components/auth/auth-divider'
+import { OAuthButtons } from '~/components/auth/oauth-buttons'
 import { Button } from '@creator-studio/ui/components/button'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
-
-function sanitizeReturnTo(value: string | null): string | null {
-  if (!value) return null
-  if (!value.startsWith('/')) return null
-  if (value.startsWith('//')) return null
-  if (value === '/sign-in' || value === '/sign-up') return null
-  return value
-}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request)
@@ -27,6 +21,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function SignIn({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const resetSuccess = searchParams.get('reset') === 'success'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -40,7 +37,14 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
     await authClient.signIn.email(
       { email, password },
       {
-        onSuccess: () => navigate(loaderData.returnTo || '/dashboard'),
+        onSuccess: (ctx) => {
+          if (ctx.data?.twoFactorRedirect) {
+            sessionStorage.setItem('2fa-email', email)
+            navigate(`/sign-in/verify-2fa?returnTo=${encodeURIComponent(loaderData.returnTo || '/dashboard')}`)
+          } else {
+            navigate(loaderData.returnTo || '/dashboard')
+          }
+        },
         onError: (ctx) => setError(ctx.error.message ?? 'Sign in failed'),
       },
     )
@@ -54,6 +58,12 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
           <h2 className="text-2xl font-bold">Welcome back</h2>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to Creator Studio</p>
         </div>
+
+        {resetSuccess && (
+          <div className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200" role="status">
+            Password reset successful. Sign in with your new password.
+          </div>
+        )}
 
         <form onSubmit={handleSignIn} className="space-y-4">
           {error && (
@@ -76,7 +86,12 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
@@ -94,6 +109,8 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
         </form>
 
         <AuthDivider />
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}

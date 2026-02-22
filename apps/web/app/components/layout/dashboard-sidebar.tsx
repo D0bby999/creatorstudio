@@ -13,6 +13,8 @@ import {
   Puzzle,
   PanelLeftClose,
   PanelLeft,
+  Settings,
+  Shield,
 } from 'lucide-react'
 import { useSidebar } from '~/lib/sidebar-context'
 import { cn } from '@creator-studio/ui/lib/utils'
@@ -28,16 +30,18 @@ const navItems = [
   { to: '/dashboard/api-keys', label: 'API Keys', icon: Key },
   { to: '/dashboard/plugins', label: 'Plugins', icon: Puzzle },
   { to: '/dashboard/organizations', label: 'Organizations', icon: Building2 },
+  { to: '/dashboard/settings/security', label: 'Settings', icon: Settings },
 ]
 
 interface DashboardSidebarProps {
   userName: string
   userEmail: string
+  isAdmin?: boolean
   onSignOut: () => void
   orgSwitcher?: React.ReactNode
 }
 
-export function DashboardSidebar({ userName, userEmail, onSignOut, orgSwitcher }: DashboardSidebarProps) {
+export function DashboardSidebar({ userName, userEmail, isAdmin, onSignOut, orgSwitcher }: DashboardSidebarProps) {
   const { collapsed, toggle } = useSidebar()
 
   return (
@@ -71,6 +75,24 @@ export function DashboardSidebar({ userName, userEmail, onSignOut, orgSwitcher }
       )}
 
       <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+        {isAdmin && (
+          <NavLink
+            to="/admin/users"
+            viewTransition
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                collapsed && 'justify-center px-2',
+                isActive
+                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                  : 'text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/30',
+              )
+            }
+          >
+            <Shield className="h-4 w-4 shrink-0" />
+            {!collapsed && 'Admin'}
+          </NavLink>
+        )}
         {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
