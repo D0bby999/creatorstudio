@@ -206,7 +206,16 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    },
   },
+  plugins: [
+    twoFactor(),        // TOTP-based 2FA
+    magicLink(),        // Magic link authentication
+    organization(),     // Organization support
+  ],
   session: {
     cookieCache: { enabled: true, maxAge: 5 * 60 }, // 5 min cache
   },
@@ -216,6 +225,21 @@ export const auth = betterAuth({
 // Re-exports auth client with plugins for apps/web
 // Single source of truth for client-side auth operations
 export { createAuthClient } from '@creator-studio/auth/client'
+```
+
+### Email Service (Resend)
+
+```typescript
+// packages/auth/src/lib/email-sender.ts
+EmailSender integration with Resend API
+- Transactional email delivery
+- React Email component templates
+- Retry logic for failed sends
+
+Templates:
+- verify-email.tsx → Email verification flow
+- reset-password.tsx → Password recovery
+- magic-link.tsx → Passwordless login
 ```
 
 ### Auth Client Pattern
@@ -285,6 +309,38 @@ requireSession(request, { returnTo: '/dashboard' })
   - Post-login → Redirect to returnTo page
 ```
 
+## Two-Factor Authentication (2FA)
+
+### TOTP Setup Flow
+```
+1. User navigates to /dashboard/settings/security
+         ▼
+2. Click "Enable 2FA"
+         ▼
+3. Server generates TOTP secret + QR code
+         ▼
+4. User scans QR with authenticator app (Google Authenticator, Authy, etc.)
+         ▼
+5. User enters 6-digit code to verify
+         ▼
+6. Server generates 10 backup codes (displayed once, must be saved)
+         ▼
+7. 2FA enabled on User.twoFactorEnabled = true
+         ▼
+8. On next login, user must verify TOTP code after password
+```
+
+**Backup Codes:**
+- 10 one-time codes for account recovery
+- Displayed once during setup (user must save securely)
+- Each code can only be used once
+- Stored encrypted in TwoFactor table
+
+**Challenge Verification:**
+- Route: `/sign-in/verify-2fa` after password validation
+- User enters 6-digit TOTP or one backup code
+- Server validates and updates session
+
 ## Organization & RBAC Layer (packages/auth + apps/web)
 
 ### RBAC Hierarchy
@@ -338,37 +394,41 @@ requireSession(request, { returnTo: '/dashboard' })
 ### Database Schema (ERD)
 
 ```
-┌──────────────────┐
-│      User        │
-│──────────────────│
-│ id (PK)          │───┐
-│ name             │   │
-│ email (unique)   │   │
-│ emailVerified    │   │
-│ image            │   │
-│ createdAt        │   │
-│ updatedAt        │   │
-└──────────────────┘   │
+┌──────────────────────────┐
+│      User                │
+│──────────────────────────│
+│ id (PK)                  │───┐
+│ name                     │   │
+│ email (unique)           │   │
+│ emailVerified            │   │
+│ image                    │   │
+│ twoFactorEnabled         │   │
+│ banned                   │   │
+│ banReason                │   │
+│ banExpires               │   │
+│ deletedAt (soft-delete)  │   │
+│ createdAt                │   │
+│ updatedAt                │   │
+└──────────────────────────┘   │
                        │
-         ┌─────────────┼─────────────┬─────────────┬──────────────┐
-         │             │             │             │              │
-         ▼             ▼             ▼             ▼              ▼
-┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌──────────────┐
-│  Session   │  │  Account   │  │  Project   │  │Verification│  │ Organization │
-│────────────│  │────────────│  │────────────│  │────────────│  │──────────────│
-│ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)      │
-│ userId (FK)│  │ userId (FK)│  │ userId (FK)│  │ identifier │  │ name         │
-│ token      │  │ providerId │  │ name       │  │ value      │  │ ownerId (FK) │
-│ expiresAt  │  │ accountId  │  │ type       │  │ expiresAt  │  │ createdAt    │
-│ ipAddress  │  │ accessToken│  │ data (JSON)│  │ createdAt  │  │ updatedAt    │
-│ userAgent  │  │refreshToken│  │ thumbnail  │  │ updatedAt  │  └──────────────┘
-│ createdAt  │  │ idToken    │  │ createdAt  │  └────────────┘         │
-│ updatedAt  │  │ scope      │  │ updatedAt  │                         │
-└────────────┘  │ password   │  └────────────┘                         │
-                │ createdAt  │                                         │
-                │ updatedAt  │                                         ▼
-                └────────────┘                              ┌──────────────────┐
-                                                           │ OrganizationMember│
+         ┌─────────────┼─────────────┬─────────────┬──────────────┬──────────────┐
+         │             │             │             │              │              │
+         ▼             ▼             ▼             ▼              ▼              ▼
+┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌──────────────┐ ┌──────────────┐
+│  Session   │  │  Account   │  │  Project   │  │Verification│  │ Organization │ │  TwoFactor   │
+│────────────│  │────────────│  │────────────│  │────────────│  │──────────────│ │──────────────│
+│ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)    │  │ id (PK)      │ │ id (PK)      │
+│ userId (FK)│  │ userId (FK)│  │ userId (FK)│  │ identifier │  │ name         │ │ userId (FK)  │
+│ token      │  │ providerId │  │ name       │  │ value      │  │ ownerId (FK) │ │ totp         │
+│ expiresAt  │  │ accountId  │  │ type       │  │ expiresAt  │  │ createdAt    │ │ backupCodes[]│
+│ ipAddress  │  │ accessToken│  │ data (JSON)│  │ createdAt  │  │ updatedAt    │ │ verified     │
+│ userAgent  │  │refreshToken│  │ thumbnail  │  │ updatedAt  │  └──────────────┘ │ createdAt    │
+│impersonated│  │ idToken    │  │ createdAt  │  └────────────┘         │         │ updatedAt    │
+│By (opt)   │  │ scope      │  │ updatedAt  │                         │         └──────────────┘
+│ createdAt  │  │ password   │  └────────────┘                         │
+│ updatedAt  │  │ createdAt  │                                         ▼
+└────────────┘  │ updatedAt  │                              ┌──────────────────┐
+                └────────────┘                              │ OrganizationMember│
                                                            │──────────────────│
                                                            │ id (PK)          │
                                                            │ orgId (FK)       │
@@ -377,17 +437,29 @@ requireSession(request, { returnTo: '/dashboard' })
                                                            │ createdAt        │
                                                            │ updatedAt        │
                                                            └──────────────────┘
+
+                                                           ┌──────────────────┐
+                                                           │   AuditLog       │
+                                                           │──────────────────│
+                                                           │ id (PK)          │
+                                                           │ userId (FK)      │
+                                                           │ action (string)  │
+                                                           │ metadata (JSON)  │
+                                                           │ createdAt        │
+                                                           └──────────────────┘
 ```
 
 ### Table Purposes
 
-**User:** Core user identity (created by Better Auth)
-**Session:** Active login sessions with tokens
+**User:** Core user identity (created by Better Auth) with auth/account security flags
+**Session:** Active login sessions with tokens (can be revoked by user or admin)
 **Account:** OAuth provider credentials + password hashes
 **Verification:** Email/phone verification tokens
 **Project:** User-created canvas/video projects (app-specific)
 **Organization:** Team/workspace containers (created by users)
 **OrganizationMember:** User membership + role assignments (owner/admin/member)
+**TwoFactor:** TOTP secrets and backup codes for 2FA
+**AuditLog:** Complete audit trail of all user actions (login, password change, 2FA setup, etc.)
 
 ## Canvas Editor Layer (packages/canvas)
 
@@ -1183,16 +1255,34 @@ pnpm build
 - Stored in HTTP-only cookies (not accessible via JavaScript)
 - Secure flag (HTTPS only in production)
 - SameSite=Lax (CSRF protection)
+- Can be revoked by user or admin from session management page
+- Admin can impersonate user via Session.impersonatedBy field
 
 **Password Security:**
 - Hashed with bcrypt (Better Auth default)
 - Never stored in plaintext
 - Never returned in API responses
+- Password change requires current password verification
+- Password strength meter on password change page
+
+**2FA (Two-Factor Authentication):**
+- TOTP-based (Time-based One-Time Password)
+- QR code generation during setup
+- 10 backup codes for account recovery (one-time use)
+- Challenge page at `/sign-in/verify-2fa` after password login
+- Backup codes can be regenerated from settings
 
 **OAuth Tokens:**
 - Stored in Account table (encrypted at rest by database)
-- Only refresh tokens persisted
+- Refresh tokens persisted with token refresh tracking
 - Access tokens expire after provider-defined TTL
+- GitHub OAuth supported in addition to Google
+
+**Account Deletion:**
+- Soft-delete model: User.deletedAt timestamp
+- 30-day grace period before permanent deletion
+- Audit logged for compliance
+- User can request account recovery during grace period
 
 ### Database Security
 
@@ -1206,6 +1296,52 @@ pnpm build
 - Supabase RLS policies per table
 - Users can only access their own data
 
+### Admin Panel & User Management
+
+**Routes:**
+- `/admin/users` → User list with search/filter/pagination
+- `/admin/users/:userId` → User detail page with ban/unban controls
+
+**Features:**
+- Search users by email/name
+- Filter by 2FA enabled, ban status
+- Pagination support
+- Ban/unban users (prevents login)
+- View user audit log
+- View active sessions
+- Admin impersonation (via Session.impersonatedBy)
+
+**Admin Actions Logged:**
+- User ban/unban
+- Password reset (admin-initiated)
+- 2FA reset
+- Session revocation
+- Account deletion approval
+- All actions recorded in AuditLog
+
+### Audit Logging
+
+**AuditLog Table:**
+- `userId` → User who performed action
+- `action` → Action type (login, password_change, 2fa_setup, ban_user, etc.)
+- `metadata` → JSON metadata (IP, user agent, resource ID)
+- `createdAt` → Timestamp
+
+**Tracked Actions:**
+- User login/logout
+- Password change/reset
+- Email verification
+- 2FA enabled/disabled
+- Session revocation
+- Account deletion (soft-delete)
+- Admin actions (ban, impersonate, audit review)
+- OAuth provider connections
+
+**Access:**
+- Audit log visible to user for own actions
+- Admins can view all audit logs for compliance
+- Non-editable, append-only for integrity
+
 ### Environment Variables
 
 **Server-only secrets:**
@@ -1213,7 +1349,11 @@ pnpm build
 // ✅ Safe: Only available on server
 process.env.BETTER_AUTH_SECRET
 process.env.GOOGLE_CLIENT_SECRET
+process.env.GITHUB_CLIENT_SECRET
 process.env.DATABASE_URL
+process.env.DIRECT_DATABASE_URL
+process.env.RESEND_API_KEY
+process.env.TOKEN_ENCRYPTION_KEY
 
 // ❌ Never expose:
 // - Don't pass to client components

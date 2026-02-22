@@ -83,10 +83,14 @@ creator-studio/
 **Path:** `apps/web`
 **Type:** React Router 7 SSR application
 
-**Routes:**
-- `/` → `routes/home.tsx`
-- `/sign-in` → `routes/sign-in.tsx`
-- `/sign-up` → `routes/sign-up.tsx`
+**Auth Routes:**
+- `/` → `routes/home.tsx` (auth-aware, shows Dashboard link when logged in)
+- `/sign-in` → `routes/sign-in.tsx` (redirects to /dashboard if authenticated)
+- `/sign-up` → `routes/sign-up.tsx` (redirects to /dashboard if authenticated)
+- `/sign-in/verify-2fa` → `routes/sign-in.verify-2fa.tsx` (TOTP challenge verification)
+- `/forgot-password` → `routes/forgot-password.tsx` (password reset request)
+- `/reset-password` → `routes/reset-password.tsx` (password reset with token)
+- `/api/auth/*` → `routes/api.auth.$.ts` (Better Auth handler)
 - `/dashboard/*` → `routes/dashboard/` (layout + nested routes)
   - `/dashboard` → `index.tsx`
   - `/dashboard/canvas` → `canvas.tsx`
@@ -100,7 +104,12 @@ creator-studio/
   - `/dashboard/webhooks` → `webhooks.tsx` (webhook subscriptions)
   - `/dashboard/plugins/marketplace` → `plugins.marketplace.tsx` (browse plugins)
   - `/dashboard/plugins/installed` → `plugins.installed.tsx` (manage installed plugins)
-- `/api/auth/*` → `routes/api.auth.$.ts` (Better Auth handler)
+  - `/dashboard/settings/security` → `settings.security.tsx` (2FA setup, backup codes)
+  - `/dashboard/settings/password` → `settings.password.tsx` (password change with strength meter)
+  - `/dashboard/settings/sessions` → `settings.sessions.tsx` (session management, revoke)
+  - `/dashboard/settings/account` → `settings.account.tsx` (soft-delete, account recovery)
+- `/admin/users` → `routes/admin/users.tsx` (user list with search/filter/pagination)
+- `/admin/users/:userId` → `routes/admin/users.$userId.tsx` (user detail, ban/unban)
 - `/api/organizations/*` → `routes/api.organizations.ts` (org CRUD + member management)
 - `/api/api-keys` → `routes/api.api-keys.ts` (API key CRUD)
 - `/api/webhooks` → `routes/api.webhooks.ts` (webhook CRUD)
@@ -127,9 +136,14 @@ creator-studio/
 - `app/routes.ts` → Route configuration (includes org routes)
 - `app/lib/auth-server.ts` → Server-side auth utilities
 - `app/lib/auth-client.ts` → Client-side auth hooks
+- `app/lib/admin-helpers.ts` → Admin panel utilities (ban/unban, user queries)
+- `app/lib/env-validation.ts` → Environment variable validation
+- `app/lib/url-helpers.ts` → URL construction utilities
 - `app/lib/api-key-auth.ts` → API key authentication (SHA-256 hashing, scope enforcement)
 - `app/lib/api-rate-limiter.ts` → Token bucket rate limiter (100 req/min default)
 - `app/components/organization-switcher.tsx` → Org selector in nav
+- `app/routes/dashboard/settings.*.tsx` → Security, password, session, account management pages
+- `app/routes/admin/users.tsx` → Admin user list and management
 
 ### `@creator-studio/db`
 **Path:** `packages/db`
@@ -171,23 +185,38 @@ creator-studio/
 - `./lib/rbac-helpers` → `src/lib/rbac-helpers.ts` (RBAC utilities)
 
 **Enhanced Capabilities:**
-- **Better Auth Plugins** → Two-factor auth (2FA), magic link authentication, organization roles
+- **Better Auth Plugins** → Two-factor auth (2FA/TOTP), magic link authentication, organization roles
+- **Email Service** → Resend integration with verify-email, reset-password, magic-link templates (@react-email/components)
+- **2FA System** → TOTP-based with QR code setup, backup codes, verify challenge page
+- **Account Security** → Password change with strength meter, session management with revoke, soft-delete with 30-day grace period
+- **GitHub OAuth** → Additional OAuth provider support
+- **Admin Panel** → User list with search/filter/pagination, ban/unban, audit logging (AuditLog model)
 - **RBAC Helpers** → Role hierarchy (owner > admin > member), permission checks, role validation
 - **Middleware Helpers** → requireAuth, requireRole, requireOrganizationRole
-- **17 Tests** → Session validation, plugin configuration, middleware enforcement
+- **Audit Logging** → Complete audit trail via AuditLog model tracking all user actions
+- **17+ Tests** → Session validation, plugin configuration, middleware enforcement
 
 **Configuration:**
 - **Base Path:** `/api/auth`
-- **Providers:** Email/password, Google OAuth, Magic Link
+- **Providers:** Email/password, Google OAuth, GitHub OAuth, Magic Link
 - **Session:** Cookie-based with 5-minute cache
 - **Adapter:** Prisma adapter for PostgreSQL
-- **Features:** 2FA, Organization support
+- **Email:** Resend provider with templated emails
+- **Features:** 2FA, Organization support, Email verification, Password reset, Soft-delete accounts
+
+**Key Models:**
+- **User** → Enhanced with `twoFactorEnabled`, `banned`, `banReason`, `banExpires`, `deletedAt` (soft-delete)
+- **TwoFactor** → TOTP credentials and backup codes
+- **Session** → Enhanced with `impersonatedBy` for admin support
+- **AuditLog** → Comprehensive action logging (userId, action, timestamp, metadata)
 
 **Key Files:**
 - `src/auth-server.ts` → Better Auth configuration with plugins
 - `src/auth-client.ts` → Client-side authentication hooks
+- `src/lib/email-sender.ts` → Email service integration (Resend)
+- `src/templates/*.tsx` → React Email templates (verify-email, reset-password, magic-link)
 - `src/middleware/` → Authentication middleware helpers
-- `src/*.test.ts` → 17 comprehensive tests
+- `src/*.test.ts` → 17+ comprehensive tests
 
 ### `@creator-studio/ui`
 **Path:** `packages/ui`
@@ -913,9 +942,12 @@ creator-studio/
 ## Environment Variables
 
 **Required:**
-- `DATABASE_URL` → PostgreSQL connection string (Supabase)
+- `DATABASE_URL` → PostgreSQL connection string (Supabase, pooling)
+- `DIRECT_DATABASE_URL` → PostgreSQL direct connection (Supabase, no pooling) for migrations
 - `BETTER_AUTH_URL` → Application URL (http://localhost:5173 in dev)
 - `BETTER_AUTH_SECRET` → Random secret (min 32 chars)
+- `RESEND_API_KEY` → Resend email service API key for transactional emails
+- `TOKEN_ENCRYPTION_KEY` → 32-byte encryption key (hex) for OAuth token encryption
 
 **Phase 5b - OAuth & Social Integration:**
 - `META_OAUTH_CLIENT_ID` → Facebook/Instagram/Threads app ID

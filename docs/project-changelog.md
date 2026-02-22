@@ -7,6 +7,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-02-22
+
+### Added - Auth Upgrade: Email Service, 2FA, Account Security, Admin Panel
+
+**Email Service (Resend Integration)**
+- Resend API integration for transactional emails
+- React Email component templates for consistency
+- Verify-email template for email verification flow
+- Reset-password template for password recovery
+- Magic-link template for passwordless login
+- Automatic retry logic for failed sends
+
+**Two-Factor Authentication (2FA)**
+- TOTP (Time-based One-Time Password) implementation
+- QR code generation for authenticator app setup
+- 10 one-time backup codes for account recovery
+- Verify-2FA page at `/sign-in/verify-2fa`
+- TwoFactor model with encrypted storage
+
+**Account Security**
+- Password change page at `/dashboard/settings/password` with strength meter
+- Session management at `/dashboard/settings/sessions` with revoke capability
+- Account deletion at `/dashboard/settings/account` with 30-day grace period
+- Soft-delete model: User.deletedAt for recovery window
+- Admin impersonation support via Session.impersonatedBy
+
+**Admin Panel**
+- Admin user list at `/admin/users` with search/filter/pagination
+- Admin user detail page at `/admin/users/:userId`
+- Ban/unban user functionality with reason and expiry
+- User audit log viewing for compliance
+- Active session management (revoke, view)
+- User analytics and health tracking
+
+**GitHub OAuth**
+- Added GitHub OAuth provider support
+- Complements existing Google OAuth
+- Flexible provider configuration
+
+**Audit Logging**
+- AuditLog model for comprehensive action tracking
+- Tracks: login, password change, 2FA setup, email verification, bans, deletions
+- Metadata JSON field for context (IP, user agent, resource ID)
+- User-accessible audit log for own actions
+- Admin access to all audit logs
+- Non-editable append-only design for integrity
+
+**Environment Variables**
+- `RESEND_API_KEY` → Resend email service API key
+- `TOKEN_ENCRYPTION_KEY` → 32-byte encryption key for OAuth tokens
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` → GitHub OAuth credentials
+
+**Database Schema Updates**
+- User: Added twoFactorEnabled, banned, banReason, banExpires, deletedAt
+- Session: Added impersonatedBy for admin impersonation
+- TwoFactor: New table for TOTP storage + backup codes
+- AuditLog: New append-only audit trail table
+
+**Files Added/Modified**
+- `packages/auth/src/lib/email-sender.ts` → Email service integration
+- `packages/auth/src/templates/` → React Email templates (3 files)
+- `apps/web/app/routes/sign-in.verify-2fa.tsx` → 2FA challenge
+- `apps/web/app/routes/forgot-password.tsx` → Password reset request
+- `apps/web/app/routes/reset-password.tsx` → Password reset form
+- `apps/web/app/routes/dashboard/settings.security.tsx` → 2FA setup
+- `apps/web/app/routes/dashboard/settings.password.tsx` → Password change
+- `apps/web/app/routes/dashboard/settings.sessions.tsx` → Session management
+- `apps/web/app/routes/dashboard/settings.account.tsx` → Account deletion
+- `apps/web/app/routes/admin/users.tsx` → Admin user list
+- `apps/web/app/routes/admin/users.$userId.tsx` → Admin user detail
+- `apps/web/app/lib/admin-helpers.ts` → Admin utilities
+- `apps/web/app/lib/env-validation.ts` → Environment validation
+- `packages/db/prisma/schema.prisma` → Schema updates
+
+**Success Criteria Achieved**
+- ✓ Email service operational for transactional emails
+- ✓ 2FA setup and verification working
+- ✓ Account security controls in place
+- ✓ Admin panel functional for user management
+- ✓ Audit logging comprehensive and compliant
+- ✓ GitHub OAuth integration added
+- ✓ All environment variables documented
+- ✓ Zero TypeScript errors, full strict mode
+
+**Backward Compatibility**
+- All existing auth flows unchanged
+- Email templates optional enhancement
+- 2FA opt-in for users (backward compatible)
+- Admin panel isolated to admin role
+
+---
+
 ## [0.18.0] - 2026-02-22
 
 ### Updated - Database Connection & Auth Completion
@@ -1110,7 +1202,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.18.0 | Database Connection & Auth Completion | 2026-02-22 | Current |
+| 0.19.0 | Auth Upgrade | 2026-02-22 | Current |
+| 0.18.0 | Database Connection & Auth Completion | 2026-02-22 | Released |
 | 0.17.0 | AI SDK Official Provider Adoption | 2026-02-22 | Released |
 | 0.16.0 | AI Package Production Hardening | 2026-02-22 | Released |
 | 0.15.0 | AI SDK v6 Upgrade | 2026-02-22 | Released |
