@@ -3,7 +3,11 @@ import { type RouteConfig, index, layout, route } from '@react-router/dev/routes
 export default [
   index('routes/home.tsx'),
   route('sign-in', 'routes/sign-in.tsx'),
+  route('sign-in/verify-2fa', 'routes/sign-in.verify-2fa.tsx'),
   route('sign-up', 'routes/sign-up.tsx'),
+  route('forgot-password', 'routes/forgot-password.tsx'),
+  route('reset-password', 'routes/reset-password.tsx'),
+  route('account-deleted', 'routes/account-deleted.tsx'),
   route('api/auth/*', 'routes/api.auth.$.ts'),
   route('api/ai', 'routes/api.ai.ts'),
   route('api/inngest', 'routes/api.inngest.ts'),
@@ -28,5 +32,11 @@ export default [
     route('dashboard/plugins', 'routes/dashboard/plugins.tsx'),
     route('dashboard/organizations', 'routes/dashboard/organizations.tsx'),
     route('dashboard/organizations/:orgId', 'routes/dashboard/organizations.$orgId.tsx'),
+    route('dashboard/settings/security', 'routes/dashboard/settings.security.tsx'),
+    route('dashboard/settings/password', 'routes/dashboard/settings.password.tsx'),
+    route('dashboard/settings/sessions', 'routes/dashboard/settings.sessions.tsx'),
+    route('dashboard/settings/account', 'routes/dashboard/settings.account.tsx'),
+    route('admin/users', 'routes/admin/users.tsx'),
+    route('admin/users/:userId', 'routes/admin/users.$userId.tsx'),
   ]),
 ] satisfies RouteConfig

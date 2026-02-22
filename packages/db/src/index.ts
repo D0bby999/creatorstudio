@@ -1,6 +1,6 @@
 export { prisma } from './client'
 export { paginationArgs, type PaginationParams, type PaginatedResponse } from './helpers/pagination'
-export type { User, Session, Account, Project, SocialAccount, SocialPost, PostAnalytics, CrawlJob, AiSession, Organization, OrganizationMember } from '@prisma/client'
+export type { User, Session, Account, Project, SocialAccount, SocialPost, PostAnalytics, CrawlJob, AiSession, Organization, OrganizationMember, AuditLog } from '@prisma/client'
 export * from './queries/user-queries'
 export * from './queries/project-queries'
 export * from './queries/social-queries'

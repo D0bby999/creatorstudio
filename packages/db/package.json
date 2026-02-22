@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./lib/audit-log": "./src/lib/audit-log.ts"
   },
   "scripts": {
     "db:generate": "prisma generate",

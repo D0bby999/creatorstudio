@@ -3,6 +3,7 @@ import { webhookDelivery } from './functions/webhook-delivery'
 import { crawlJobExecutor } from './functions/crawl-job-executor'
 import { videoExportTrigger } from './functions/video-export-trigger'
 import { tokenRefreshCron } from './functions/token-refresh-cron'
+import { hardDeleteUsersCron } from './functions/hard-delete-users-cron'
 
 export {
   socialPostPublisher,
@@ -10,6 +11,7 @@ export {
   crawlJobExecutor,
   videoExportTrigger,
   tokenRefreshCron,
+  hardDeleteUsersCron,
 }
 
 export const functions = [
@@ -18,4 +20,5 @@ export const functions = [
   crawlJobExecutor,
   videoExportTrigger,
   tokenRefreshCron,
+  hardDeleteUsersCron,
 ]

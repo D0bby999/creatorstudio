@@ -14,11 +14,17 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@creator-studio/db": "workspace:*",
+    "@react-email/components": "^1.0.8",
     "better-auth": "^1.4.18",
-    "@creator-studio/db": "workspace:*"
+    "resend": "^6.9.2"
   },
   "devDependencies": {
+    "@types/react": "18",
+    "react": "18",
+    "react-dom": "18",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.1"
+    "vitest": "^3.2.1",
+    "jsdom": "^24.1.1"
   }
 }

@@ -6,8 +6,11 @@ import * as Sentry from '@sentry/react'
 import { PassThrough } from 'node:stream'
 import { generateSecurityHeaders } from './lib/security-headers'
 import { logger } from './lib/logger'
+import { validateEnv } from './lib/env-validation'
 
 const ABORT_DELAY = 5_000
+
+validateEnv()
 
 // Note: @sentry/react v8+ works for both client and server in React Router apps
 // It auto-detects the Node.js runtime and configures appropriately for SSR

@@ -16,10 +16,17 @@ model User {
   email          String
   emailVerified  Boolean         @default(false)
   image          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  role              String          @default("user")
+  banned            Boolean         @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  deletedAt         DateTime?
+  twoFactorEnabled  Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   sessions            Session[]
   accounts            Account[]
+  twoFactor           TwoFactor?
   projects            Project[]
   socialAccounts      SocialAccount[]
   crawlJobs           CrawlJob[]
@@ -32,6 +39,8 @@ model User {
   videoExports        VideoExport[]
   pluginReviews       PluginReview[]
   pluginInstalls      PluginInstall[]
+  auditLogsAsActor    AuditLog[]    @relation("AuditActor")
+  auditLogsAsTarget   AuditLog[]    @relation("AuditTarget")
 
   @@unique([email])
   @@map("user")
@@ -43,10 +52,11 @@ model Session {
   token     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
   @@index([userId])
@@ -83,6 +93,16 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id @default(cuid())
+  secret      String
+  backupCodes String
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factor")
 }
 
 // ─── Application tables ───
@@ -418,4 +438,22 @@ model VideoExport {
   @@index([projectId])
   @@index([status])
   @@map("video_export")
+}
+
+// ─── Audit Log tables ───
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  actorId   String
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetId  String?
+  target    User?    @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetId])
+  @@index([action])
+  @@map("audit_log")
 }
