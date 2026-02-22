@@ -3,15 +3,12 @@ import { handleAiStream } from '@creator-studio/ai/lib/ai-stream-handler'
 import { getSessions, getSession } from '@creator-studio/ai/lib/session-memory'
 import { sanitizeUserInput, wrapWithDelimiters } from '@creator-studio/ai/lib/prompt-sanitizer'
 import { checkAiRateLimit, AiRateLimitError } from '@creator-studio/ai/lib/ai-rate-limiter'
-import { auth } from '~/lib/auth.server'
+import { requireApiSession } from '~/lib/auth-server'
 import { logger } from '~/lib/logger'
 import type { AgentRole } from '@creator-studio/ai/types/ai-types'
 
 export async function action({ request }: ActionFunctionArgs) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const session = await requireApiSession(request)
 
   const body = await request.json()
   const { sessionId, message, agentRole } = body
@@ -73,6 +70,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  await requireApiSession(request)
+
   const url = new URL(request.url)
   const sessionId = url.searchParams.get('sessionId')
 

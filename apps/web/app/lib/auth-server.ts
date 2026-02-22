@@ -10,9 +10,11 @@ export async function getSession(request: Request) {
 export async function requireSession(request: Request) {
   const session = await getSession(request)
   if (!session) {
+    const returnTo = new URL(request.url).pathname
+    const params = returnTo !== '/dashboard' ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
     throw new Response(null, {
       status: 302,
-      headers: { Location: '/sign-in' },
+      headers: { Location: `/sign-in${params}` },
     })
   }
   return session

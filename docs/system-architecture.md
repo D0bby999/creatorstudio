@@ -144,13 +144,16 @@ Creator Studio is built as a **Turborepo monorepo** with a **React Router 7 SSR 
 
 ```
 app/routes/
-├── home.tsx                  GET /
-├── sign-in.tsx              GET /sign-in, POST (action)
-├── sign-up.tsx              GET /sign-up, POST (action)
+├── home.tsx                  GET / (auth-aware, shows Dashboard link if logged in)
+├── sign-in.tsx              GET /sign-in, POST (redirects to /dashboard if authenticated)
+├── sign-up.tsx              GET /sign-up, POST (redirects to /dashboard if authenticated)
 ├── api.auth.$.ts            ALL /api/auth/* (Better Auth handler)
+├── api.ai.ts                POST /api/ai (requires auth, fixed imports)
+├── api.ai.image.ts          POST /api/ai/image (requires auth, fixed imports)
+├── api.ai.suggestions.ts    POST /api/ai/suggestions (requires auth, fixed imports)
 └── dashboard/
-    ├── layout.tsx           Wrapper for /dashboard/*
-    ├── index.tsx            GET /dashboard
+    ├── layout.tsx           Wrapper for /dashboard/* (requires auth)
+    ├── index.tsx            GET /dashboard (requires auth, fixed imports)
     ├── canvas.tsx           GET /dashboard/canvas
     ├── video.tsx            GET /dashboard/video
     ├── crawler.tsx          GET /dashboard/crawler
@@ -208,6 +211,21 @@ export const auth = betterAuth({
     cookieCache: { enabled: true, maxAge: 5 * 60 }, // 5 min cache
   },
 })
+
+// packages/auth/src/client.ts
+// Re-exports auth client with plugins for apps/web
+// Single source of truth for client-side auth operations
+export { createAuthClient } from '@creator-studio/auth/client'
+```
+
+### Auth Client Pattern
+
+**apps/web imports unified auth client:**
+```typescript
+// apps/web/app/lib/auth.client.ts
+export { createAuthClient } from '@creator-studio/auth/client'
+
+// Provides: signIn, signUp, signOut, useSession, plus plugins
 ```
 
 ### Authentication Flow
@@ -260,6 +278,11 @@ Better Auth checks:
   - Cookie cache valid? (5 min)
          ▼
 Return Session { user, expiresAt, ... } or null
+         ▼
+requireSession(request, { returnTo: '/dashboard' })
+  - If no session → Redirect to sign-in with returnTo param
+  - If session valid → Continue to route
+  - Post-login → Redirect to returnTo page
 ```
 
 ## Organization & RBAC Layer (packages/auth + apps/web)
@@ -1024,13 +1047,14 @@ pnpm dev
 
 # What happens:
 1. Turborepo runs "dev" task for all packages (parallel)
-2. packages/db → No dev task (types already generated)
-3. packages/auth → No dev task (TypeScript source used directly)
-4. packages/ui → No dev task (imported as source)
+2. packages/db → Generates Prisma client and watches schema
+3. packages/auth → Exports auth client with plugins
+4. packages/ui → Imported as TypeScript source
 5. apps/web → react-router dev (Vite dev server on :5173)
          ▼
 6. Vite serves app with HMR (Hot Module Replacement)
-7. Changes auto-reload in browser
+7. Docker Postgres runs on port 5433 (to avoid conflicts with system Postgres)
+8. Changes auto-reload in browser
 ```
 
 ### Production Build
@@ -1173,9 +1197,10 @@ pnpm build
 ### Database Security
 
 **Connection:**
-- DATABASE_URL via environment variable (not committed)
+- DATABASE_URL (pooling connection via PgBouncer for serverless)
+- DIRECT_DATABASE_URL (direct connection for migrations and real-time queries)
 - SSL/TLS connection to Supabase (enforced)
-- Connection pooling via Prisma
+- Connection pooling via Prisma and PgBouncer for high-concurrency environments
 
 **Row-Level Security (Future):**
 - Supabase RLS policies per table

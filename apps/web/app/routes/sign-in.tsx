@@ -1,12 +1,31 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { redirect } from 'react-router'
+import type { Route } from './+types/sign-in'
+import { getSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
 import { AuthLayout } from '~/components/auth/auth-layout'
+import { AuthDivider } from '~/components/auth/auth-divider'
 import { Button } from '@creator-studio/ui/components/button'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
 
-export default function SignIn() {
+function sanitizeReturnTo(value: string | null): string | null {
+  if (!value) return null
+  if (!value.startsWith('/')) return null
+  if (value.startsWith('//')) return null
+  if (value === '/sign-in' || value === '/sign-up') return null
+  return value
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request)
+  if (session) throw redirect('/dashboard')
+  const returnTo = sanitizeReturnTo(new URL(request.url).searchParams.get('returnTo'))
+  return { returnTo }
+}
+
+export default function SignIn({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +40,7 @@ export default function SignIn() {
     await authClient.signIn.email(
       { email, password },
       {
-        onSuccess: () => navigate('/dashboard'),
+        onSuccess: () => navigate(loaderData.returnTo || '/dashboard'),
         onError: (ctx) => setError(ctx.error.message ?? 'Sign in failed'),
       },
     )
@@ -49,7 +68,7 @@ export default function SignIn() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
               autoComplete="email"
@@ -62,7 +81,7 @@ export default function SignIn() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               placeholder="Enter your password"
               required
               autoComplete="current-password"
@@ -73,6 +92,8 @@ export default function SignIn() {
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+
+        <AuthDivider />
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}

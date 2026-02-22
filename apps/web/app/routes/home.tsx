@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Image, Video, Share2, Globe, Sparkles } from 'lucide-react'
 import type { Route } from './+types/home'
+import { getSession } from '~/lib/auth-server'
 import { Button } from '@creator-studio/ui/components/button'
 
 export function meta(_args: Route.MetaArgs) {
@@ -8,6 +9,11 @@ export function meta(_args: Route.MetaArgs) {
     { title: 'Creator Studio — All-in-one Creative Toolkit' },
     { name: 'description', content: 'Design, edit, publish, and analyze content — all in one place.' },
   ]
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request)
+  return { isAuthenticated: !!session }
 }
 
 const features = [
@@ -18,18 +24,28 @@ const features = [
   { icon: Sparkles, title: 'AI Tools', desc: 'Content generation and design suggestions' },
 ]
 
-export default function Home() {
+export default function Home({ loaderData }: Route.ComponentProps) {
+  const { isAuthenticated } = loaderData
+
   return (
     <main className="min-h-screen">
       <header className="flex items-center justify-between px-6 py-4 lg:px-12">
         <span className="text-xl font-bold text-primary">Creator Studio</span>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link to="/sign-in">Sign In</Link>
-          </Button>
-          <Button asChild className="press-scale">
-            <Link to="/sign-up">Get Started</Link>
-          </Button>
+          {isAuthenticated ? (
+            <Button asChild className="press-scale">
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link to="/sign-in">Sign In</Link>
+              </Button>
+              <Button asChild className="press-scale">
+                <Link to="/sign-up">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
@@ -43,12 +59,20 @@ export default function Home() {
           Stop switching between tools and start creating.
         </p>
         <div className="mt-10 flex justify-center gap-4">
-          <Button size="lg" asChild className="press-scale">
-            <Link to="/sign-up">Start Creating</Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link to="/sign-in">Sign In</Link>
-          </Button>
+          {isAuthenticated ? (
+            <Button size="lg" asChild className="press-scale">
+              <Link to="/dashboard">Go to Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button size="lg" asChild className="press-scale">
+                <Link to="/sign-up">Start Creating</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/sign-in">Sign In</Link>
+              </Button>
+            </>
+          )}
         </div>
       </section>
 

@@ -8,15 +8,11 @@ import { suggestHashtags } from '@creator-studio/ai/lib/hashtag-suggestions'
 import { suggestPostingTimes } from '@creator-studio/ai/lib/content-scheduling'
 import { predictPerformance } from '@creator-studio/ai/lib/content-performance-predictor'
 import { checkAiRateLimit, AiRateLimitError } from '@creator-studio/ai/lib/ai-rate-limiter'
-import { auth } from '~/lib/auth.server'
+import { requireApiSession } from '~/lib/auth-server'
 import { logger } from '~/lib/logger'
 
 export async function action({ request }: ActionFunctionArgs) {
-  // Check authentication
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const session = await requireApiSession(request)
 
   if (request.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 })

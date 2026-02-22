@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { redirect } from 'react-router'
+import type { Route } from './+types/sign-up'
+import { getSession } from '~/lib/auth-server'
 import { authClient } from '~/lib/auth-client'
 import { AuthLayout } from '~/components/auth/auth-layout'
+import { AuthDivider } from '~/components/auth/auth-divider'
 import { Button } from '@creator-studio/ui/components/button'
 import { Input } from '@creator-studio/ui/components/input'
 import { Label } from '@creator-studio/ui/components/label'
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request)
+  if (session) throw redirect('/dashboard')
+  return {}
+}
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -50,7 +60,7 @@ export default function SignUp() {
               id="name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               placeholder="Your name"
               required
               autoComplete="name"
@@ -63,7 +73,7 @@ export default function SignUp() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
               autoComplete="email"
@@ -76,7 +86,7 @@ export default function SignUp() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               placeholder="Min. 8 characters"
               required
               minLength={8}
@@ -88,6 +98,8 @@ export default function SignUp() {
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
+
+        <AuthDivider />
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}

@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-02-22
+
+### Updated - Database Connection & Auth Completion
+
+**Docker Database Configuration**
+- Docker Postgres now exposed on port 5433 (vs. 5432) to avoid conflicts with system PostgreSQL
+- Verified PgBouncer pooling for serverless compatibility
+- Connection pool limits optimized for serverless (connection_limit=1 on pooler)
+
+**Environment Variable Updates**
+- `.env.example` now includes `DIRECT_DATABASE_URL` for Prisma migrations and direct connections
+- Dual-connection pattern: `DATABASE_URL` (pooling) + `DIRECT_DATABASE_URL` (direct)
+- Documented for both local dev (Docker on 5433) and production (Supabase with pooler)
+
+**Auth Client Re-export Pattern**
+- `apps/web` now imports auth client from `@creator-studio/auth/client` (single source of truth)
+- All plugins and session methods centralized in auth package exports
+- Type-safe auth client with full plugin support (2FA, magic links, organizations)
+
+**Auth-Aware Pages**
+- Home page (`home.tsx`) now auth-aware: shows Dashboard button when logged in
+- Sign-in page (`sign-in.tsx`) redirects to /dashboard if already authenticated
+- Sign-up page (`sign-up.tsx`) redirects to /dashboard if already authenticated
+- `requireSession()` helper now includes `returnTo` parameter for post-login redirects
+
+**AI API Routes Fixed**
+- Fixed import errors in `api.ai.ts`, `api.ai.image.ts`, `api.ai.suggestions.ts`
+  - Changed: `~/lib/auth.server` → `~/lib/auth-server` (correct filename)
+- All AI routes now properly require authentication (was missing in some)
+- AI chat loader now validates session before returning data
+
+**Inngest Functions ESM Fix**
+- Fixed ESM re-export bug in `inngest-functions.ts`
+- Proper module export pattern for background job functions
+
+**Files Modified (7)**
+- `docker-compose.yml` — Database port changed to 5433
+- `.env.example` — Added DIRECT_DATABASE_URL configuration
+- `packages/auth/src/client.ts` — Auth client with plugins exported
+- `apps/web/app/routes/home.tsx` — Auth-aware home page
+- `apps/web/app/routes/sign-in.tsx` — Auto-redirect if authenticated
+- `apps/web/app/routes/sign-up.tsx` — Auto-redirect if authenticated
+- `apps/web/app/routes/api.ai*.ts` — Fixed imports, added auth checks
+- `apps/web/app/routes/dashboard/index.tsx` — Fixed AI imports
+- `apps/web/app/lib/inngest-functions.ts` — Fixed ESM re-export
+
+**Success Criteria Achieved**
+- ✓ Database connection stable on port 5433 without conflicts
+- ✓ Dual-connection pattern documented (pooling + direct)
+- ✓ Auth client centralized as single source of truth
+- ✓ All pages correctly require or respect authentication
+- ✓ AI API routes functional with proper auth checks
+- ✓ All imports consistent and resolvable
+- ✓ Zero TypeScript errors, full strict mode
+
+---
+
 ## [0.17.0] - 2026-02-22
 
 ### Updated - AI SDK Official Provider Adoption
@@ -1053,7 +1110,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.16.0 | AI Package Production Hardening | 2026-02-22 | Current |
+| 0.18.0 | Database Connection & Auth Completion | 2026-02-22 | Current |
+| 0.17.0 | AI SDK Official Provider Adoption | 2026-02-22 | Released |
+| 0.16.0 | AI Package Production Hardening | 2026-02-22 | Released |
 | 0.15.0 | AI SDK v6 Upgrade | 2026-02-22 | Released |
 | 0.14.0 | AI Features Mega-Upgrade | 2026-02-21 | Released |
 | 0.13.0 | AI Package Multi-Provider Upgrade | 2026-02-21 | Released |
