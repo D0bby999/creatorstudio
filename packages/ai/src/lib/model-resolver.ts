@@ -5,6 +5,7 @@
 
 import { wrapLanguageModel } from 'ai'
 import type { LanguageModel } from 'ai'
+import type { LanguageModelV3 } from '@ai-sdk/provider'
 import { resolveModel, createProviderModel } from './model-registry'
 import { createCacheMiddleware } from './ai-cache-middleware'
 import { createLoggingMiddleware } from './ai-logging-middleware'
@@ -68,10 +69,10 @@ export function resolveModelForTask(task: AiTask): LanguageModel {
   }
 
   // Apply middleware: logging always, cache only for structured/prediction
-  const logged = wrapLanguageModel({ model: baseModel, middleware: loggingMiddleware })
+  const logged = wrapLanguageModel({ model: baseModel as LanguageModelV3, middleware: loggingMiddleware })
 
   if (CACHEABLE_TASKS.has(task)) {
-    return wrapLanguageModel({ model: logged, middleware: cacheMiddleware })
+    return wrapLanguageModel({ model: logged as LanguageModelV3, middleware: cacheMiddleware })
   }
 
   return logged

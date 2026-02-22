@@ -44,27 +44,16 @@ export default function AI() {
 
           const chunk = decoder.decode(value, { stream: true })
 
-          // Parse Vercel AI data stream format - text chunks prefixed with "0:"
-          const lines = chunk.split('\n')
-          for (const line of lines) {
-            if (line.startsWith('0:')) {
-              try {
-                const text = JSON.parse(line.slice(2))
-                assistantMessage += text
-                setMessages(prev => {
-                  const updated = [...prev]
-                  updated[updated.length - 1] = {
-                    role: 'assistant',
-                    content: assistantMessage,
-                    agentRole: currentAgent
-                  }
-                  return updated
-                })
-              } catch (e) {
-                // Ignore parse errors for incomplete chunks
-              }
+          assistantMessage += chunk
+          setMessages(prev => {
+            const updated = [...prev]
+            updated[updated.length - 1] = {
+              role: 'assistant',
+              content: assistantMessage,
+              agentRole: currentAgent
             }
-          }
+            return updated
+          })
         }
       }
     } catch (e) {

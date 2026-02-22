@@ -2,7 +2,7 @@
  * Caption variant generation using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 import { getPlatformRule } from './platform-adaptation-rules'
@@ -39,9 +39,9 @@ export async function generateCaptionVariants(
       ? `\n\nBrand context: ${brandContext}`
       : ''
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('caption-variant'),
-      schema: CaptionVariantSchema,
+      output: Output.object({ schema: CaptionVariantSchema }),
       prompt: `Generate ${validCount} caption variants for ${platform} based on this content:
 
 "${content}"
@@ -63,7 +63,7 @@ Provide a testing hypothesis explaining what each variant aims to test.`,
       temperature: 0.8,
     })
 
-    return object
+    return output!
   } catch (error) {
     console.error('Caption variant generation error:', error)
     return generateCaptionVariantsHeuristic(content, platform, validCount)

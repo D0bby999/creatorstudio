@@ -2,7 +2,7 @@
  * Content translation using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -88,9 +88,9 @@ export async function translateContent(
       ? `\n\nBrand context: ${brandContext}`
       : ''
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('translate'),
-      schema: TranslatedContentSchema,
+      output: Output.object({ schema: TranslatedContentSchema }),
       prompt: `Translate this content to ${LANGUAGE_NAMES[targetLang]} (${targetLang}).
 
 Original content: "${content}"${preserveInstructions}${brandPrompt}
@@ -102,7 +102,7 @@ Identify the source language and provide the complete translated content.`,
     })
 
     // Post-process: ensure preserved tokens are present
-    let finalContent = object.translatedContent
+    let finalContent = output!.translatedContent
 
     for (const token of preservedTokens) {
       if (!finalContent.includes(token)) {
@@ -112,7 +112,7 @@ Identify the source language and provide the complete translated content.`,
     }
 
     return {
-      ...object,
+      ...output!,
       translatedContent: finalContent,
       preservedTokens,
     }

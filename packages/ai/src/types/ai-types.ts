@@ -101,6 +101,8 @@ export interface TokenUsageRecord {
   totalTokens: number
   estimatedCostUsd: number
   timestamp: number
+  cacheReadTokens?: number
+  reasoningTokens?: number
 }
 
 // Performance prediction schema for structured output

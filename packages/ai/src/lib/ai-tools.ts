@@ -9,7 +9,7 @@ import type { suggestHashtags } from './hashtag-suggestions'
  */
 export const searchWeb = tool({
   description: 'Search the web for information on a topic',
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe('Search query'),
   }),
   execute: async ({ query }) => {
@@ -62,7 +62,7 @@ export const searchWeb = tool({
  */
 export const analyzeTrends = tool({
   description: 'Analyze trending topics for a platform and niche',
-  parameters: z.object({
+  inputSchema: z.object({
     platform: z.enum(['instagram', 'twitter', 'tiktok', 'youtube']).describe('Social platform'),
     niche: z.string().describe('Content niche or topic area'),
   }),
@@ -147,7 +147,7 @@ export const analyzeTrends = tool({
  */
 export const suggestDesign = tool({
   description: 'Suggest design templates for social media content',
-  parameters: z.object({
+  inputSchema: z.object({
     content: z.string().describe('Content to design for'),
     platform: z.enum(['instagram', 'twitter', 'tiktok', 'youtube']).describe('Target platform'),
   }),
@@ -234,7 +234,7 @@ export const suggestDesign = tool({
  */
 export const generateImageTool = tool({
   description: 'Generate an image from a text description using AI',
-  parameters: z.object({
+  inputSchema: z.object({
     prompt: z.string().describe('Detailed description of the image to generate'),
     width: z.number().optional().describe('Image width in pixels (default: 1024)'),
     height: z.number().optional().describe('Image height in pixels (default: 1024)'),
@@ -263,7 +263,7 @@ export const generateImageTool = tool({
  */
 export const suggestHashtagsTool = tool({
   description: 'Generate relevant hashtags for social media content',
-  parameters: z.object({
+  inputSchema: z.object({
     content: z.string().describe('The content to generate hashtags for'),
     platform: z.enum(['instagram', 'twitter', 'tiktok', 'linkedin']).describe('Target social platform'),
     count: z.number().optional().describe('Number of hashtags to generate'),

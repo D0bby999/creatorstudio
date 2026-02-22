@@ -19,7 +19,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const result = await handleAiStream(sessionId, message, agentRole as AgentRole, {
       abortSignal: request.signal,
     })
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     // Check if error is due to missing API key
     const errorMessage = String(error)

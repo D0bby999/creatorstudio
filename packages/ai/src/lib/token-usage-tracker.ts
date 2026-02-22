@@ -22,13 +22,16 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
 /** Estimate cost in USD for a given usage + model */
 export function estimateCost(
   usage: { promptTokens: number; completionTokens: number },
-  modelId: string
+  modelId: string,
+  details?: { cacheReadTokens?: number; reasoningTokens?: number }
 ): number {
   const pricing = MODEL_PRICING[modelId]
   if (!pricing) return 0
 
-  const cost = (usage.promptTokens * pricing.input + usage.completionTokens * pricing.output) / 1000
-  return Math.round(cost * 10000) / 10000 // 4 decimal places
+  // Discount cached tokens (50% for OpenAI cached input tokens)
+  const cacheDiscount = (details?.cacheReadTokens ?? 0) * pricing.input * 0.5 / 1000
+  const cost = (usage.promptTokens * pricing.input + usage.completionTokens * pricing.output) / 1000 - cacheDiscount
+  return Math.round(Math.max(0, cost) * 10000) / 10000 // 4 decimal places
 }
 
 /** Store a usage record for a session */

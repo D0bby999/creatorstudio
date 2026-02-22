@@ -2,7 +2,7 @@
  * Content moderation using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -42,9 +42,9 @@ export async function moderateContent(
   try {
     const promptPrefix = getSensitivityPrompt(sensitivity)
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('moderation'),
-      schema: ModerationReportSchema,
+      output: Output.object({ schema: ModerationReportSchema }),
       prompt: `${promptPrefix}
 
 Moderate this ${platform} post for brand safety, policy compliance, accessibility, and sensitive content.
@@ -62,12 +62,12 @@ Provide safe status, overall risk level, specific issues with categories and sev
     })
 
     // Post-process: ensure high risk if any error-level issues
-    const hasErrorIssues = object.issues.some(issue => issue.severity === 'error')
-    if (hasErrorIssues && object.overallRisk !== 'high') {
-      object.overallRisk = 'high'
+    const hasErrorIssues = output!.issues.some(issue => issue.severity === 'error')
+    if (hasErrorIssues && output!.overallRisk !== 'high') {
+      output!.overallRisk = 'high'
     }
 
-    return object
+    return output!
   } catch (error) {
     console.error('Content moderation error:', error)
     return moderateContentHeuristic(content, platform)

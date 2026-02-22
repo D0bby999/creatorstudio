@@ -1,4 +1,4 @@
-import { generateText } from 'ai'
+import { generateText, stepCountIs } from 'ai'
 import { resolveModelForTask } from './model-resolver'
 import { getAgentConfig } from './agent-config'
 import { searchWeb, analyzeTrends, suggestDesign } from './ai-tools'
@@ -30,7 +30,7 @@ export async function* runMultiStepAgent(params: {
     system: config.systemPrompt,
     prompt: params.prompt,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
-    maxSteps: params.maxSteps ?? 5,
+    stopWhen: stepCountIs(params.maxSteps ?? 5),
   })
 
   // Yield text response

@@ -22,7 +22,7 @@ export async function loadSessionFromDb(sessionId: string): Promise<AgentSession
 
 export async function listUserSessions(userId: string): Promise<AgentSession[]> {
   const records = await findAiSessionsByUserId(userId)
-  return records.map(r => ({
+  return (records as any[]).map((r: any) => ({
     id: r.id,
     agentRole: r.agentRole as AgentRole,
     messages: (r.messages as any[]) ?? [],

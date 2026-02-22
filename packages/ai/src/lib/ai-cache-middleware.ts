@@ -1,10 +1,10 @@
 /**
  * AI generation cache middleware
- * Caches generateObject results in Redis, skips streaming
+ * Caches generateText results in Redis, skips streaming
  */
 
 import { createHash } from 'crypto'
-import type { LanguageModelV1Middleware } from 'ai'
+import type { LanguageModelV3Middleware } from '@ai-sdk/provider'
 import { cacheGet, cacheSet } from '@creator-studio/redis/cache'
 
 const CACHE_PREFIX = 'ai:cache:'
@@ -25,11 +25,12 @@ function hashParams(params: Record<string, unknown>): string {
   return createHash('sha256').update(serialized).digest('hex').slice(0, 16)
 }
 
-export function createCacheMiddleware(options?: CacheMiddlewareOptions): LanguageModelV1Middleware {
+export function createCacheMiddleware(options?: CacheMiddlewareOptions): LanguageModelV3Middleware {
   const ttl = options?.ttl ?? DEFAULT_TTL
   const prefix = options?.prefix ?? CACHE_PREFIX
 
   return {
+    specificationVersion: 'v3',
     wrapGenerate: async ({ doGenerate, params }) => {
       const key = `${prefix}${hashParams(params as Record<string, unknown>)}`
 

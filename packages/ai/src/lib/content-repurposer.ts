@@ -3,7 +3,7 @@
  * Adapts source content for multiple target platforms via parallel AI generation
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 import { getPlatformRule } from './platform-adaptation-rules'
@@ -64,9 +64,9 @@ async function generateAdaptedContent(
   const rule = getPlatformRule(targetPlatform)
   const brandPrompt = brandContext ? `\nBrand context:\n${brandContext}\n` : ''
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: resolveModelForTask('repurpose'),
-    schema: AdaptedContentSchema,
+    output: Output.object({ schema: AdaptedContentSchema }),
     prompt: `Adapt this ${sourcePlatform} content for ${targetPlatform}.
 ${brandPrompt}
 Source content: "${source}"
@@ -83,12 +83,12 @@ Adapt the content naturally for ${targetPlatform}. Preserve the core message but
   })
 
   // Post-process: enforce char limits
-  const truncated = object.content.length > rule.maxChars
-    ? object.content.slice(0, rule.maxChars)
-    : object.content
+  const truncated = output!.content.length > rule.maxChars
+    ? output!.content.slice(0, rule.maxChars)
+    : output!.content
 
   return {
-    ...object,
+    ...output!,
     platform: targetPlatform,
     content: truncated,
     characterCount: truncated.length,

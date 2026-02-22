@@ -1,4 +1,4 @@
-import { streamText } from 'ai'
+import { streamText, stepCountIs } from 'ai'
 import { resolveModelForTask } from './model-resolver'
 import { getCurrentProvider } from './model-registry'
 import { getAgentConfig } from './agent-config'
@@ -18,12 +18,13 @@ const TOOL_MAP = {
  * Handles AI streaming for a chat session
  * Supports abort via AbortSignal and tracks token usage on completion
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export async function handleAiStream(
   sessionId: string,
   userMessage: string,
   agentRole: AgentRole,
   options?: { abortSignal?: AbortSignal }
-) {
+): Promise<ReturnType<typeof streamText>> {
   const config = getAgentConfig(agentRole)
   const session = await getSession(sessionId)
 
@@ -46,7 +47,7 @@ export async function handleAiStream(
     system: config.systemPrompt,
     messages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
-    maxSteps: 3,
+    stopWhen: stepCountIs(3),
     abortSignal: options?.abortSignal,
     onFinish: async ({ text, usage }) => {
       await addMessage(sessionId, {
@@ -58,15 +59,17 @@ export async function handleAiStream(
       // Track token usage (non-blocking)
       if (usage) {
         const provider = getCurrentProvider()
-        const modelId = model.modelId ?? 'unknown'
+        const modelId = typeof model === 'string' ? model : (model as { modelId?: string }).modelId ?? 'unknown'
+        const inputTok = usage.inputTokens ?? 0
+        const outputTok = usage.outputTokens ?? 0
         trackUsage(sessionId, {
           provider,
           model: modelId,
-          promptTokens: usage.promptTokens ?? 0,
-          completionTokens: usage.completionTokens ?? 0,
-          totalTokens: (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0),
+          promptTokens: inputTok,
+          completionTokens: outputTok,
+          totalTokens: inputTok + outputTok,
           estimatedCostUsd: estimateCost(
-            { promptTokens: usage.promptTokens ?? 0, completionTokens: usage.completionTokens ?? 0 },
+            { promptTokens: inputTok, completionTokens: outputTok },
             modelId
           ),
           timestamp: Date.now(),

@@ -3,10 +3,11 @@
  * Logs model, token usage, and latency per call (no prompt text — PII risk)
  */
 
-import type { LanguageModelV1Middleware } from 'ai'
+import type { LanguageModelV3Middleware } from '@ai-sdk/provider'
 
-export function createLoggingMiddleware(): LanguageModelV1Middleware {
+export function createLoggingMiddleware(): LanguageModelV3Middleware {
   return {
+    specificationVersion: 'v3',
     wrapGenerate: async ({ doGenerate, params, model }) => {
       const start = Date.now()
       const result = await doGenerate()
@@ -14,8 +15,8 @@ export function createLoggingMiddleware(): LanguageModelV1Middleware {
 
       console.info('[ai]', {
         model: model.modelId,
-        promptTokens: result.usage?.promptTokens ?? 0,
-        completionTokens: result.usage?.completionTokens ?? 0,
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
         finishReason: result.finishReason,
         latencyMs,
         timestamp: new Date().toISOString(),

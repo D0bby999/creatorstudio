@@ -3,10 +3,11 @@ import { runMultiStepAgent } from '../src/lib/multi-step-agent'
 
 vi.mock('ai', () => ({
   generateText: vi.fn(),
+  stepCountIs: vi.fn((n) => `stepCountIs(${n})`),
 }))
 
 vi.mock('../src/lib/model-resolver', () => ({
-  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v1' })),
+  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v3' })),
 }))
 
 vi.mock('../src/lib/agent-config', () => ({
@@ -36,7 +37,7 @@ describe('multi-step-agent', () => {
       vi.mocked(generateText).mockResolvedValue({
         text: 'This is a response',
         steps: [],
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
         finishReason: 'stop',
       } as any)
 
@@ -57,7 +58,7 @@ describe('multi-step-agent', () => {
       })
       expect(steps[1]).toEqual({
         type: 'usage',
-        content: JSON.stringify({ promptTokens: 10, completionTokens: 20, totalTokens: 30 }),
+        content: JSON.stringify({ inputTokens: 10, outputTokens: 20, totalTokens: 30 }),
       })
     })
 
@@ -80,7 +81,7 @@ describe('multi-step-agent', () => {
             ],
           },
         ],
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
         finishReason: 'stop',
       } as any)
 
@@ -111,7 +112,7 @@ describe('multi-step-agent', () => {
       })
       expect(steps[3]).toEqual({
         type: 'usage',
-        content: JSON.stringify({ promptTokens: 10, completionTokens: 20, totalTokens: 30 }),
+        content: JSON.stringify({ inputTokens: 10, outputTokens: 20, totalTokens: 30 }),
       })
     })
 
@@ -119,7 +120,7 @@ describe('multi-step-agent', () => {
       vi.mocked(generateText).mockResolvedValue({
         text: 'Quick response',
         steps: [],
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
         finishReason: 'stop',
       } as any)
 
@@ -135,7 +136,7 @@ describe('multi-step-agent', () => {
 
       expect(generateText).toHaveBeenCalledWith(
         expect.objectContaining({
-          maxSteps: 1,
+          stopWhen: 'stepCountIs(1)',
         })
       )
     })

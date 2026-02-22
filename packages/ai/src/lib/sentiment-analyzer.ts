@@ -2,7 +2,7 @@
  * Sentiment analysis using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -47,9 +47,9 @@ export async function analyzeSentiment(texts: string[]): Promise<SentimentResult
  * Analyze sentiment for a single batch
  */
 async function analyzeSentimentBatch(texts: string[]): Promise<SentimentResult[]> {
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: resolveModelForTask('sentiment'),
-    schema: SentimentResultSchema,
+    output: Output.object({ schema: SentimentResultSchema }),
     prompt: `Analyze the sentiment of the following texts. For each text, determine:
 - sentiment: positive, negative, neutral, or mixed
 - confidence: 0-1 score of how confident you are
@@ -62,7 +62,7 @@ Return results in the same order as the input texts.`,
     temperature: 0.3,
   })
 
-  return object.results
+  return output!.results
 }
 
 /**

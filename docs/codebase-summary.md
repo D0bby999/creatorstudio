@@ -524,7 +524,15 @@ creator-studio/
 - `./lib/thumbnail-generator` → Platform-aware thumbnails
 - `./lib/video-script-generator` → Remotion script generation
 
-**Enhanced Capabilities (v0.14.0 - AI Features Mega-Upgrade):**
+**SDK Version: v6.0.97** (upgraded from v4.3.19 on 2026-02-22)
+
+**Enhanced Capabilities (v0.15.0 - AI SDK v6 Upgrade):**
+- **API v6 Migration** → Structured output via Output.object(), new middleware types, enhanced token tracking
+- **Streaming Format** → Plain text chunks via toTextStreamResponse() (vs v4's 0:-prefixed format)
+- **Middleware v3** → LanguageModelV3Middleware from @ai-sdk/provider for cache/logging
+- **Token Tracking Extended** → cacheReadTokens, reasoningTokens in addition to prompt/completion/total
+- **Step Control** → stopWhen(stepCountIs(N)) pattern vs legacy maxSteps
+- **Tool Schema** → inputSchema (vs legacy parameters field)
 - **Content Repurposing** → Multi-platform adaptation (7 platforms, parallel processing)
 - **Writing Assistant v2** → Tone adjustment, variant generation, 11-language translation
 - **AI Moderation** → 3 sensitivity levels, keyword blocklist, safety flags
@@ -536,14 +544,12 @@ creator-studio/
 - **Model Resolver** → Task-to-model mapping (20+ tasks including new AI features)
 - **AI Cache Middleware** → Redis-backed, sha256 key hashing, 1h TTL, in-memory fallback
 - **AI Logging Middleware** → Structured logs (model, tokens, latency) — no PII
-- **Enhanced Token Tracking** → Redis-backed, per-call breakdown, MODEL_PRICING cost estimation
 - **AbortSignal Support** → Streaming cancellation via request.signal
-- **Structured Output** → Type-safe AI responses with Zod validation (generateObject)
 - **Multi-step Agent** → Sequential reasoning and planning with usage info yield
 - **Session Persistence** → Save/load agent conversation state (Redis-ready)
 - **Content Templates** → Prompt templates for common tasks
 - **240 Unit Tests** → 32/33 source files tested (97% file coverage)
-- **Testing Note** → All tests use mocked AI APIs (vi.mock). No integration tests with real API keys exist yet. AI response quality and prompt effectiveness are NOT verified by the test suite.
+- **Testing Note** → All tests use mocked AI APIs (vi.mock). No integration tests with real API keys exist yet.
 
 **Key Files (AI Mega-Upgrade):**
 - `src/lib/platform-adaptation-rules.ts` → Shared platform config (7 platforms)
@@ -579,12 +585,13 @@ creator-studio/
 - `src/templates/` → Prompt templates
 - `__tests__/*.test.ts` → 240 unit tests (32 test files, all mocked — no real API calls)
 
-**Dependencies:**
-- `ai` → Vercel AI SDK core
-- `@ai-sdk/openai` → OpenAI provider (primary)
+**Dependencies (v6 - Updated 2026-02-22):**
+- `ai@^6.0.0` → Vercel AI SDK core (upgraded from v4)
+- `@ai-sdk/openai@^3.0.0` → OpenAI provider (primary)
 - `@ai-sdk/anthropic@^3.0.46` → Anthropic provider (Claude models)
 - `@ai-sdk/google@^3.0.30` → Google provider (Gemini models)
-- `zod` → Schema validation for structured outputs
+- `@ai-sdk/provider@^3.0.0` → Provider type definitions (new direct dep)
+- `zod@^3.24.0` → Schema validation for structured outputs
 - `@creator-studio/redis` → Caching and token tracking
 - Redis-backed session storage (in-memory fallback)
 

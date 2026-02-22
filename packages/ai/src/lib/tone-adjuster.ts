@@ -2,7 +2,7 @@
  * Tone adjustment using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -39,9 +39,9 @@ export async function adjustTone(
       ? `\n\nBrand context: ${brandContext}`
       : ''
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('tone-adjust'),
-      schema: AdjustedContentSchema,
+      output: Output.object({ schema: AdjustedContentSchema }),
       prompt: `Adjust the tone of this content based on the following settings:
 - Formality: ${formalityDesc} (${settings.formality.toFixed(1)})
 - Humor: ${humorDesc} (${settings.humor.toFixed(1)})
@@ -54,7 +54,7 @@ Identify the original tone, the adjusted tone, and list specific changes made.`,
       temperature: 0.6,
     })
 
-    return object
+    return output!
   } catch (error) {
     console.error('Tone adjustment error:', error)
     return adjustToneHeuristic(content, settings)

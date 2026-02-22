@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-02-22
+
+### Updated - AI SDK v6 Upgrade
+
+**AI Package Version Update:**
+- `ai`: 4.3.19 → 6.0.97
+- `@ai-sdk/openai`: 1.3.24 → 3.0.30
+- `@ai-sdk/provider`: ^3.0.0 (new direct dependency)
+
+**Breaking API Changes Implemented:**
+
+1. **Structured Output Migration:**
+   - Old: `generateObject(...)` with parameters
+   - New: `generateText(..., { output: Output.object(...) })`
+   - Updated in `structured-output.ts`
+
+2. **Middleware Architecture:**
+   - Old: `LanguageModelV1Middleware` from `ai` package
+   - New: `LanguageModelV3Middleware` from `@ai-sdk/provider`
+   - Updated `ai-cache-middleware.ts` and `ai-logging-middleware.ts`
+
+3. **Tool Definitions:**
+   - Old: `parameters: ZodSchema`
+   - New: `inputSchema: ZodSchema` in tool definitions
+
+4. **Step Control:**
+   - Old: `maxSteps: N`
+   - New: `stopWhen: stepCountIs(N)` in multi-step agents
+   - Updated `multi-step-agent.ts`
+
+5. **Stream Response Format:**
+   - Old: `toDataStreamResponse()` with `0:` prefix
+   - New: `toTextStreamResponse()` with plain text chunks
+   - Updated `ai-stream-handler.ts`
+
+6. **Token Tracking Enhancement:**
+   - Added `cacheReadTokens` tracking (cache hits)
+   - Added `reasoningTokens` tracking (if applicable)
+   - Extended `token-usage-tracker.ts` for new token types
+
+**Files Modified (8):**
+- `src/lib/model-resolver.ts` — Verified imports and exports
+- `src/lib/structured-output.ts` — Migrated to Output.object pattern
+- `src/lib/ai-stream-handler.ts` — Updated to toTextStreamResponse
+- `src/lib/ai-cache-middleware.ts` — Updated middleware type signature
+- `src/lib/ai-logging-middleware.ts` — Updated middleware type signature
+- `src/lib/multi-step-agent.ts` — Migrated maxSteps to stopWhen
+- `src/lib/token-usage-tracker.ts` — Extended for cache/reasoning tokens
+- `src/types/ai-types.ts` — Updated if needed for new token fields
+
+**Test Coverage:**
+- All 194 existing tests continue to pass
+- Verified middleware type compatibility
+- Token tracking tests updated for new token types
+
+**Backward Compatibility:**
+- No breaking changes to external AI API surface
+- All task resolvers remain functional
+- Streaming and structured output APIs unchanged at app level
+
+**Documentation Updates:**
+- Updated model resolver docs
+- Documented new token tracking fields
+- Clarified middleware architecture for v6
+
 ## [0.14.0] - 2026-02-21
 
 ### Added - AI Features Mega-Upgrade
@@ -851,7 +916,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.13.0 | AI Package Multi-Provider Upgrade | 2026-02-21 | Current |
+| 0.15.0 | AI SDK v6 Upgrade | 2026-02-22 | Current |
+| 0.14.0 | AI Features Mega-Upgrade | 2026-02-21 | Released |
+| 0.13.0 | AI Package Multi-Provider Upgrade | 2026-02-21 | Released |
 | 0.12.0 | Social Post Preview & Approval Workflow | 2026-02-21 | Released |
 | 0.11.0 | Social Package Upgrade | 2026-02-21 | Released |
 | 0.10.0 | Crawler Production Upgrade | 2026-02-21 | Released |

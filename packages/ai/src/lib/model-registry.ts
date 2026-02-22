@@ -41,12 +41,10 @@ const PROVIDER_ENV_KEYS: Record<ProviderName, string> = {
 
 const PROVIDER_PRIORITY: ProviderName[] = ['openai', 'anthropic', 'google']
 
-// Provider SDKs v3 return LanguageModelV3 — runtime-compatible with LanguageModelV1
-// Cast needed because ai@4.x types haven't aligned yet
 const MODEL_CREATORS: Record<ProviderName, (modelId: string) => LanguageModel> = {
   openai: (id) => openai(id),
-  anthropic: (id) => anthropic(id) as unknown as LanguageModel,
-  google: (id) => google(id) as unknown as LanguageModel,
+  anthropic: (id) => anthropic(id),
+  google: (id) => google(id),
 }
 
 /** Returns list of providers with API keys configured */

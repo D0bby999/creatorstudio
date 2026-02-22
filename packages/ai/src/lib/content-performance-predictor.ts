@@ -2,7 +2,7 @@
  * Content performance prediction using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { resolveModelForTask } from './model-resolver'
 import { PerformancePredictionSchema } from '../types/ai-types'
 import type { PerformancePrediction } from '../types/ai-types'
@@ -17,9 +17,9 @@ export async function predictPerformance(
   brandContext?: string
 ): Promise<PerformancePrediction> {
   try {
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('prediction'),
-      schema: PerformancePredictionSchema,
+      output: Output.object({ schema: PerformancePredictionSchema }),
       prompt: `${brandContext ? `${brandContext}\n\n` : ''}Analyze this ${platform} post and predict its engagement performance.
 
 Content: "${content}"
@@ -31,14 +31,14 @@ Provide a score 0-100, positive factors, negative factors, and actionable sugges
 
     // Map structured output to unified factors format
     const factors = [
-      ...object.positiveFactors.map((f: string) => `✓ ${f}`),
-      ...object.negativeFactors.map((f: string) => `✗ ${f}`),
+      ...output!.positiveFactors.map((f: string) => `✓ ${f}`),
+      ...output!.negativeFactors.map((f: string) => `✗ ${f}`),
     ]
 
     return {
-      score: Math.min(100, Math.max(0, object.score)),
+      score: Math.min(100, Math.max(0, output!.score)),
       factors,
-      suggestions: object.suggestions,
+      suggestions: output!.suggestions,
     }
   } catch (error) {
     console.error('Performance prediction error:', error)

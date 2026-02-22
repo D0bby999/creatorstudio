@@ -2,7 +2,7 @@
  * Competitor analysis using AI structured output + heuristic fallback
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -46,9 +46,9 @@ export async function analyzeCompetitor(
   }
 
   try {
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('competitor-analysis'),
-      schema: CompetitorInsightsSchema,
+      output: Output.object({ schema: CompetitorInsightsSchema }),
       prompt: `Analyze this competitor's social media presence and provide strategic insights.
 
 URL: ${url}
@@ -65,7 +65,7 @@ Provide:
       temperature: 0.4,
     })
 
-    return object
+    return output!
   } catch (error) {
     console.error('Competitor analysis error:', error)
     return analyzeCompetitorHeuristic()

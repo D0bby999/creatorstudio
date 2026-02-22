@@ -3,14 +3,15 @@ import { generateContentPlan, generatePostDraft, generateDesignBrief } from '../
 import { ContentPlanSchema, PostDraftSchema, DesignBriefSchema } from '../src/types/ai-types'
 
 vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn(() => 'mock-output-spec') },
 }))
 
 vi.mock('../src/lib/model-resolver', () => ({
-  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v1' })),
+  resolveModelForTask: vi.fn(() => ({ modelId: 'gpt-4o-mini', specificationVersion: 'v3' })),
 }))
 
-const { generateObject } = await import('ai')
+const { generateText } = await import('ai')
 
 describe('structured-output', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('structured-output', () => {
   })
 
   describe('generateContentPlan', () => {
-    it('should call generateObject with ContentPlanSchema', async () => {
+    it('should call generateText with ContentPlanSchema', async () => {
       const mockPlan = {
         title: 'Social Media Strategy',
         platforms: ['instagram', 'twitter'],
@@ -28,17 +29,20 @@ describe('structured-output', () => {
         ],
       }
 
-      vi.mocked(generateObject).mockResolvedValue({
-        object: mockPlan,
+      vi.mocked(generateText).mockResolvedValue({
+        output: mockPlan,
         finishReason: 'stop',
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+        text: '',
+        steps: [],
+        response: {},
       } as any)
 
       const result = await generateContentPlan('Create a content plan for tech startup')
 
-      expect(generateObject).toHaveBeenCalledWith({
+      expect(generateText).toHaveBeenCalledWith({
         model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
-        schema: ContentPlanSchema,
+        output: 'mock-output-spec',
         prompt: 'Create a content plan: Create a content plan for tech startup',
       })
       expect(result).toEqual(mockPlan)
@@ -46,7 +50,7 @@ describe('structured-output', () => {
   })
 
   describe('generatePostDraft', () => {
-    it('should call generateObject with PostDraftSchema and platform', async () => {
+    it('should call generateText with PostDraftSchema and platform', async () => {
       const mockDraft = {
         content: 'Check out our new product!',
         hashtags: ['tech', 'innovation'],
@@ -54,17 +58,20 @@ describe('structured-output', () => {
         characterCount: 27,
       }
 
-      vi.mocked(generateObject).mockResolvedValue({
-        object: mockDraft,
+      vi.mocked(generateText).mockResolvedValue({
+        output: mockDraft,
         finishReason: 'stop',
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+        text: '',
+        steps: [],
+        response: {},
       } as any)
 
       const result = await generatePostDraft('Promote new product launch', 'instagram')
 
-      expect(generateObject).toHaveBeenCalledWith({
+      expect(generateText).toHaveBeenCalledWith({
         model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
-        schema: PostDraftSchema,
+        output: 'mock-output-spec',
         prompt: 'Write a instagram post: Promote new product launch',
       })
       expect(result).toEqual(mockDraft)
@@ -72,7 +79,7 @@ describe('structured-output', () => {
   })
 
   describe('generateDesignBrief', () => {
-    it('should call generateObject with DesignBriefSchema', async () => {
+    it('should call generateText with DesignBriefSchema', async () => {
       const mockBrief = {
         templateId: 'modern-card',
         colorScheme: ['#FF5733', '#3498DB'],
@@ -80,17 +87,20 @@ describe('structured-output', () => {
         dimensions: { width: 1080, height: 1080 },
       }
 
-      vi.mocked(generateObject).mockResolvedValue({
-        object: mockBrief,
+      vi.mocked(generateText).mockResolvedValue({
+        output: mockBrief,
         finishReason: 'stop',
-        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+        text: '',
+        steps: [],
+        response: {},
       } as any)
 
       const result = await generateDesignBrief('Create a design for product launch')
 
-      expect(generateObject).toHaveBeenCalledWith({
+      expect(generateText).toHaveBeenCalledWith({
         model: expect.objectContaining({ modelId: 'gpt-4o-mini' }),
-        schema: DesignBriefSchema,
+        output: 'mock-output-spec',
         prompt: 'Create a design brief: Create a design for product launch',
       })
       expect(result).toEqual(mockBrief)

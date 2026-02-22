@@ -3,7 +3,7 @@
  * Produces structured scripts compatible with Remotion Sequence components
  */
 
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { resolveModelForTask } from './model-resolver'
 
@@ -39,9 +39,9 @@ export async function generateVideoScript(
   const brandPrompt = options?.brandContext ? `\nBrand context:\n${options.brandContext}\n` : ''
 
   try {
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: resolveModelForTask('video-script'),
-      schema: VideoScriptSchema,
+      output: Output.object({ schema: VideoScriptSchema }),
       prompt: `Create a ${style} video script about: "${topic}"
 ${brandPrompt}
 Requirements:
@@ -55,8 +55,8 @@ Requirements:
     })
 
     // Post-process: ensure totalDuration matches scene sum
-    const sceneSum = object.scenes.reduce((sum, s) => sum + s.duration, 0)
-    return { ...object, totalDuration: sceneSum }
+    const sceneSum = output!.scenes.reduce((sum, s) => sum + s.duration, 0)
+    return { ...output!, totalDuration: sceneSum }
   } catch (error) {
     console.error('Video script generation error:', error)
     return generateVideoScriptHeuristic(topic, duration, style)
