@@ -82,7 +82,10 @@
       "Bash(pnpm info:*)",
       "Bash(python3:*)",
       "Bash(pnpm ls:*)",
-      "Bash(pnpm run typecheck:*)"
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm --filter @creator-studio/ai test:*)",
+      "Bash(pnpm --filter @creator-studio/ai add:*)",
+      "Bash(pnpm --filter @creator-studio/ai exec vitest run:*)"
     ]
   }
 }
