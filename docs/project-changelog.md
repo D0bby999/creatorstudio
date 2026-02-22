@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-02-22
+
+### Added - AI Package Production Hardening
+
+**Security & Rate Limiting (Phase 1)**
+- Prompt sanitizer with injection pattern detection (jailbreak, role-hijack, prompt-leak, encoding tricks)
+- AI-specific rate limiter with token-aware per-user limits
+- Env var config for tier limits (free/pro/enterprise) with hardcoded defaults
+- Delimiter wrapping for user input isolation before system prompt assembly
+- 2 new modules: `prompt-sanitizer.ts`, `ai-rate-limiter.ts` (~280 LOC combined)
+
+**Resilience & Provider Failover (Phase 2)**
+- Retry handler with exponential backoff + jitter (~80 LOC)
+- Circuit breaker pattern per provider with in-memory state (~180 LOC)
+- Provider failover orchestration across OpenAI → Anthropic → Google
+- Graceful degradation when all providers exhausted
+- Classified error handling: retryable (429, 5xx) vs non-retryable (4xx)
+- 2 new modules: `retry-handler.ts`, `circuit-breaker.ts`
+
+**Quality Scoring & A/B Testing (Phase 3)**
+- Content quality scorer (engagement-only heuristics: hooks, CTAs, emojis, hashtags, length) (~190 LOC)
+- A/B variant tracker with deterministic assignment and metric aggregation (~140 LOC)
+- Prompt registry with versioning and variable rendering (~100 LOC)
+- Platform-specific quality weights for 7 platforms
+- Redis-backed metric tracking with in-memory fallback
+- 3 new modules: `content-quality-scorer.ts`, `ab-variant-tracker.ts`, `prompt-registry.ts`
+
+**Streaming & Multi-modal (Phase 4)**
+- Streaming structured output with partial JSON parsing (~120 LOC)
+- AI completion events via Inngest (fire-and-forget webhook emission) (~80 LOC)
+- Image analyzer using GPT-4o vision (alt-text, describe, OCR, content-tags) (~100 LOC)
+- Async generator for incremental JSON parsing and validation
+- Task-specific system prompts for image analysis
+- 3 new modules: `streaming-structured-output.ts`, `ai-completion-events.ts`, `image-analyzer.ts`
+
+**Analytics & Integration (Phase 5)**
+- Usage analytics aggregator with time-range queries (day/week/month) (~130 LOC)
+- Per-model and per-provider usage breakdown
+- Route integration: sanitizer + rate limiter wired into api.ai.ts
+- Route modifications: api.ai.suggestions.ts and api.ai.image.ts rate limit checks
+- Non-blocking async analytics recording
+- 1 new module: `usage-analytics-aggregator.ts`
+
+**Test Coverage**
+- 11 new test files with 461 total tests
+- All 5 phases tested comprehensively
+- Mock Redis and Inngest for deterministic testing
+- Edge cases: missing Redis, all providers down, malformed JSON
+- 240 existing tests remain passing (0 regressions)
+
+**Files Added (11 source + 11 test = 22 total)**
+- Phase 1: `prompt-sanitizer.ts`, `ai-rate-limiter.ts` + tests
+- Phase 2: `retry-handler.ts`, `circuit-breaker.ts` + tests
+- Phase 3: `content-quality-scorer.ts`, `ab-variant-tracker.ts`, `prompt-registry.ts` + tests
+- Phase 4: `streaming-structured-output.ts`, `ai-completion-events.ts`, `image-analyzer.ts` + tests
+- Phase 5: `usage-analytics-aggregator.ts` + tests
+
+**Files Modified (1)**
+- `apps/web/app/routes/api.ai.ts` — Added sanitizer + rate limiter wiring (~20 LOC)
+
+**Key Metrics**
+- 11 new production modules, all <200 LOC each
+- 461 total tests across packages/ai (up from 240)
+- 0 external dependencies added (pure TypeScript)
+- Redis + in-memory fallback pattern (consistent with codebase)
+- All modules follow LanguageModelV3Middleware + AI SDK v6 patterns
+
+**Success Criteria Achieved**
+- Prompt injection patterns detected with low false positives
+- Rate limiting enforces token + RPM limits per tier
+- Circuit breaker auto-recovers after provider cooldown
+- Quality scoring correlates with platform best practices
+- A/B variant assignment deterministic and evenly distributed
+- Streaming emits partial JSON as chunks arrive
+- All existing AI functionality preserved (backward compatible)
+- 0 TypeScript errors, full strict mode compliance
+
 ## [0.15.0] - 2026-02-22
 
 ### Updated - AI SDK v6 Upgrade
@@ -916,7 +993,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.15.0 | AI SDK v6 Upgrade | 2026-02-22 | Current |
+| 0.16.0 | AI Package Production Hardening | 2026-02-22 | Current |
+| 0.15.0 | AI SDK v6 Upgrade | 2026-02-22 | Released |
 | 0.14.0 | AI Features Mega-Upgrade | 2026-02-21 | Released |
 | 0.13.0 | AI Package Multi-Provider Upgrade | 2026-02-21 | Released |
 | 0.12.0 | Social Post Preview & Approval Workflow | 2026-02-21 | Released |

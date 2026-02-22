@@ -7,6 +7,7 @@ import type { ActionFunctionArgs } from 'react-router'
 import { suggestHashtags } from '@creator-studio/ai/lib/hashtag-suggestions'
 import { suggestPostingTimes } from '@creator-studio/ai/lib/content-scheduling'
 import { predictPerformance } from '@creator-studio/ai/lib/content-performance-predictor'
+import { checkAiRateLimit, AiRateLimitError } from '@creator-studio/ai/lib/ai-rate-limiter'
 import { auth } from '~/lib/auth.server'
 import { logger } from '~/lib/logger'
 
@@ -19,6 +20,18 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (request.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 })
+  }
+
+  // Rate limit check
+  try {
+    await checkAiRateLimit(session.user.id)
+  } catch (e) {
+    if (e instanceof AiRateLimitError) {
+      return Response.json(
+        { error: 'Rate limit exceeded', retryAfter: e.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(e.retryAfter) } }
+      )
+    }
   }
 
   try {
