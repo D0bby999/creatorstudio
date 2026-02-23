@@ -8,15 +8,15 @@ export interface CanvasShortcutCallbacks {
   onToolChange?: (toolId: string) => void
 }
 
-/** Tool-switch shortcuts: single key, no modifiers, guarded against text editing focus */
+/**
+ * Tool-switch shortcuts: single key, no modifiers, guarded against text editing focus.
+ * NOTE: tldraw 4.3.1 internally registers shortcuts for all built-in tools via hotkeys-js:
+ *   v=select, h=hand, e=eraser, k=laser, z=zoom, d/b/x=draw, r=geo(rect), o=geo(ellipse),
+ *   a=arrow, l=line, f=frame, t=text, n=note, shift+d=highlight
+ * We only register shortcuts for our CUSTOM tools here to avoid double-fire.
+ */
 const TOOL_SHORTCUTS: Record<string, string> = {
-  v: 'select',
-  h: 'hand',
-  e: 'eraser',
-  k: 'laser',
-  z: 'zoom',
   c: 'connector',
-  x: 'crop',
 }
 
 function isEditingText(): boolean {

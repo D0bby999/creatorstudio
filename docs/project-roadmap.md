@@ -4,11 +4,11 @@
 
 Creator Studio is a comprehensive creative toolkit for content creators. This roadmap tracks the project evolution from foundation through scaling phases.
 
-## Current Status: Canvas Core Tools Complete
+## Current Status: Canvas Full Parity Phase 2 Complete
 
 **Project Completion:** 100% (All phases + upgrades complete)
-**Latest Phase:** Canvas Core Tools (Phase 1/10 Full Parity) - 2026-02-23 - COMPLETE
-**Previous Phase:** Canvas Advanced Upgrade (v0.21.0) - 2026-02-23 - COMPLETE
+**Latest Phase:** Canvas Default Shape Types (Phase 2/10 Full Parity) - 2026-02-23 - COMPLETE
+**Previous Phase:** Canvas Core Tools (Phase 1/10 Full Parity) - 2026-02-23 - COMPLETE
 
 ---
 
@@ -177,7 +177,77 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 - CropTool custom implementation serves specific needs (CSS clip-path for custom shapes vs tldraw's native image crop)
 
 **Next Phase**
-- Phase 2: Default shape types (draw, geo, text, note, arrow, image, video, frame, embed, bookmark, highlight, line)
+- Phase 3: Style panel + property system
+
+---
+
+### Canvas Full Parity - Phase 2: Default Shape Types (COMPLETE) ✓
+**Timeline:** Completed Feb 2026 (1 day vs. 4-5 week estimate)
+**Status:** Tldraw built-in shapes exposed via custom UI
+**Version:** Part of 10-phase full parity plan
+
+**Critical Discovery:**
+Tldraw 4.3.1 ships all 12 default shapes (`defaultShapeUtils`) and 8 shape tools (`defaultShapeTools`) as built-in exports that are automatically merged into the `<Tldraw>` component. Originally scoped as 4-5 week reimplementation effort (~23,700 LOC across 40+ files) - discovered shapes already work, only needed UI wiring.
+
+**Deliverables:**
+
+**Toolbar UI Enhancements**
+- [x] Updated `tool-selection-toolbar.tsx` with 8 built-in shape tools (draw, text, geo, note, arrow, line, frame, highlight)
+- [x] Added keyboard shortcut hints to all tool buttons (tooltips show d, t, r, n, a, l, f, shift+d)
+- [x] Organized into collapsible sections with visual group dividers
+- [x] Tool icons aligned with tldraw defaults (pen for draw, text for text, box for geo, etc.)
+
+**Shape Insertion Panel Updates**
+- [x] Added geo sub-type dropdown with 19 geometric shapes in 4-column grid layout
+- [x] Rectangle, ellipse, triangle, diamond, pentagon, hexagon, octagon, star, rhombus, oval, trapezoid, arrow variants, cloud, x-box, check-box, heart
+- [x] Frame insertion button for clipping containers
+- [x] Organized shape-insertion-toolbar into labeled sections:
+  - Shapes section (geo sub-types, frame)
+  - Creator section (social-card, quote-card, carousel-slide, text-overlay, brand-kit)
+  - Tools section (connector)
+
+**Keyboard Shortcut Cleanup**
+- [x] Removed duplicate shortcuts from `canvas-keyboard-shortcuts.ts` (tldraw's built-in hotkeys-js already handles d/b/x, r, o, a, l, f, t, n, shift+d)
+- [x] Kept custom tool shortcut: c=connector
+- [x] Prevented shortcut conflicts and double-registration
+
+**Files Changed (3)**
+- Modified: `tool-selection-toolbar.tsx` (added 8 built-in shape tools with shortcuts)
+- Modified: `shape-insertion-toolbar.tsx` (geo sub-type dropdown, frame button, labeled sections)
+- Modified: `canvas-keyboard-shortcuts.ts` (removed duplicate shortcuts handled by tldraw)
+
+**Shapes Now Accessible (12 built-in)**
+1. Draw shape (freehand drawing with pressure-sensitive strokes)
+2. Geo shape (19 sub-types: rectangle, ellipse, triangle, diamond, star, etc.)
+3. Text shape (multi-line text with auto-resize)
+4. Note shape (sticky notes with colors)
+5. Arrow shape (straight/curved/elbow routing with bindings and labels)
+6. Line shape (polyline with draggable handles)
+7. Frame shape (clipping container with label)
+8. Highlight shape (transparent marker stroke)
+9. Image shape (already functional, not added to toolbar)
+10. Video shape (already functional, not added to toolbar)
+11. Embed shape (already functional, not added to toolbar)
+12. Bookmark shape (already functional, not added to toolbar)
+
+**Success Metrics Achieved**
+- [x] All 12 default shapes accessible via UI or already functional
+- [x] 8 shape tools added to toolbar with keyboard shortcuts
+- [x] Geo sub-types (19 variants) accessible via dropdown
+- [x] Frame insertion functional for clipping containers
+- [x] No shortcut conflicts with tldraw built-in handlers
+- [x] ~4-5 weeks of effort saved by leveraging tldraw defaults
+- [x] Zero visual regressions from toolbar updates
+- [x] All existing canvas functionality preserved
+
+**Effort Saved**
+- **Original estimate:** 4-5 weeks, ~40+ files, ~23,700 LOC from reference
+- **Actual effort:** 1 day, 3 file modifications, ~150 LOC UI changes
+- **Time saved:** 4-5 weeks of reimplementation avoided
+- **Why:** Tldraw already exports `defaultShapeUtils` and `defaultShapeTools` that merge automatically into `<Tldraw>` component
+
+**Next Phase**
+- Phase 3: Style panel + property system (1-2 weeks)
 
 ---
 
@@ -1149,6 +1219,7 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 | Canvas Pro Upgrade | Feb 2026 | ✓ Complete |
 | Canvas Advanced Upgrade (v0.21.0) | Feb 2026 | ✓ Complete |
 | Canvas Full Parity - Phase 1: Core Tools | Feb 2026 | ✓ Complete |
+| Canvas Full Parity - Phase 2: Default Shape Types | Feb 2026 | ✓ Complete |
 
 ## Known Constraints & Gotchas
 

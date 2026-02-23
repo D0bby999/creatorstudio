@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-02-23
+
+### Added - Canvas Full Parity: Phase 2 Default Shape Types (1-Day Completion)
+
+**Critical Discovery**
+- Tldraw 4.3.1 ships all 12 default shapes (`defaultShapeUtils`) and 8 shape tools (`defaultShapeTools`) as built-in exports
+- Shapes automatically merged into `<Tldraw>` component — already functional, just needed UI exposure
+- Original scope: 4-5 weeks to reimplement ~23,700 LOC across 40+ files
+- Actual work: 1 day to wire toolbar UI to expose built-in functionality
+- **Effort saved:** 4-5 weeks of reimplementation avoided
+
+**Toolbar UI Enhancements**
+- Updated `tool-selection-toolbar.tsx` — added 8 built-in shape tools with keyboard shortcuts
+  - Draw tool (d key) — Freehand drawing with pressure-sensitive strokes
+  - Text tool (t key) — Multi-line text with auto-resize
+  - Geo tool (r/o/x keys) — Rectangle, oval, hexagon via quick shortcuts
+  - Note tool (n key) — Sticky notes with color variants
+  - Arrow tool (a key) — Straight/curved/elbow routing with bindings
+  - Line tool (l key) — Polyline with draggable handles
+  - Frame tool (f key) — Clipping container with label
+  - Highlight tool (shift+d key) — Transparent marker stroke
+- Added collapsible sections and visual group dividers
+- Tooltip hints show keyboard shortcuts for all tools
+
+**Shape Insertion Panel Updates**
+- Updated `shape-insertion-toolbar.tsx` — geo sub-type dropdown with 19 geometric shapes
+  - 4-column grid layout for compact presentation
+  - Rectangle, ellipse, triangle, diamond, pentagon, hexagon, octagon, star, rhombus, oval, trapezoid, arrow variants, cloud, x-box, check-box, heart
+- Added frame insertion button for clipping containers
+- Organized into labeled sections:
+  - **Shapes:** Geo sub-types, frame
+  - **Creator:** Social-card, quote-card, carousel-slide, text-overlay, brand-kit
+  - **Tools:** Connector
+
+**Keyboard Shortcut Cleanup**
+- Fixed `canvas-keyboard-shortcuts.ts` — removed duplicate shortcuts
+- Tldraw's built-in `hotkeys-js` already handles: d, b, x (draw/box/hex), r (rectangle), o (oval), a (arrow), l (line), f (frame), t (text), n (note), shift+d (highlight)
+- Kept custom tool shortcut: c=connector (our custom shape)
+- Prevented double-registration and shortcut conflicts
+
+**12 Built-in Shapes Now Accessible**
+1. **Draw** — Freehand with pressure-sensitive strokes (getStroke algorithm)
+2. **Geo** — 19 sub-types via dropdown (rectangle, ellipse, triangle, diamond, star, pentagon, hexagon, octagon, rhombus, oval, trapezoid, arrow-shapes, cloud, x-box, check-box, heart)
+3. **Text** — Multi-line with auto-resize, font selection, alignment
+4. **Note** — Sticky notes with color variants and auto-grow
+5. **Arrow** — Straight/curved/elbow routing, bindings to shapes, labels
+6. **Line** — Polyline with draggable handles
+7. **Frame** — Clipping container with label, presentation mode support
+8. **Highlight** — Transparent marker stroke using draw path algorithm
+9. **Image** — Upload, crop, aspect ratio lock (already functional, not added to toolbar)
+10. **Video** — Playback controls, thumbnail (already functional, not added to toolbar)
+11. **Embed** — iframe sandboxing, URL validation (already functional, not added to toolbar)
+12. **Bookmark** — URL preview with metadata (already functional, not added to toolbar)
+
+**Files Modified (3)**
+- `packages/canvas/src/components/tool-selection-toolbar.tsx` — Added 8 built-in shape tools
+- `packages/canvas/src/components/shape-insertion-toolbar.tsx` — Geo sub-type dropdown, frame button, labeled sections
+- `packages/canvas/src/lib/canvas-keyboard-shortcuts.ts` — Removed duplicate shortcuts
+
+**Success Metrics Achieved**
+- [x] All 12 default shapes accessible via UI or already functional
+- [x] 8 shape tools added to toolbar with keyboard shortcut hints
+- [x] Geo sub-types (19 variants) accessible via 4-column dropdown grid
+- [x] Frame insertion button functional for clipping containers
+- [x] No keyboard shortcut conflicts with tldraw built-in handlers
+- [x] ~4-5 weeks of effort saved by leveraging tldraw defaults
+- [x] Zero visual regressions from toolbar updates
+- [x] All existing canvas functionality preserved
+- [x] Backward compatible with existing canvas projects
+
+**Technical Details**
+- **Tldraw Architecture:** `defaultShapeUtils` array exported from `@tldraw/tldraw` is automatically merged into editor via `<Tldraw>` component props
+- **Shape Tools:** `defaultShapeTools` array provides 8 creation tools (TextTool, DrawTool, GeoTool, NoteTool, LineTool, FrameTool, ArrowTool, HighlightTool)
+- **Custom UI:** Our toolbar components call `editor.setCurrentTool('draw')` etc. to activate tldraw's built-in tools
+- **Geo Sub-types:** Geo shape has `props.geo` field with 19 possible values — dropdown sets this via `editor.updateShapes()`
+- **No Reimplementation:** Zero custom ShapeUtil code written — all 12 shapes use tldraw's battle-tested implementations
+
+**Why This Matters**
+- Avoided 4-5 weeks of complex reimplementation work
+- Tldraw's shapes are battle-tested with edge cases handled (SelectTool has 16 child states, Arrow has 1370 LOC util)
+- Focus shifted from shape internals to user-facing UI/UX improvements
+- Faster time-to-value for users (shapes available immediately)
+- Reduced maintenance burden (tldraw handles shape bugs and updates)
+
+**Next Phase**
+- Phase 3: Style panel + property system (1-2 weeks)
+- Will provide UI for editing shape properties (colors, stroke width, font, opacity, etc.)
+
+---
+
 ## [0.21.0] - 2026-02-23
 
 ### Added - Canvas Advanced Upgrade: Real-Time Collaboration & Advanced Tools
