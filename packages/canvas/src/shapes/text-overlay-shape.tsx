@@ -10,7 +10,7 @@ import {
   useIsEditing,
   useEditor,
 } from 'tldraw'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { loadFont } from '../lib/canvas-font-loader'
 
 export type TextOverlayShape = TLBaseShape<
@@ -98,7 +98,10 @@ function TextOverlayComponent({ shape }: { shape: TextOverlayShape }) {
   const editor = useEditor()
   const isEditing = useIsEditing(shape.id)
   const { fontFamily, fontWeight, textAlign, letterSpacing, lineHeight } = shape.props
-  if (fontFamily !== 'sans-serif') loadFont(fontFamily, fontWeight)
+
+  useEffect(() => {
+    if (fontFamily !== 'sans-serif') loadFont(fontFamily, fontWeight)
+  }, [fontFamily, fontWeight])
 
   const alignMap: Record<string, string> = { top: 'flex-start', center: 'center', bottom: 'flex-end' }
 

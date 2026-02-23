@@ -113,9 +113,14 @@ export function CanvasEditor({
 
   useEffect(() => {
     if (!editor || !collabEnabled) return
+    let lastSendTime = 0
+    const THROTTLE_MS = 50
     const onPointerMove = (e: PointerEvent) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      sync.sendPresence({ x: e.clientX - rect.left, y: e.clientY - rect.top }, [])
+      const now = Date.now()
+      if (now - lastSendTime < THROTTLE_MS) return
+      lastSendTime = now
+      const pagePoint = editor.screenToPage({ x: e.clientX, y: e.clientY })
+      sync.sendPresence(pagePoint, editor.getSelectedShapeIds())
     }
     const el = editor.getContainer()
     el.addEventListener('pointermove', onPointerMove)

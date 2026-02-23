@@ -10,6 +10,7 @@ interface PendingSave {
 
 const pendingSaves = new Map<string, PendingSave>()
 const DEBOUNCE_MS = 30_000 // 30 seconds
+let signalHandlersRegistered = false
 
 export async function saveSnapshot(
   roomId: string,
@@ -35,10 +36,12 @@ async function flushSnapshot(
   snapshot: Record<string, unknown>
 ): Promise<void> {
   try {
+    // Shallow clone to prevent mid-write mutations
+    const clonedSnapshot = { ...snapshot }
     await prisma.canvasRoom.update({
       where: { id: roomId },
       data: {
-        snapshot,
+        snapshot: clonedSnapshot,
         updatedAt: new Date(),
       },
     })
@@ -91,7 +94,9 @@ export async function flushAllPendingSaves(): Promise<void> {
 }
 
 // Cleanup on shutdown (for graceful termination)
-if (typeof process !== 'undefined') {
+if (typeof process !== 'undefined' && !signalHandlersRegistered) {
+  signalHandlersRegistered = true
+
   const cleanup = () => {
     flushAllPendingSaves().catch((err) =>
       console.error('[snapshot-persistence] Cleanup failed:', err)

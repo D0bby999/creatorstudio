@@ -109,10 +109,9 @@ async function pruneVersions(projectId: string): Promise<void> {
         const all = (req.result as VersionEntry[]).sort((a, b) => b.timestamp - a.timestamp)
         if (all.length <= MAX_VERSIONS) { resolve(); return }
         const toDelete = all.slice(MAX_VERSIONS)
-        const delStore = tx(db, 'readwrite')
         let remaining = toDelete.length
         for (const entry of toDelete) {
-          const delReq = delStore.delete([entry.projectId, entry.timestamp])
+          const delReq = store.delete([entry.projectId, entry.timestamp])
           delReq.onsuccess = delReq.onerror = () => { if (--remaining === 0) resolve() }
         }
       }

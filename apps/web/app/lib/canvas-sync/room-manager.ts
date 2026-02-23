@@ -27,15 +27,33 @@ const INACTIVE_TIMEOUT_MS = 60 * 60 * 1000 // 1 hour
 const RATE_LIMIT_WINDOW_MS = 1000 // 1 second
 const RATE_LIMIT_MAX_MESSAGES = 10
 
-// Periodic cleanup
-setInterval(() => {
-  const now = Date.now()
-  for (const [roomId, room] of rooms) {
-    if (now - room.lastActivity.getTime() > INACTIVE_TIMEOUT_MS) {
-      cleanupRoom(roomId)
+let cleanupIntervalId: NodeJS.Timeout | null = null
+
+/**
+ * Start periodic room cleanup
+ */
+export function startRoomCleanup(): void {
+  if (cleanupIntervalId !== null) return // Already started
+
+  cleanupIntervalId = setInterval(() => {
+    const now = Date.now()
+    for (const [roomId, room] of rooms) {
+      if (now - room.lastActivity.getTime() > INACTIVE_TIMEOUT_MS) {
+        cleanupRoom(roomId)
+      }
     }
+  }, 5 * 60 * 1000) // Check every 5 minutes
+}
+
+/**
+ * Stop periodic room cleanup
+ */
+export function stopRoomCleanup(): void {
+  if (cleanupIntervalId !== null) {
+    clearInterval(cleanupIntervalId)
+    cleanupIntervalId = null
   }
-}, 5 * 60 * 1000) // Check every 5 minutes
+}
 
 function cleanupRoom(roomId: string): void {
   rooms.delete(roomId)
@@ -72,6 +90,11 @@ export async function joinRoom(
   userName: string,
   ws: unknown
 ): Promise<Room> {
+  // Lazy-start cleanup on first room join
+  if (cleanupIntervalId === null) {
+    startRoomCleanup()
+  }
+
   let room = rooms.get(roomId)
   if (!room) {
     room = await createRoom(roomId)
@@ -213,5 +236,6 @@ export function getRoomUserCount(roomId: string): number {
 
 // For testing
 export function resetRoomManager(): void {
+  stopRoomCleanup()
   rooms.clear()
 }

@@ -9,8 +9,15 @@ interface MetricStats {
   total: number
 }
 
-// Global metrics storage
-const metrics = new Map<string, number[]>()
+interface RunningStats {
+  count: number
+  sum: number
+  min: number
+  max: number
+}
+
+// Global metrics storage using running stats accumulator
+const metrics = new Map<string, RunningStats>()
 
 /**
  * Start a performance measurement
@@ -33,10 +40,15 @@ export function startMeasure(label: string): () => number {
  * @param value - Metric value
  */
 export function trackMetric(name: string, value: number): void {
-  if (!metrics.has(name)) {
-    metrics.set(name, [])
+  const existing = metrics.get(name)
+  if (!existing) {
+    metrics.set(name, { count: 1, sum: value, min: value, max: value })
+  } else {
+    existing.count++
+    existing.sum += value
+    existing.min = Math.min(existing.min, value)
+    existing.max = Math.max(existing.max, value)
   }
-  metrics.get(name)!.push(value)
 }
 
 /**
@@ -46,20 +58,17 @@ export function trackMetric(name: string, value: number): void {
 export function getMetrics(): Record<string, MetricStats> {
   const result: Record<string, MetricStats> = {}
 
-  for (const [name, values] of metrics.entries()) {
-    if (values.length === 0) continue
+  for (const [name, stats] of metrics.entries()) {
+    if (stats.count === 0) continue
 
-    const total = values.reduce((sum, val) => sum + val, 0)
-    const avg = total / values.length
-    const max = Math.max(...values)
-    const min = Math.min(...values)
+    const avg = stats.sum / stats.count
 
     result[name] = {
-      count: values.length,
+      count: stats.count,
       avg: Math.round(avg * 100) / 100,
-      max: Math.round(max * 100) / 100,
-      min: Math.round(min * 100) / 100,
-      total: Math.round(total * 100) / 100,
+      max: Math.round(stats.max * 100) / 100,
+      min: Math.round(stats.min * 100) / 100,
+      total: Math.round(stats.sum * 100) / 100,
     }
   }
 

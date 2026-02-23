@@ -103,7 +103,8 @@ export function findShapeAtPoint(
   const shapes = editor.getCurrentPageShapes()
   const excludeSet = new Set(excludeIds)
 
-  for (const shape of shapes) {
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const shape = shapes[i]
     if (excludeSet.has(shape.id)) continue
     if (isPointNearShape(editor, shape.id, point)) {
       return shape.id

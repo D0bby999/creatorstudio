@@ -2,7 +2,8 @@
 // In-memory metrics tracking, no external dependencies
 
 interface WebSocketSnapshot {
-  totalConnections: number
+  cumulativeConnections: number
+  activeConnections: number
   activeRooms: number
   messagesByType: Record<string, number>
   errorCount: number
@@ -72,16 +73,20 @@ export class WebSocketMetrics {
    */
   getSnapshot(): WebSocketSnapshot {
     const roomStats: Record<string, { connectionCount: number; messageCount: number }> = {}
+    let totalActive = 0
 
     for (const roomId of this.activeRooms) {
+      const connCount = this.roomConnections.get(roomId) || 0
       roomStats[roomId] = {
-        connectionCount: this.roomConnections.get(roomId) || 0,
+        connectionCount: connCount,
         messageCount: this.roomMessages.get(roomId) || 0,
       }
+      totalActive += connCount
     }
 
     return {
-      totalConnections: this.connectionCount,
+      cumulativeConnections: this.connectionCount,
+      activeConnections: totalActive,
       activeRooms: this.activeRooms.size,
       messagesByType: Object.fromEntries(this.messagesByType),
       errorCount: this.errorCount,

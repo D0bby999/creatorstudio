@@ -196,6 +196,14 @@ async function handleRemoveMember(userId: string, formData: FormData) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Verify member belongs to this room (prevents IDOR)
+  const member = await prisma.roomMember.findFirst({
+    where: { id: memberId, roomId },
+  })
+  if (!member) {
+    return Response.json({ error: 'Member not found in this room' }, { status: 404 })
+  }
+
   await prisma.roomMember.delete({ where: { id: memberId } })
 
   return Response.json({ success: true })

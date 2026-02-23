@@ -17,6 +17,8 @@ import {
 } from './message-protocol'
 import { updatePresence, getAllPresence, removePresence } from './presence-tracker'
 import type { ErrorCode } from './message-protocol'
+import { auth } from '~/lib/auth-server'
+import { prisma } from '@creator-studio/db/client'
 
 interface WebSocketLike {
   send(data: string): void
@@ -25,12 +27,72 @@ interface WebSocketLike {
   addEventListener?(event: string, handler: (...args: any[]) => void): void
 }
 
+/**
+ * Verifies WebSocket authentication and room authorization
+ * @param token - Session token from better-auth cookie
+ * @param roomId - Canvas room ID to verify access to
+ * @returns User info if authorized, null otherwise
+ */
+async function verifyWebSocketAuth(
+  token: string,
+  roomId: string
+): Promise<{ userId: string; userName: string } | null> {
+  try {
+    // Validate session using better-auth
+    const headers = new Headers()
+    headers.set('cookie', `better-auth.session_token=${token}`)
+    const session = await auth.api.getSession({ headers })
+
+    if (!session) {
+      console.warn('[websocket-handler] No valid session found')
+      return null
+    }
+
+    // Verify user has access to this room (owner or member)
+    const room = await prisma.canvasRoom.findUnique({
+      where: { id: roomId },
+      include: { members: true },
+    })
+
+    if (!room) {
+      console.warn('[websocket-handler] Room not found:', roomId)
+      return null
+    }
+
+    const isOwner = room.ownerId === session.user.id
+    const isMember = room.members.some((m) => m.userId === session.user.id)
+
+    if (!isOwner && !isMember) {
+      console.warn('[websocket-handler] User not authorized for room:', {
+        userId: session.user.id,
+        roomId,
+      })
+      return null
+    }
+
+    return {
+      userId: session.user.id,
+      userName: session.user.name || 'Anonymous',
+    }
+  } catch (error) {
+    console.error('[websocket-handler] Auth verification failed:', error)
+    return null
+  }
+}
+
 export async function handleWebSocketConnection(
   ws: WebSocketLike,
   roomId: string,
-  userId: string,
-  userName: string
+  token: string
 ): Promise<void> {
+  // Verify authentication and authorization
+  const authResult = await verifyWebSocketAuth(token, roomId)
+  if (!authResult) {
+    ws.close(4001, 'Unauthorized')
+    return
+  }
+
+  const { userId, userName } = authResult
   try {
     // Join room and get initial snapshot
     const room = await joinRoom(roomId, userId, userName, ws)

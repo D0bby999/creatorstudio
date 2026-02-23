@@ -87,6 +87,7 @@ export function resizeCropByHandle(
 
 /** Generate CSS clip-path from crop region relative to shape dimensions */
 export function cropToClipPath(crop: CropRegion, shapeW: number, shapeH: number): string {
+  if (shapeW <= 0 || shapeH <= 0) return 'inset(0% 0% 0% 0%)'
   const left = (crop.x / shapeW) * 100
   const top = (crop.y / shapeH) * 100
   const right = ((shapeW - crop.x - crop.w) / shapeW) * 100

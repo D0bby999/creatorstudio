@@ -26,9 +26,9 @@ export function CanvasToolbar({
 }: CanvasToolbarProps) {
   return (
     <div style={toolbarContainerStyle}>
-      {panels.filter(p => p.condition !== false).map(p =>
+      {panels.filter(p => p.condition !== false).map((p, index) =>
         p.key === 'sep'
-          ? <div key={p.key} style={toolbarSeparator} />
+          ? <div key={`sep-${index}`} style={toolbarSeparator} />
           : <button key={p.key} onClick={p.toggle} style={toolbarBtnStyle(p.active)}>{p.label}</button>
       )}
 

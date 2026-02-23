@@ -113,10 +113,10 @@ export function useCanvasSync({
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'presence',
-        data: { cursor, selectedShapeIds, userName },
+        data: { cursor, selectedShapeIds },
       }))
     }
-  }, [userName])
+  }, [])
 
   const disconnect = useCallback(() => {
     reconnectAttempt.current = 999 // Prevent reconnect

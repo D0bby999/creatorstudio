@@ -66,6 +66,7 @@ class IndexedDBPool {
       request.onupgradeneeded = () => this.onUpgrade(request.result)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
+      request.onblocked = () => reject(new Error(`IndexedDB "${this.dbName}" blocked by another connection`))
     })
   }
 }
