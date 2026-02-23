@@ -1,19 +1,23 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Editor } from 'tldraw'
-import { exportCanvas, exportAndDownload, type ExportFormat } from '../lib/canvas-export'
+import { exportCanvas, exportAndDownload, type ExportFormat, downloadBlob } from '../lib/canvas-export'
 import { batchExport } from '../lib/canvas-batch-export'
 import { exportWithWatermark } from '../lib/canvas-watermark'
+import { exportToPdf } from '../lib/export/canvas-export-pdf'
+import { downloadTldrFile, loadTldrFile } from '../lib/export/canvas-export-tldr-file'
+import { copyAs, type CopyFormat } from '../lib/export/canvas-export-copy-as'
 
 interface ExportPanelProps {
   editor: Editor
   onClose: () => void
 }
 
-const formats: { value: ExportFormat; label: string }[] = [
+const formats: { value: ExportFormat | 'pdf'; label: string }[] = [
   { value: 'png', label: 'PNG' },
   { value: 'svg', label: 'SVG' },
   { value: 'webp', label: 'WebP' },
   { value: 'jpeg', label: 'JPEG' },
+  { value: 'pdf', label: 'PDF' },
 ]
 
 const scales = [
@@ -23,13 +27,15 @@ const scales = [
 ]
 
 export function ExportPanel({ editor, onClose }: ExportPanelProps) {
-  const [format, setFormat] = useState<ExportFormat>('png')
+  const [format, setFormat] = useState<ExportFormat | 'pdf'>('png')
   const [scale, setScale] = useState(2)
   const [background, setBackground] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [watermarkEnabled, setWatermarkEnabled] = useState(false)
   const [watermarkText, setWatermarkText] = useState('@username')
   const [batchProgress, setBatchProgress] = useState<string | null>(null)
+  const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedCount = editor.getSelectedShapeIds().length
   const artboardCount = editor.getCurrentPageShapes().filter((s) => (s.type as string) === 'social-card').length
@@ -40,22 +46,18 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
       const timestamp = new Date().toISOString().slice(0, 10)
       const filename = `creator-studio-${timestamp}.${format}`
 
-      if (watermarkEnabled && watermarkText) {
+      if (format === 'pdf') {
+        const blob = await exportToPdf(editor, { scale, background })
+        downloadBlob(blob, filename)
+      } else if (watermarkEnabled && watermarkText) {
         const blob = await exportWithWatermark(
           editor,
-          () => exportCanvas(editor, { format, scale, background }),
+          () => exportCanvas(editor, { format: format as ExportFormat, scale, background }),
           { text: watermarkText },
         )
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
+        downloadBlob(blob, filename)
       } else {
-        await exportAndDownload(editor, filename, { format, scale, background })
+        await exportAndDownload(editor, filename, { format: format as ExportFormat, scale, background })
       }
     } catch (err) {
       console.error('Export failed:', err)
@@ -68,7 +70,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
     setExporting(true)
     try {
       const count = await batchExport(editor, {
-        format,
+        format: format === 'pdf' ? 'png' : (format as ExportFormat),
         scale,
         background,
         onProgress: (cur, total) => setBatchProgress(`${cur}/${total}`),
@@ -79,6 +81,44 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
       console.error('Batch export failed:', err)
     } finally {
       setExporting(false)
+    }
+  }
+
+  const handleSaveTldr = () => {
+    try {
+      downloadTldrFile(editor)
+    } catch (err) {
+      console.error('Save .tldr failed:', err)
+    }
+  }
+
+  const handleLoadTldr = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setExporting(true)
+    try {
+      await loadTldrFile(editor, file)
+    } catch (err) {
+      console.error('Load .tldr failed:', err)
+      alert('Failed to load .tldr file. Please check the file format.')
+    } finally {
+      setExporting(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleCopyAs = async (copyFormat: CopyFormat) => {
+    try {
+      await copyAs(editor, copyFormat)
+      setCopyStatus(`Copied as ${copyFormat.toUpperCase()}`)
+      setTimeout(() => setCopyStatus(null), 2000)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      setCopyStatus('Copy failed')
+      setTimeout(() => setCopyStatus(null), 2000)
     }
   }
 
@@ -105,7 +145,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
           </div>
         </div>
 
-        {format !== 'svg' && (
+        {format !== 'svg' && format !== 'pdf' && (
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Scale</label>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -155,11 +195,55 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
           {exporting ? 'Exporting...' : `Download .${format}`}
         </button>
 
-        {artboardCount > 1 && (
+        {artboardCount > 1 && format !== 'pdf' && (
           <button onClick={handleBatchExport} disabled={exporting} style={{ ...exportBtnStyle, background: '#555', marginTop: 8 }}>
             {batchProgress ?? `Export All (${artboardCount} artboards)`}
           </button>
         )}
+
+        <div style={{ borderTop: '1px solid #eee', marginTop: 16, paddingTop: 12 }}>
+          <label style={labelStyle}>Project Files</label>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            <button onClick={handleSaveTldr} style={smallBtnStyle}>
+              Save .tldr
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} style={smallBtnStyle}>
+              Load .tldr
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".tldr"
+            onChange={handleLoadTldr}
+            style={{ display: 'none' }}
+          />
+        </div>
+
+        <div style={{ borderTop: '1px solid #eee', marginTop: 12, paddingTop: 12 }}>
+          <label style={labelStyle}>Copy to Clipboard</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button onClick={() => handleCopyAs('png')} disabled={selectedCount === 0} style={smallBtnStyle}>
+              PNG
+            </button>
+            <button onClick={() => handleCopyAs('svg')} disabled={selectedCount === 0} style={smallBtnStyle}>
+              SVG
+            </button>
+            <button onClick={() => handleCopyAs('json')} disabled={selectedCount === 0} style={smallBtnStyle}>
+              JSON
+            </button>
+          </div>
+          {copyStatus && (
+            <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>
+              {copyStatus}
+            </div>
+          )}
+          {selectedCount === 0 && (
+            <div style={{ fontSize: 11, color: '#999', marginTop: 6 }}>
+              Select shapes to copy
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -221,5 +305,17 @@ const exportBtnStyle: React.CSSProperties = {
   border: 'none',
   background: '#333',
   color: '#fff',
+  cursor: 'pointer',
+}
+
+const smallBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '8px 12px',
+  fontSize: 12,
+  fontWeight: 500,
+  borderRadius: 6,
+  border: '1px solid #e5e5e5',
+  background: '#fff',
+  color: '#333',
   cursor: 'pointer',
 }
