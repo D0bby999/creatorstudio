@@ -31,6 +31,8 @@ import { cleanupFonts } from '../lib/canvas-font-loader'
 import { useCanvasSync } from '../hooks/use-canvas-sync'
 import { PresenceCursorsOverlay } from './presence-cursors-overlay'
 import { UserListPanel } from './user-list-panel'
+import { OfflineIndicator } from './offline-indicator'
+import { FollowingIndicator } from './following-indicator'
 
 const LazyAiToolsPanel = lazy(() => import('./ai-tools-panel').then(m => ({ default: m.AiToolsPanel })))
 
@@ -74,6 +76,7 @@ export function CanvasEditor({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [multiplayer, setMultiplayer] = useState(false)
   const [activeTool, setActiveTool] = useState('select')
+  const [followingUser, setFollowingUser] = useState<{ name: string; color: string } | null>(null)
 
   const collabEnabled = !!(roomId && wsUrl && authToken && multiplayer)
   const sync = useCanvasSync({
@@ -210,6 +213,14 @@ export function CanvasEditor({
 
       {collabEnabled && <PresenceCursorsOverlay users={sync.users} />}
       {collabEnabled && <UserListPanel users={sync.users} currentUserId={userId} currentUserName={userName} />}
+      {collabEnabled && <OfflineIndicator status={sync.status} queueSize={sync.queueSize} />}
+      {collabEnabled && (
+        <FollowingIndicator
+          followingUserName={followingUser?.name ?? null}
+          followingUserColor={followingUser?.color}
+          onStopFollowing={() => setFollowingUser(null)}
+        />
+      )}
 
       {editor && <ToolSelectionToolbar editor={editor} activeTool={activeTool} onToolChange={setActiveTool} />}
       {editor && <ShapeInsertionToolbar editor={editor} />}

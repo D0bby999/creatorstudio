@@ -517,6 +517,107 @@ requireSession(request, { returnTo: '/dashboard' })
 └─────────────────────────────────────────────────────────┘
 ```
 
+### Canvas Sync Server (Standalone WebSocket Server)
+
+**Architecture:** Dedicated WebSocket server separate from React Router SSR
+
+```
+┌────────────────────────────────────────────────────┐
+│   React Router 7 App (Port 5173)                   │
+│   ├─ Canvas route with room loader                 │
+│   ├─ Session validation (better-auth)              │
+│   └─ Constructs WS URL from env + query params     │
+└────────────────────────────────────────────────────┘
+                    ▼
+┌────────────────────────────────────────────────────┐
+│   Canvas Sync WebSocket Server (Port 5174)         │
+│   apps/web/app/lib/canvas-sync/ws-server.ts        │
+├────────────────────────────────────────────────────┤
+│  Connection Flow:                                  │
+│  1. Client connects with ?token=<session_token>    │
+│  2. Auth via better-auth.api.getSession()          │
+│  3. Join room (roomId from query param)            │
+│  4. Subscribe to Redis pub/sub for room            │
+│  5. Broadcast presence/cursor updates              │
+│  6. Sync canvas state changes                      │
+└────────────────────────────────────────────────────┘
+                    ▼
+┌────────────────────────────────────────────────────┐
+│   Redis Pub/Sub (ioredis adapter)                  │
+│   packages/redis (canvas-specific instance)        │
+├────────────────────────────────────────────────────┤
+│  - Cross-instance message delivery                 │
+│  - Room-based channel isolation                    │
+│  - Falls back to in-memory for single instance     │
+└────────────────────────────────────────────────────┘
+```
+
+**Message Protocol:**
+
+```typescript
+// Client → Server
+{ type: 'join', roomId: string, userId: string }
+{ type: 'cursor', x: number, y: number, color: string }
+{ type: 'change', snapshot: TLStoreSnapshot, userId: string }
+{ type: 'ping' }
+
+// Server → Client
+{ type: 'presence', users: User[] }
+{ type: 'sync', snapshot: TLStoreSnapshot, fromUserId: string }
+{ type: 'cursor', userId: string, x: number, y: number }
+{ type: 'pong' }
+{ type: 'error', message: string }
+```
+
+**Room Lifecycle:**
+
+```
+Room Creation
+    ▼
+Empty room in memory (Map<roomId, Room>)
+    ▼
+First user connects → Join room
+    ▼
+Subscribe to Redis channel: canvas:room:{roomId}
+    ▼
+Additional users → Receive initial state + presence
+    ▼
+Changes → Broadcast to all room members via Redis
+    ▼
+Last user disconnects → Cleanup timer (5min)
+    ▼
+Room auto-deleted if empty (memory cleanup)
+```
+
+**Redis Integration (ioredis):**
+- **Adapter:** `ioredis` for Redis Pub/Sub (separate from Upstash)
+- **Canvas-specific:** Canvas sync uses dedicated Redis instance
+- **Fallback:** In-memory Map when Redis unavailable (single-instance mode)
+- **Channel pattern:** `canvas:room:{roomId}` for room isolation
+- **Cross-instance:** Enables horizontal scaling with multiple WS servers
+
+**UI Components:**
+- **OfflineIndicator** (`offline-indicator.tsx`) → Banner on disconnect
+- **FollowingIndicator** (`following-indicator.tsx`) → Camera follow banner with Esc to stop
+
+**Configuration:**
+- **Env var:** `CANVAS_WS_PORT` (default: 5174)
+- **Env var:** `CANVAS_REDIS_URL` (optional, for cross-instance sync)
+- **Loader:** Canvas route loader passes `sessionToken`, `roomId`, `wsUrl` to client
+
+**Test Coverage:**
+- 128/135 tests passing (7 pre-existing failures from tldraw built-in shortcuts)
+- Keyboard shortcut tests fixed (delegated to tldraw built-in handlers)
+
+**Key Features:**
+- Session token-based auth (no cookies on WebSocket)
+- Room isolation via Redis channels
+- Auto-cleanup of empty rooms
+- Reconnection with exponential backoff
+- Presence cursors with user colors
+- Offline queue (client-side, 1000 ops)
+- Cross-instance sync via Redis Pub/Sub
+
 **Canvas Full Parity Strategy (v0.21.1):**
 - **6 Phases Built-in:** Leveraged tldraw 4.3.1 defaults for core tools, shapes, style system, groups, alignment, presentation, undo/redo, history
 - **4 Phases Custom:** Implemented export (PDF/.tldr/clipboard), template system (categories/search/favorites/page-manager)

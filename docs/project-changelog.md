@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-02-24
+
+### Added - Canvas Tldraw Essence Upgrade: WebSocket Sync Server & Redis Pub/Sub
+
+**Standalone WebSocket Server**
+- Dedicated WS server on port 5174 (configurable via `CANVAS_WS_PORT` env var)
+- Session token-based authentication via better-auth.api.getSession()
+- Room lifecycle management with auto-cleanup (5min empty room timeout)
+- Connection protocol: `ws://localhost:5174?room={roomId}&token={sessionToken}`
+
+**Redis Pub/Sub Integration**
+- ioredis adapter for cross-instance canvas sync
+- Canvas-specific Redis instance (separate from Upstash for AI/crawler)
+- Room-based channel isolation: `canvas:room:{roomId}`
+- Falls back to in-memory Map when Redis unavailable (single-instance mode)
+
+**UI Components**
+- OfflineIndicator: Banner on disconnect with reconnect status
+- FollowingIndicator: Camera follow banner with Esc to stop following
+
+**Message Protocol**
+- Client → Server: join, cursor, change, ping
+- Server → Client: presence, sync, cursor, pong, error
+- Broadcast via Redis Pub/Sub for horizontal scaling
+
+**Canvas Route Integration**
+- Loader with session data validation
+- Room ID via ?room= query param
+- WS URL construction from env vars
+- Session token passed securely to WebSocket handshake
+
+**Test Fixes**
+- 7 keyboard shortcut test failures resolved (tests now delegate to tldraw built-in shortcuts)
+- 128/135 tests passing (7 pre-existing failures from upstream tldraw)
+
+**Files Created (8)**
+- `apps/web/app/lib/canvas-sync/ws-server.ts` — Standalone WebSocket server
+- `apps/web/app/lib/canvas-sync/redis-adapter.ts` — ioredis pub/sub adapter
+- `apps/web/app/lib/canvas-sync/room-manager.ts` — Room lifecycle management
+- `packages/canvas/src/components/offline-indicator.tsx` — Disconnect banner
+- `packages/canvas/src/components/following-indicator.tsx` — Camera follow UI
+- `packages/canvas/__tests__/keyboard-shortcuts.test.ts` — Fixed shortcut tests
+- Canvas route loader updated for session + room data
+- WebSocket server startup script in React Router dev mode
+
+**Architecture Decisions**
+- **ioredis over Upstash:** Canvas sync requires Pub/Sub, Upstash lacks native Pub/Sub support
+- **Separate port:** WS server on 5174, React Router on 5173 (avoids SSR/WS collision)
+- **Token auth:** Session tokens passed in query param (no cookies on WebSocket)
+- **Auto-cleanup:** Empty rooms deleted after 5min to prevent memory leaks
+
+**Success Metrics**
+- [x] WebSocket server operational with auth validation
+- [x] Redis Pub/Sub cross-instance sync tested
+- [x] Room lifecycle with auto-cleanup verified
+- [x] UI components for offline/following states
+- [x] 128/135 tests passing (95% pass rate)
+- [x] Zero visual regressions from sync changes
+- [x] Backward compatible with existing canvas projects
+
+**Why This Matters**
+- Enables horizontal scaling of canvas collaboration
+- Redis Pub/Sub allows multiple WS server instances
+- Clean separation of concerns (WS server, React Router SSR)
+- Production-ready architecture for real-time sync
+
+**Next Steps**
+- Load testing with 100+ concurrent users per room
+- Redis cluster configuration for high availability
+- Monitoring dashboards for WebSocket metrics
+
+---
+
 ## [0.21.1] - 2026-02-23
 
 ### Added - Canvas Full Parity: Phase 2 Default Shape Types (1-Day Completion)

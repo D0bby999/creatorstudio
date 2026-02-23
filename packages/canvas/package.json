@@ -8,6 +8,7 @@
     "./shapes/*": "./src/shapes/*.tsx",
     "./templates/*": "./src/templates/*.ts",
     "./lib/*": "./src/lib/*.ts",
+    "./lib/storage/*": "./src/lib/storage/*.ts",
     "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
@@ -19,6 +20,7 @@
     "@creator-studio/db": "workspace:*",
     "@tanstack/react-virtual": "^3.13.18",
     "@tldraw/sync": "4.3.1",
+    "ioredis": "^5.9.3",
     "jspdf": "^4.2.0",
     "tldraw": "^4.3.1"
   },
