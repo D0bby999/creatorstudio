@@ -5,6 +5,27 @@ export interface CanvasShortcutCallbacks {
   onExport?: () => void
   onToggleLayers?: () => void
   onToggleInspector?: () => void
+  onToolChange?: (toolId: string) => void
+}
+
+/** Tool-switch shortcuts: single key, no modifiers, guarded against text editing focus */
+const TOOL_SHORTCUTS: Record<string, string> = {
+  v: 'select',
+  h: 'hand',
+  e: 'eraser',
+  k: 'laser',
+  z: 'zoom',
+  c: 'connector',
+  x: 'crop',
+}
+
+function isEditingText(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = el.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return true
+  if ((el as HTMLElement).contentEditable === 'true') return true
+  return false
 }
 
 export function registerCanvasShortcuts(
@@ -14,6 +35,7 @@ export function registerCanvasShortcuts(
   const handler = (e: KeyboardEvent) => {
     const meta = e.metaKey || e.ctrlKey
 
+    // Modifier-based shortcuts (Cmd/Ctrl combos)
     if (meta && e.key === 's') {
       e.preventDefault()
       callbacks.onSave?.()
@@ -52,12 +74,16 @@ export function registerCanvasShortcuts(
       if (ids.length > 0) editor.ungroupShapes(ids)
       return
     }
-    // Connector tool shortcut (no modifier)
-    if (!meta && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'c') {
-      const active = document.activeElement
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).contentEditable === 'true')) return
-      editor.setCurrentTool('connector')
-      return
+
+    // Tool-switch shortcuts: single key, no modifiers
+    if (!meta && !e.shiftKey && !e.altKey) {
+      if (isEditingText()) return
+      const toolId = TOOL_SHORTCUTS[e.key.toLowerCase()]
+      if (toolId) {
+        editor.setCurrentTool(toolId)
+        callbacks.onToolChange?.(toolId)
+        return
+      }
     }
   }
 

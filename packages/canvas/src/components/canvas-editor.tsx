@@ -1,6 +1,6 @@
 /// <reference path="../tldraw-custom-shapes.d.ts" />
 import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react'
-import { Tldraw, type Editor } from 'tldraw'
+import { Tldraw, react, type Editor } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { SocialCardShapeUtil } from '../shapes/social-card-shape'
 import { QuoteCardShapeUtil } from '../shapes/quote-card-shape'
@@ -22,6 +22,7 @@ import { VersionHistoryPanel } from './version-history-panel'
 import { ArtboardPresetsPanel } from './artboard-presets-panel'
 import { ErrorBoundaryPanel } from './error-boundary-panel'
 import { CanvasToolbar } from './canvas-toolbar'
+import { ToolSelectionToolbar } from './tool-selection-toolbar'
 import { createCanvasAssetStore, createFallbackAssetStore } from '../lib/canvas-asset-store'
 import { registerCanvasShortcuts } from '../lib/canvas-keyboard-shortcuts'
 import { createAutoSave, type SaveStatus } from '../lib/canvas-auto-save'
@@ -72,6 +73,7 @@ export function CanvasEditor({
   const [showAiTools, setShowAiTools] = useState(false)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [multiplayer, setMultiplayer] = useState(false)
+  const [activeTool, setActiveTool] = useState('select')
 
   const collabEnabled = !!(roomId && wsUrl && authToken && multiplayer)
   const sync = useCanvasSync({
@@ -108,8 +110,18 @@ export function CanvasEditor({
       onExport: () => { closeDropdowns(); setShowExport((v: boolean) => !v) },
       onToggleLayers: () => setShowLayers((v: boolean) => !v),
       onToggleInspector: () => setShowInspector((v: boolean) => !v),
+      onToolChange: setActiveTool,
     })
   }, [editor, onSave])
+
+  // Reactive tool sync — fires only when getCurrentToolId() actually changes
+  useEffect(() => {
+    if (!editor) return
+    return react('sync active tool', () => {
+      const toolId = editor.getCurrentToolId()
+      setActiveTool(toolId)
+    })
+  }, [editor])
 
   useEffect(() => {
     if (!editor || !collabEnabled) return
@@ -199,6 +211,7 @@ export function CanvasEditor({
       {collabEnabled && <PresenceCursorsOverlay users={sync.users} />}
       {collabEnabled && <UserListPanel users={sync.users} currentUserId={userId} currentUserName={userName} />}
 
+      {editor && <ToolSelectionToolbar editor={editor} activeTool={activeTool} onToolChange={setActiveTool} />}
       {editor && <ShapeInsertionToolbar editor={editor} />}
       {editor && <AlignmentToolbar editor={editor} />}
 

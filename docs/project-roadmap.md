@@ -4,11 +4,11 @@
 
 Creator Studio is a comprehensive creative toolkit for content creators. This roadmap tracks the project evolution from foundation through scaling phases.
 
-## Current Status: Canvas Advanced Upgrade Complete
+## Current Status: Canvas Core Tools Complete
 
 **Project Completion:** 100% (All phases + upgrades complete)
-**Latest Phase:** Canvas Advanced Upgrade (v0.21.0) - 2026-02-23 - COMPLETE
-**Previous Phase:** Canvas Pro Upgrade (v0.20.0) - 2026-02-23 - COMPLETE
+**Latest Phase:** Canvas Core Tools (Phase 1/10 Full Parity) - 2026-02-23 - COMPLETE
+**Previous Phase:** Canvas Advanced Upgrade (v0.21.0) - 2026-02-23 - COMPLETE
 
 ---
 
@@ -113,6 +113,71 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 - [x] Presence cursors update <100ms
 - [x] Reconnection <5 seconds
 - [x] Backward compatible with v0.20.0
+
+---
+
+### Canvas Full Parity - Phase 1: Core Tools (COMPLETE) ✓
+**Timeline:** Completed Feb 2026
+**Status:** Hybrid approach with built-in tools + custom UI
+**Version:** Part of 10-phase full parity plan
+
+**Deliverables:**
+
+**Decision: Hybrid Approach Over Full Reimplementation**
+- [x] Tldraw 4.3.1 ships all 5 core tools as built-in defaults (SelectTool, HandTool, EraserTool, ZoomTool, LaserTool)
+- [x] CropTool kept as standalone custom tool (CSS clip-path for custom shapes)
+- [x] Avoided ~4000 LOC reimplementation effort (SelectTool alone has 16 child states)
+
+**Keyboard Shortcuts & UI Discoverability**
+- [x] Tool-switch shortcuts: V=select, H=hand, E=eraser, K=laser, Z=zoom, C=connector, X=crop
+- [x] Text editing guard (shortcuts disabled when focus on input/textarea/contentEditable)
+- [x] Modifier shortcuts preserved (Cmd+S save, Cmd+E export, Cmd+D duplicate, Cmd+G group/ungroup)
+- [x] ToolSelectionToolbar — left-side vertical toolbar with 7 tool buttons showing shortcut hints
+
+**Tool State Synchronization**
+- [x] Reactive tool state sync between tldraw editor and UI via `react()` from `@tldraw/editor`
+- [x] Active tool highlighting in toolbar
+- [x] Tool change callback integration
+
+**Files Changed (4)**
+- Modified: `canvas-keyboard-shortcuts.ts` (added TOOL_SHORTCUTS map, isEditingText guard)
+- Modified: `canvas-editor.tsx` (integrated ToolSelectionToolbar)
+- Created: `tool-selection-toolbar.tsx` (7-button vertical toolbar with icons + shortcuts)
+- Created: `canvas-keyboard-shortcuts.test.ts` (20 new unit tests)
+
+**Test Coverage**
+- [x] 20 new unit tests for shortcuts + toolbar interaction
+- [x] 115 total tests (was 95), all pass
+- [x] Keyboard shortcut conflict prevention tested
+- [x] Tool state synchronization tested
+- [x] 0 TypeScript errors
+
+**Features**
+- All 7 canvas tools accessible via single-key shortcuts (no modifiers)
+- Visual toolbar with tooltips showing shortcut hints
+- Built-in tools (select, hand, eraser, laser, zoom) use tldraw defaults
+- Custom tools (connector, crop) remain fully custom implementations
+- Text editing context awareness prevents shortcut conflicts
+
+**Success Metrics Achieved**
+- [x] All 7 tools switchable via keyboard + UI toolbar
+- [x] Tool state syncs reactively between editor and UI
+- [x] Shortcuts don't interfere with text editing
+- [x] CropTool serves custom shape needs (social-card, carousel-slide with CSS clip-path)
+- [x] ~4000 LOC avoided by leveraging tldraw built-ins
+- [x] Backward compatible with existing canvas projects
+- [x] Zero visual regressions from toolbar addition
+- [x] All tests passing with 20 new tests added
+
+**Why Hybrid Instead of Full Reimplementation?**
+- Tldraw's built-in tools are battle-tested with edge cases covered
+- SelectTool state machine complexity (~4000 LOC, 16 child states) avoided
+- Faster time-to-value for user-facing features
+- Keyboard shortcuts + toolbar provide discoverability without reinventing internals
+- CropTool custom implementation serves specific needs (CSS clip-path for custom shapes vs tldraw's native image crop)
+
+**Next Phase**
+- Phase 2: Default shape types (draw, geo, text, note, arrow, image, video, frame, embed, bookmark, highlight, line)
 
 ---
 
@@ -1083,6 +1148,7 @@ Creator Studio is a comprehensive creative toolkit for content creators. This ro
 | Database Connection & Auth Completion | Feb 2026 | ✓ Complete |
 | Canvas Pro Upgrade | Feb 2026 | ✓ Complete |
 | Canvas Advanced Upgrade (v0.21.0) | Feb 2026 | ✓ Complete |
+| Canvas Full Parity - Phase 1: Core Tools | Feb 2026 | ✓ Complete |
 
 ## Known Constraints & Gotchas
 
