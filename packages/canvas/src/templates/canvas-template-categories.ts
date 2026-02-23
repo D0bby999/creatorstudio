@@ -83,21 +83,23 @@ export function extractTemplateTags(template: {
   const tags: TemplateTag[] = []
   const lower = template.id.toLowerCase() + template.name.toLowerCase() + template.category.toLowerCase()
 
-  // Platform tags
-  if (lower.includes('instagram') || lower.includes('ig')) tags.push('instagram')
-  if (lower.includes('twitter') || lower.includes('tw')) tags.push('twitter')
-  if (lower.includes('facebook') || lower.includes('fb')) tags.push('facebook')
-  if (lower.includes('tiktok') || lower.includes('tt')) tags.push('tiktok')
-  if (lower.includes('youtube') || lower.includes('yt')) tags.push('youtube')
-  if (lower.includes('linkedin') || lower.includes('li')) tags.push('linkedin')
-  if (lower.includes('pinterest') || lower.includes('pin')) tags.push('pinterest')
+  // Platform tags — use full names only to avoid false positives from short abbreviations
+  // Template IDs already use clear prefixes like `ig-`, `tw-`, `fb-` which match full words
+  const id = template.id.toLowerCase()
+  if (lower.includes('instagram') || id.startsWith('ig-')) tags.push('instagram')
+  if (lower.includes('twitter') || id.startsWith('tw-')) tags.push('twitter')
+  if (lower.includes('facebook') || id.startsWith('fb-')) tags.push('facebook')
+  if (lower.includes('tiktok') || id.startsWith('tt-')) tags.push('tiktok')
+  if (lower.includes('youtube') || id.startsWith('yt-')) tags.push('youtube')
+  if (lower.includes('linkedin') || id.startsWith('li-')) tags.push('linkedin')
+  if (lower.includes('pinterest') || id.startsWith('pin-')) tags.push('pinterest')
 
   // Format tags
   if (lower.includes('story')) tags.push('story')
   if (lower.includes('post')) tags.push('post')
   if (lower.includes('cover')) tags.push('cover')
   if (lower.includes('banner') || lower.includes('header')) tags.push('banner')
-  if (lower.includes('ad')) tags.push('ad')
+  if (lower.includes('advertisement') || id.startsWith('ad-')) tags.push('ad')
   if (lower.includes('slide') || lower.includes('presentation')) tags.push('slide')
 
   // Orientation tags (basic heuristic)

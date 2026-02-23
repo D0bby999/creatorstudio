@@ -7,6 +7,7 @@ import {
   toggleFavoriteTemplate,
   isTemplateFavorite,
   filterFavoriteTemplates,
+  getFavoriteTemplateIds,
 } from '../templates/canvas-template-favorites'
 
 interface TemplatePanelProps {
@@ -18,17 +19,7 @@ interface TemplatePanelProps {
 export function TemplatePanel({ editor, onClose }: TemplatePanelProps) {
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all' | 'favorites'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('canvas-template-favorites')
-        return stored ? JSON.parse(stored) : []
-      } catch {
-        return []
-      }
-    }
-    return []
-  })
+  const [favorites, setFavorites] = useState<string[]>(() => getFavoriteTemplateIds())
 
   const enrichedTemplates = useMemo(() => enrichTemplates(canvasTemplates), [])
 
@@ -77,9 +68,8 @@ export function TemplatePanel({ editor, onClose }: TemplatePanelProps) {
 
   const handleToggleFavorite = (templateId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    toggleFavoriteTemplate(templateId)
-    // Update local state to trigger re-render
-    setFavorites(isTemplateFavorite(templateId) ? favorites.filter((id) => id !== templateId) : [...favorites, templateId])
+    const isNowFavorite = toggleFavoriteTemplate(templateId)
+    setFavorites(isNowFavorite ? [...favorites, templateId] : favorites.filter((id) => id !== templateId))
   }
 
   return (

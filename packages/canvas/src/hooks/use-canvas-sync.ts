@@ -35,6 +35,7 @@ export function useCanvasSync({
   const lastPingTime = useRef(0)
   const reconnectStrategy = useRef(new ReconnectStrategy({ maxAttempts: 5 }))
   const offlineQueue = useRef(new OfflineQueue({ maxSize: 1000 }))
+  const scheduleReconnectRef = useRef<() => void>(() => {})
 
   const cleanup = useCallback(() => {
     if (pingTimer.current) clearInterval(pingTimer.current)
@@ -58,6 +59,7 @@ export function useCanvasSync({
     ws.onopen = () => {
       setState(s => ({ ...s, status: 'connected', queueSize: 0 }))
       reconnectStrategy.current.reset()
+      lastPingTime.current = 0
 
       // Replay queued operations from offline period
       const queued = offlineQueue.current.flush()
@@ -82,7 +84,7 @@ export function useCanvasSync({
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data)
-        if (msg.type === 'pong') {
+        if (msg.type === 'pong' && lastPingTime.current > 0) {
           const latency = Date.now() - lastPingTime.current
           setState(s => ({ ...s, latencyMs: latency }))
         } else if (msg.type === 'presence') {
@@ -99,7 +101,7 @@ export function useCanvasSync({
 
     ws.onclose = () => {
       setState(s => ({ ...s, status: 'disconnected', users: new Map() }))
-      scheduleReconnect()
+      scheduleReconnectRef.current()
     }
 
     ws.onerror = () => {
@@ -107,7 +109,8 @@ export function useCanvasSync({
     }
   }, [enabled, wsUrl, roomId, token, userId, cleanup])
 
-  const scheduleReconnect = useCallback(() => {
+  // Keep ref in sync so ws.onclose always calls the latest version
+  scheduleReconnectRef.current = () => {
     const delay = reconnectStrategy.current.getNextDelay()
     if (delay === null) {
       console.warn('[CanvasSync] Max reconnection attempts reached')
@@ -117,7 +120,7 @@ export function useCanvasSync({
 
     console.log(`[CanvasSync] Reconnecting in ${delay}ms (attempt ${reconnectStrategy.current.getAttempt()})`)
     reconnectTimer.current = setTimeout(connect, delay)
-  }, [connect])
+  }
 
   useEffect(() => {
     if (enabled) connect()
