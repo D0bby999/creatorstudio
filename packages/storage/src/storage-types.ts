@@ -1,6 +1,7 @@
 export type FileType =
   | 'video-export'
   | 'canvas-export'
+  | 'canvas-asset'
   | 'social-upload'
   | 'thumbnail';
 
@@ -33,6 +34,11 @@ export const UPLOAD_CONFIGS: Record<FileType, UploadConfig> = {
   'canvas-export': {
     maxSize: 10 * 1024 * 1024, // 10MB
     allowedTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+    ttl: 15 * 60,
+  },
+  'canvas-asset': {
+    maxSize: 10 * 1024 * 1024, // 10MB
+    allowedTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'],
     ttl: 15 * 60,
   },
   'social-upload': {

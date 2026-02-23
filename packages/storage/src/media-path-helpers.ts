@@ -48,6 +48,7 @@ export function extractFileTypeFromKey(key: string): FileType | null {
   const validTypes: FileType[] = [
     'video-export',
     'canvas-export',
+    'canvas-asset',
     'social-upload',
     'thumbnail',
   ];

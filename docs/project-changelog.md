@@ -7,6 +7,195 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-02-23
+
+### Added - Canvas Pro Upgrade: Production-Ready Design Editor
+
+**Image & Asset Pipeline (Phase 1)**
+- Image upload via drag-drop, clipboard paste, and URL import
+- R2 cloud storage integration with presigned upload URLs (15min TTL)
+- Data URL fallback mode for offline/MVP compatibility (no R2 config needed)
+- Asset management panel (grid view, search/filter, insert, delete)
+- `canvas-asset` FileType in storage package (10MB max, PNG/JPEG/WebP/GIF/SVG)
+- Asset store implementation with `upload()` and `resolve()` methods
+- Client-side + server-side file validation
+- Thumbnail generation for asset panel (200px wide)
+
+**Pro Editor UI (Phase 2)**
+- Property inspector panel with per-shape-type field rendering
+  - Supports 4 custom shapes + tldraw built-in shapes
+  - Reactive updates via `editor.store.listen()`
+  - Debounced text input (300ms)
+  - Multi-select: shared props only, batch update
+- Layers panel with z-order management
+  - Lock/unlock, show/hide, rename shapes
+  - Bring to front/back, forward/backward controls
+  - Group/ungroup button for multi-select
+  - Real-time sync with canvas changes
+- Color picker widget
+  - Hex input with validation
+  - 12 preset swatches (brand + social colors)
+  - Recent colors (last 8, localStorage)
+  - Opacity slider (0-100%)
+  - Gradient builder (from/to color + angle)
+  - Native `<input type="color">` base picker
+- Alignment/distribution toolbar
+  - 6 alignment options (left, center-h, right, top, center-v, bottom)
+  - Horizontal/vertical distribution
+  - Enabled only when 2+ shapes selected
+- Keyboard shortcuts
+  - Cmd+S (save), Cmd+E (export)
+  - Cmd+Shift+L (layers), Cmd+Shift+I (inspector)
+  - Delete/Backspace, Cmd+D (duplicate), Cmd+G (group), Cmd+Shift+G (ungroup)
+- Context menu customization (via tldraw overrides API)
+
+**Enhanced Shapes & Typography (Phase 3)**
+- Google Fonts integration with 30 curated fonts
+  - Sans: Inter, Roboto, Open Sans, Lato, Montserrat, Poppins, Nunito, Raleway, Oswald, Rubik
+  - Serif: Playfair Display, Merriweather, Lora, PT Serif, Crimson Text
+  - Display: Bebas Neue, Lobster, Pacifico, Caveat, Dancing Script, Righteous, Fredoka One
+  - Mono: JetBrains Mono, Fira Code, Source Code Pro, Space Mono
+- Native CSS Font Loading API (`document.fonts.load()`) — zero deps
+- Font picker widget with search and category groups
+- Typography props for all text-bearing shapes
+  - fontFamily, fontWeight, fontSize, textAlign, letterSpacing, lineHeight
+  - Backward compatible defaults (existing canvases render identically)
+- Enhanced social-card shape with 3 layout modes
+  - Minimal: current behavior (dimensions + label only)
+  - Standard: header + body text + CTA button area
+  - Full: header + body + image placeholder + CTA
+- Brand kit shape (brand colors, logo placeholder, tagline)
+- Shape style presets (6 presets)
+  - Shadow Card, Outlined, Gradient Pop, Minimal, Dark Mode, Glassmorphism
+  - 1-click apply via property inspector dropdown
+- SVG export preserves font references via embedded CSS import URLs
+
+**Smart Canvas Features (Phase 4)**
+- Auto-save with 30s debounce after shape changes
+  - Side effects registration via `editor.sideEffects.register()`
+  - Non-blocking background operation
+  - Error handling with 10s retry
+- Save status indicator
+  - 4 states: idle, unsaved, saving, saved, error
+  - Visual: colored dot + text in toolbar
+- Version history with IndexedDB storage
+  - Raw IndexedDB API (zero deps, no idb-keyval)
+  - Max 50 versions per project (FIFO eviction)
+  - Auto-snapshot every 5th auto-save OR manual save
+  - `VersionEntry: { timestamp, label?, shapeCount, snapshotSize }`
+- Version history panel
+  - List versions with date/time, label, shape count
+  - Restore any version (confirm dialog)
+  - Delete individual versions
+  - "Save Version" button for manual snapshots with optional label
+- Responsive artboard presets
+  - Quick-switch between platform sizes (Instagram, Twitter, LinkedIn, Facebook, etc.)
+  - Resize existing artboard shape while preserving content
+- Batch export
+  - Export all social-card shapes as separate images
+  - Sequential download (no JSZip dependency)
+  - Progress callback for UI updates
+  - File naming: `{label}-{width}x{height}.{format}`
+- Text-only watermark overlay for export
+  - Position: bottom-right, bottom-left, center
+  - Opacity configurable (default 0.3)
+  - Renders at export time only (no canvas clutter)
+  - Temporary shape created + removed in `editor.batch()`
+
+**AI Integration (Phase 5)**
+- AI image generation on canvas
+  - Replicate SDXL via `packages/ai` image generator
+  - Prompt input dialog with dimensions selector
+  - Generated image uploaded to R2 via asset pipeline
+  - Inserted as tldraw image shape at viewport center
+- AI content fill for text shapes
+  - Per-shape-type prompts (quote-card, carousel-slide, text-overlay, social-card)
+  - Structured output with Zod schema validation
+  - Rate limit: 10 fills/min per user
+  - Updates shape props via `editor.updateShapes()`
+- Smart layout suggestions
+  - Geometry-based alignment (no AI model needed)
+  - Detects patterns: grid, row, column, scattered
+  - Auto-aligns to center with equal vertical spacing
+  - Applies via `editor.batch()` for single undo
+- Smart resize
+  - Proportional content scaling when artboard dimensions change
+  - Scale factors calculated: `scaleX = newW / oldW`, `scaleY = newH / oldH`
+  - Child shapes repositioned and resized proportionally
+  - Font sizes scaled proportionally
+- AI background generation for social-card shapes
+- AI tools panel with loading states
+  - "Generate Image": prompt textarea + dimensions + generate button
+  - "Fill Content": topic input + generate button (selected shape)
+  - "Auto Layout": one-click alignment
+  - "Smart Resize": target dimensions input + apply
+  - Disabled when `REPLICATE_API_TOKEN` missing (graceful fallback)
+- Rate limiting awareness (graceful 429 handling)
+- All AI actions undoable with single Cmd+Z
+
+**New API Routes (5)**
+- `POST /api/canvas/upload` — Presigned URL generation for image upload
+- `GET /api/canvas/assets` — List user's canvas assets
+- `DELETE /api/canvas/assets` — Delete asset (ownership validation)
+- `POST /api/canvas/ai-generate` — AI image generation endpoint
+- `POST /api/canvas/ai-fill` — AI content fill endpoint
+
+**New Dependencies (0)**
+- Zero new npm packages added
+- Uses native CSS Font Loading API (not webfontloader)
+- Uses raw IndexedDB API (not idb-keyval)
+- Uses native `<input type="color">` for color picker
+
+**Files Added (26)**
+- Phase 1: `canvas-asset-store.ts`, `asset-panel.tsx`, `api/canvas-upload.ts`, `api/canvas-assets.ts`
+- Phase 2: `property-inspector-panel.tsx`, `layers-panel.tsx`, `color-picker-widget.tsx`, `alignment-toolbar.tsx`, `canvas-keyboard-shortcuts.ts`
+- Phase 3: `canvas-font-loader.ts`, `font-picker-widget.tsx`, `brand-kit-shape.tsx`, `shape-style-presets.ts`
+- Phase 4: `canvas-auto-save.ts`, `canvas-version-history.ts`, `version-history-panel.tsx`, `artboard-presets-panel.tsx`, `canvas-batch-export.ts`, `canvas-watermark.ts`
+- Phase 5: `canvas-ai-actions.ts`, `ai-tools-panel.tsx`, `canvas-smart-layout.ts`, `canvas-smart-resize.ts`, `api/canvas-ai-generate.ts`, `api/canvas-ai-fill.ts`
+
+**Files Modified (10+)**
+- `packages/canvas/src/components/canvas-editor.tsx` — Layout + new panels
+- `packages/storage/src/storage-types.ts` — Added canvas-asset FileType
+- `packages/canvas/src/shapes/social-card-shape.tsx` — Enhanced layouts + typography props
+- `packages/canvas/src/shapes/quote-card-shape.tsx` — Added typography props
+- `packages/canvas/src/shapes/carousel-slide-shape.tsx` — Added typography props
+- `packages/canvas/src/shapes/text-overlay-shape.tsx` — Added typography props
+- `packages/canvas/src/components/export-panel.tsx` — Batch export + watermark controls
+- `apps/web/app/routes/dashboard/canvas.tsx` — Save/export callback wiring
+
+**Test Coverage**
+- 20+ new canvas tests (asset pipeline, UI panels, AI actions)
+- All existing canvas tests continue passing
+- Integration tests with R2 storage fallback
+
+**Success Metrics Achieved**
+- [x] Image upload pipeline with R2 and data URL fallback
+- [x] Property inspector reactive to shape selection
+- [x] Layers panel reflects z-order in real-time
+- [x] Google Fonts load asynchronously without blocking
+- [x] Auto-save triggers correctly after 30s debounce
+- [x] Version history stores/restores snapshots (50 version limit)
+- [x] AI image generation inserts on canvas after prompt
+- [x] All AI actions wrapped in `editor.batch()` for single undo
+- [x] Zero TypeScript errors, full strict mode
+- [x] Backward compatible with existing canvas projects
+
+**Backward Compatibility**
+- All new shape props have defaults matching current behavior
+- Existing saved canvases render identically
+- R2 storage is opt-in (data URL fallback when not configured)
+- AI features gracefully disabled when `REPLICATE_API_TOKEN` missing
+
+**Technical Details**
+- **Asset Store**: R2 presigned upload (15min expiry) + data URL fallback
+- **Auto-Save**: Side effects pattern with 30s debounce
+- **Version History**: Raw IndexedDB (object store: canvas-versions)
+- **Font Loading**: Native `document.fonts.load()` with 3s timeout fallback
+- **Smart Layout**: Pure geometry (center of mass, bounding box, spacing calc)
+- **AI Rate Limiting**: 5 image gens/min, 10 content fills/min per user
+
+---
+
 ## [0.19.0] - 2026-02-22
 
 ### Added - Auth Upgrade: Email Service, 2FA, Account Security, Admin Panel
@@ -1202,7 +1391,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Phase | Date | Status |
 |---------|-------|------|--------|
-| 0.19.0 | Auth Upgrade | 2026-02-22 | Current |
+| 0.20.0 | Canvas Pro Upgrade | 2026-02-23 | Current |
+| 0.19.0 | Auth Upgrade | 2026-02-22 | Released |
 | 0.18.0 | Database Connection & Auth Completion | 2026-02-22 | Released |
 | 0.17.0 | AI SDK Official Provider Adoption | 2026-02-22 | Released |
 | 0.16.0 | AI Package Production Hardening | 2026-02-22 | Released |

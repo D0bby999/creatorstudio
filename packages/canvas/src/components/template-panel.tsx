@@ -23,7 +23,7 @@ export function TemplatePanel({ editor, onClose }: TemplatePanelProps) {
         platform: template.category.toLowerCase(),
         backgroundColor: '#ffffff',
       },
-    })
+    } as any)
 
     // Zoom to fit the new shape
     editor.zoomToFit({ animation: { duration: 300 } })

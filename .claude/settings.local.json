@@ -100,7 +100,11 @@
       "Bash(chmod:*)",
       "WebFetch(domain:better-auth.com)",
       "Bash(pnpm remove:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(xargs ls:*)",
+      "Bash(TLDRAW_PATH=/Users/dobby/Heroin/creatorstudio/node_modules/.pnpm/tldraw@4.3.1_@floating-ui+dom@1.7.5_@types+react-dom@18.3.7_@types+react@18.3.28__@type_a8851220458d33123c93360273bdfa11/node_modules/tldraw grep:*)",
+      "Bash(TLDRAW_DTS=\"/Users/dobby/Heroin/creatorstudio/node_modules/.pnpm/tldraw@4.3.1_@floating-ui+dom@1.7.5_@types+react-dom@18.3.7_@types+react@18.3.28__@type_a8851220458d33123c93360273bdfa11/node_modules/tldraw/dist-cjs/index.d.ts\" grep:*)",
+      "Bash(pnpm --filter @creator-studio/canvas test:*)"
     ]
   }
 }

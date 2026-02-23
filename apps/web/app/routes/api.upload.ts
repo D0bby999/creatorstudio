@@ -26,6 +26,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const validTypes: FileType[] = [
       'video-export',
       'canvas-export',
+      'canvas-asset',
       'social-upload',
       'thumbnail',
     ];

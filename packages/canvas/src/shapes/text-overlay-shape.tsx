@@ -1,3 +1,4 @@
+/// <reference path="../tldraw-custom-shapes.d.ts" />
 import {
   type TLBaseShape,
   ShapeUtil,
@@ -7,8 +8,8 @@ import {
   Rectangle2d,
   type Geometry2d,
 } from 'tldraw'
+import { loadFont } from '../lib/canvas-font-loader'
 
-/** Text overlay shape with semi-transparent background */
 export type TextOverlayShape = TLBaseShape<
   'text-overlay',
   {
@@ -18,7 +19,12 @@ export type TextOverlayShape = TLBaseShape<
     fontSize: number
     textColor: string
     bgOpacity: number
-    position: 'top' | 'center' | 'bottom'
+    position: string
+    fontFamily: string
+    fontWeight: number
+    textAlign: string
+    letterSpacing: number
+    lineHeight: number
   }
 >
 
@@ -33,6 +39,11 @@ export class TextOverlayShapeUtil extends ShapeUtil<TextOverlayShape> {
     textColor: T.string,
     bgOpacity: T.number,
     position: T.string,
+    fontFamily: T.string,
+    fontWeight: T.number,
+    textAlign: T.string,
+    letterSpacing: T.number,
+    lineHeight: T.number,
   }
 
   getDefaultProps(): TextOverlayShape['props'] {
@@ -44,31 +55,26 @@ export class TextOverlayShapeUtil extends ShapeUtil<TextOverlayShape> {
       textColor: '#ffffff',
       bgOpacity: 0.5,
       position: 'center',
+      fontFamily: 'sans-serif',
+      fontWeight: 700,
+      textAlign: 'center',
+      letterSpacing: 0,
+      lineHeight: 1.2,
     }
   }
 
-  override canResize() {
-    return true
-  }
-
-  override isAspectRatioLocked() {
-    return false
-  }
+  override canResize() { return true }
+  override isAspectRatioLocked() { return false }
 
   getGeometry(shape: TextOverlayShape): Geometry2d {
-    return new Rectangle2d({
-      width: shape.props.w,
-      height: shape.props.h,
-      isFilled: true,
-    })
+    return new Rectangle2d({ width: shape.props.w, height: shape.props.h, isFilled: true })
   }
 
   component(shape: TextOverlayShape) {
-    const alignMap = {
-      top: 'flex-start',
-      center: 'center',
-      bottom: 'flex-end',
-    }
+    const { fontFamily, fontWeight, textAlign, letterSpacing, lineHeight } = shape.props
+    if (fontFamily !== 'sans-serif') loadFont(fontFamily, fontWeight)
+
+    const alignMap: Record<string, string> = { top: 'flex-start', center: 'center', bottom: 'flex-end' }
     return (
       <HTMLContainer
         style={{
@@ -79,17 +85,18 @@ export class TextOverlayShapeUtil extends ShapeUtil<TextOverlayShape> {
           alignItems: alignMap[shape.props.position],
           justifyContent: 'center',
           padding: '20px',
-          fontFamily: 'sans-serif',
+          fontFamily,
           pointerEvents: 'all',
         }}
       >
         <div
           style={{
             fontSize: shape.props.fontSize,
-            fontWeight: 700,
+            fontWeight,
             color: shape.props.textColor,
-            textAlign: 'center',
-            lineHeight: 1.2,
+            textAlign: textAlign as any,
+            lineHeight,
+            letterSpacing,
             userSelect: 'none',
           }}
         >
@@ -104,25 +111,19 @@ export class TextOverlayShapeUtil extends ShapeUtil<TextOverlayShape> {
   }
 
   override toSvg(shape: TextOverlayShape) {
-    const yPosMap = {
-      top: shape.props.h * 0.25,
-      center: shape.props.h * 0.5,
-      bottom: shape.props.h * 0.75,
-    }
+    const { fontFamily, fontWeight, fontSize } = shape.props
+    const yPosMap: Record<string, number> = { top: shape.props.h * 0.25, center: shape.props.h * 0.5, bottom: shape.props.h * 0.75 }
     return (
       <g>
-        <rect
-          width={shape.props.w}
-          height={shape.props.h}
-          fill={`rgba(0, 0, 0, ${shape.props.bgOpacity})`}
-        />
+        <rect width={shape.props.w} height={shape.props.h} fill={`rgba(0, 0, 0, ${shape.props.bgOpacity})`} />
         <text
           x={shape.props.w / 2}
           y={yPosMap[shape.props.position]}
           textAnchor="middle"
           fill={shape.props.textColor}
-          fontSize={shape.props.fontSize}
-          fontWeight={700}
+          fontSize={fontSize}
+          fontWeight={fontWeight}
+          fontFamily={fontFamily}
         >
           {shape.props.text}
         </text>

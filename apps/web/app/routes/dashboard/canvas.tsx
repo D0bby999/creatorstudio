@@ -19,25 +19,6 @@ export default function Canvas() {
     setIsClient(true)
   }, [])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault()
-        setShortcutsOpen(true)
-      }
-      if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        console.log('Save triggered')
-      }
-      if (e.key === 'e' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault()
-        console.log('Export triggered')
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
   if (!isClient) {
     return <EditorSkeleton />
   }
@@ -59,7 +40,12 @@ export default function Canvas() {
       </EditorToolbar>
       <div className="flex-1 min-h-0">
         <Suspense fallback={<EditorSkeleton />}>
-          <CanvasEditorLazy />
+          <CanvasEditorLazy
+            uploadEndpoint="/api/canvas/upload"
+            assetsEndpoint="/api/canvas/assets"
+            aiGenerateEndpoint="/api/canvas/ai-generate"
+            aiFillEndpoint="/api/canvas/ai-fill"
+          />
         </Suspense>
       </div>
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />

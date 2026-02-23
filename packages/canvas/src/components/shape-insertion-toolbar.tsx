@@ -7,13 +7,13 @@ interface ShapeInsertionToolbarProps {
 /** Toolbar for inserting custom shapes at camera center */
 export function ShapeInsertionToolbar({ editor }: ShapeInsertionToolbarProps) {
   const insertShape = (type: string, props: Record<string, any>) => {
-    const { x, y } = editor.getViewportPageCenter()
+    const center = editor.getViewportPageBounds().center
     editor.createShape({
       type,
-      x: x - props.w / 2,
-      y: y - props.h / 2,
+      x: center.x - props.w / 2,
+      y: center.y - props.h / 2,
       props,
-    })
+    } as any)
   }
 
   return (
@@ -92,12 +92,36 @@ export function ShapeInsertionToolbar({ editor }: ShapeInsertionToolbarProps) {
             label: 'Instagram Post',
             platform: 'instagram',
             backgroundColor: '#ffffff',
+            title: '',
+            body: '',
+            ctaText: '',
+            fontFamily: 'sans-serif',
+            accentColor: '#3b82f6',
+            layout: 'minimal',
           })
         }
         style={btnStyle}
         title="Insert social media card template"
       >
         Social Card
+      </button>
+      <button
+        onClick={() =>
+          insertShape('brand-kit', {
+            w: 400,
+            h: 300,
+            brandName: 'Brand Name',
+            tagline: 'Your tagline here',
+            primaryColor: '#3b82f6',
+            secondaryColor: '#8b5cf6',
+            fontFamily: 'sans-serif',
+            logoPlaceholder: true,
+          })
+        }
+        style={btnStyle}
+        title="Insert brand kit reference"
+      >
+        Brand Kit
       </button>
     </div>
   )

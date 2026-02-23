@@ -11,7 +11,7 @@ export async function saveCanvasToProject(editor: Editor, projectId: string): Pr
 export async function loadCanvasFromProject(editor: Editor, projectId: string): Promise<void> {
   const project = await findProjectById(projectId)
   if (project?.data) {
-    editor.store.loadSnapshot(project.data as any)
+    ;(editor.store as any).loadSnapshot(project.data as any)
   }
 }
 

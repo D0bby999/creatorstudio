@@ -14,16 +14,18 @@ export async function exportCanvas(editor: Editor, options: ExportOptions): Prom
   const { format, scale = 2, background = true, padding = 16 } = options
   const selectedIds = editor.getSelectedShapeIds()
 
-  const blob = await editor.toImage({
+  const shapes = selectedIds.length > 0
+    ? selectedIds
+    : editor.getCurrentPageShapeIds()
+
+  const result = await editor.toImage([...shapes], {
     format,
     scale,
     background,
     padding,
-    // Export selected shapes if any, otherwise all
-    ...(selectedIds.length > 0 ? { ids: [...selectedIds] } : {}),
   })
 
-  return blob
+  return result.blob
 }
 
 /** Download a blob as a file */

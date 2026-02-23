@@ -275,28 +275,56 @@ creator-studio/
 
 ### `@creator-studio/canvas`
 **Path:** `packages/canvas`
-**Type:** Tldraw 4.3.1 integration with custom extensions
+**Type:** Pro-grade design editor built on Tldraw 4.3.1
 **Exports:**
 - `./editor` → Canvas editor component
-- `./shapes` → Custom shape utilities
+- `./shapes` → Custom shape utilities (5 shapes)
 - `./templates` → Design templates
+- `./lib` → Asset pipeline, auto-save, AI actions, typography
 
-**Enhanced Capabilities:**
-- **3 Custom Shapes** → QuoteCard, CarouselSlide, TextOverlay
-- **7 Templates** → Pre-built canvas designs
-- **Persistence** → Save/load canvas state
-- **Toolbar** → Enhanced editing controls
-- **20 Tests** → Shape rendering, template loading, persistence
+**Enhanced Capabilities (v0.20.0 - Canvas Pro Upgrade):**
+- **5 Custom Shapes** → SocialCard (3 layouts), QuoteCard, CarouselSlide, TextOverlay, BrandKit
+- **18 Templates** → Pre-built canvas designs
+- **Image Pipeline** → R2 cloud storage + data URL fallback, drag-drop upload, asset panel
+- **Pro Editor UI** → Property inspector, layers panel, color picker, alignment toolbar
+- **Typography** → Google Fonts (30 curated), native Font Loading API, font picker widget
+- **Smart Features** → Auto-save (30s debounce), version history (IndexedDB, 50 versions), batch export, watermark
+- **AI Integration** → Image generation, content fill, smart layout, smart resize
+- **Keyboard Shortcuts** → Cmd+S (save), Cmd+E (export), Cmd+Shift+L (layers), Cmd+Shift+I (inspector)
+- **40+ Tests** → Shape rendering, asset pipeline, UI panels, AI actions, persistence
 
 **Key Files:**
-- `src/editor.tsx` → Main canvas editor
-- `src/shapes/` → Custom shape implementations
-- `src/templates/` → Template definitions
-- `src/*.test.ts` → 20 comprehensive tests
+- `src/components/canvas-editor.tsx` → Main editor wrapper with panels
+- `src/shapes/` → 5 custom shape implementations
+- `src/templates/` → 18 template definitions
+- `src/lib/canvas-asset-store.ts` → R2 + data URL asset store
+- `src/lib/canvas-font-loader.ts` → Google Fonts loader (native API)
+- `src/lib/canvas-auto-save.ts` → Auto-save with debounce + side effects
+- `src/lib/canvas-version-history.ts` → IndexedDB version snapshots
+- `src/lib/canvas-ai-actions.ts` → AI action wrappers
+- `src/lib/canvas-smart-layout.ts` → Geometry-based layout suggestions
+- `src/lib/canvas-smart-resize.ts` → Proportional content scaling
+- `src/components/property-inspector-panel.tsx` → Shape props editor
+- `src/components/layers-panel.tsx` → Z-order management
+- `src/components/color-picker-widget.tsx` → Color picker (hex, swatches, gradient)
+- `src/components/alignment-toolbar.tsx` → Align/distribute controls
+- `src/components/font-picker-widget.tsx` → Font selector (30 fonts)
+- `src/components/asset-panel.tsx` → Asset management UI
+- `src/components/version-history-panel.tsx` → Version restore UI
+- `src/components/ai-tools-panel.tsx` → AI tools UI
+- `src/*.test.ts` → 40+ comprehensive tests
 
 **Dependencies:**
 - `tldraw` → Vector drawing engine (pinned v4.3.1)
 - Lazy-loaded in React Router for SSR compatibility
+- Zero new dependencies (native Font Loading API, raw IndexedDB)
+
+**New API Routes:**
+- `POST /api/canvas/upload` → Presigned URL for image upload
+- `GET /api/canvas/assets` → List user's canvas assets
+- `DELETE /api/canvas/assets` → Delete asset
+- `POST /api/canvas/ai-generate` → AI image generation
+- `POST /api/canvas/ai-fill` → AI content fill
 
 ### `@creator-studio/video`
 **Path:** `packages/video`
