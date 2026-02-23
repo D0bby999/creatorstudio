@@ -30,6 +30,19 @@ export const STYLE_PRESETS: StylePreset[] = [
     name: 'Glassmorphism',
     props: { backgroundColor: '#ffffff', bgOpacity: 0.15, textColor: '#ffffff' },
   },
+  // Connector presets
+  {
+    name: 'Solid Arrow',
+    props: { style: 'solid', stroke: '#333333', strokeWidth: 2, showArrow: 1 },
+  },
+  {
+    name: 'Dashed Line',
+    props: { style: 'dashed', stroke: '#666666', strokeWidth: 2, showArrow: 0 },
+  },
+  {
+    name: 'Bold Connector',
+    props: { style: 'solid', stroke: '#3b82f6', strokeWidth: 4, showArrow: 1 },
+  },
 ]
 
 export function applyStylePreset(editor: Editor, shapeIds: string[], preset: StylePreset): void {

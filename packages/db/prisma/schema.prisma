@@ -41,6 +41,8 @@ model User {
   pluginInstalls      PluginInstall[]
   auditLogsAsActor    AuditLog[]    @relation("AuditActor")
   auditLogsAsTarget   AuditLog[]    @relation("AuditTarget")
+  canvasRooms         CanvasRoom[]  @relation("CanvasRoomOwner")
+  roomMemberships     RoomMember[]  @relation("RoomMembership")
 
   @@unique([email])
   @@map("user")
@@ -456,4 +458,37 @@ model AuditLog {
   @@index([targetId])
   @@index([action])
   @@map("audit_log")
+}
+
+// ─── Canvas Collaboration tables ───
+
+model CanvasRoom {
+  id          String       @id @default(cuid())
+  name        String
+  ownerId     String
+  snapshot    Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  owner       User         @relation("CanvasRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     RoomMember[]
+
+  @@index([ownerId])
+  @@map("canvas_room")
+}
+
+model RoomMember {
+  id          String     @id @default(cuid())
+  roomId      String
+  userId      String
+  role        String     @default("editor")
+  joinedAt    DateTime   @default(now())
+
+  room        CanvasRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User       @relation("RoomMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+  @@map("room_member")
 }

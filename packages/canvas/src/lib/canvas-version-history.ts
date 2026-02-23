@@ -1,3 +1,5 @@
+import { IndexedDBPool } from './indexeddb-connection-pool'
+
 const DB_NAME = 'creator-studio-canvas-versions'
 const STORE_NAME = 'versions'
 const DB_VERSION = 1
@@ -11,28 +13,28 @@ export interface VersionEntry {
   snapshot: any
 }
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION)
-    request.onupgradeneeded = () => {
-      const db = request.result
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: ['projectId', 'timestamp'] })
-        store.createIndex('byProject', 'projectId', { unique: false })
-      }
-    }
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-}
+const pool = new IndexedDBPool(DB_NAME, DB_VERSION, (db) => {
+  if (!db.objectStoreNames.contains(STORE_NAME)) {
+    const store = db.createObjectStore(STORE_NAME, { keyPath: ['projectId', 'timestamp'] })
+    store.createIndex('byProject', 'projectId', { unique: false })
+  }
+})
 
 function tx(db: IDBDatabase, mode: IDBTransactionMode): IDBObjectStore {
   return db.transaction(STORE_NAME, mode).objectStore(STORE_NAME)
 }
 
-export async function saveVersion(projectId: string, snapshot: any, label?: string): Promise<void> {
-  const db = await openDb()
+async function withDb<T>(fn: (db: IDBDatabase) => Promise<T>): Promise<T> {
+  const db = await pool.acquire()
   try {
+    return await fn(db)
+  } finally {
+    pool.release(db)
+  }
+}
+
+export async function saveVersion(projectId: string, snapshot: any, label?: string): Promise<void> {
+  return withDb(async (db) => {
     const shapeCount = Object.keys(snapshot?.store ?? {}).length
     const entry: VersionEntry = {
       projectId,
@@ -42,21 +44,18 @@ export async function saveVersion(projectId: string, snapshot: any, label?: stri
       snapshot,
     }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const store = tx(db, 'readwrite')
       const req = store.add(entry)
       req.onsuccess = () => { resolve(); pruneVersions(projectId).catch(() => {}) }
       req.onerror = () => reject(req.error)
     })
-  } finally {
-    db.close()
-  }
+  })
 }
 
 export async function getVersions(projectId: string): Promise<Omit<VersionEntry, 'snapshot'>[]> {
-  const db = await openDb()
-  try {
-    return await new Promise((resolve, reject) => {
+  return withDb(async (db) => {
+    return new Promise((resolve, reject) => {
       const store = tx(db, 'readonly')
       const index = store.index('byProject')
       const req = index.getAll(projectId)
@@ -68,23 +67,18 @@ export async function getVersions(projectId: string): Promise<Omit<VersionEntry,
       }
       req.onerror = () => reject(req.error)
     })
-  } finally {
-    db.close()
-  }
+  })
 }
 
 export async function getVersion(projectId: string, timestamp: number): Promise<VersionEntry | null> {
-  const db = await openDb()
-  try {
-    return await new Promise((resolve, reject) => {
+  return withDb(async (db) => {
+    return new Promise((resolve, reject) => {
       const store = tx(db, 'readonly')
       const req = store.get([projectId, timestamp])
       req.onsuccess = () => resolve(req.result ?? null)
       req.onerror = () => reject(req.error)
     })
-  } finally {
-    db.close()
-  }
+  })
 }
 
 export async function restoreVersion(editor: any, projectId: string, timestamp: number): Promise<boolean> {
@@ -95,26 +89,21 @@ export async function restoreVersion(editor: any, projectId: string, timestamp: 
 }
 
 export async function deleteVersion(projectId: string, timestamp: number): Promise<void> {
-  const db = await openDb()
-  try {
-    return await new Promise((resolve, reject) => {
+  return withDb(async (db) => {
+    return new Promise((resolve, reject) => {
       const store = tx(db, 'readwrite')
       const req = store.delete([projectId, timestamp])
       req.onsuccess = () => resolve()
       req.onerror = () => reject(req.error)
     })
-  } finally {
-    db.close()
-  }
+  })
 }
 
 async function pruneVersions(projectId: string): Promise<void> {
-  const db = await openDb()
-  try {
-    const store = tx(db, 'readwrite')
-    const index = store.index('byProject')
-
-    return await new Promise((resolve) => {
+  return withDb(async (db) => {
+    return new Promise((resolve) => {
+      const store = tx(db, 'readwrite')
+      const index = store.index('byProject')
       const req = index.getAll(projectId)
       req.onsuccess = () => {
         const all = (req.result as VersionEntry[]).sort((a, b) => b.timestamp - a.timestamp)
@@ -129,7 +118,9 @@ async function pruneVersions(projectId: string): Promise<void> {
       }
       req.onerror = () => resolve()
     })
-  } finally {
-    db.close()
-  }
+  })
+}
+
+export function destroyVersionPool(): void {
+  pool.destroy()
 }

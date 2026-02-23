@@ -44,6 +44,9 @@ export const CURATED_FONTS: FontInfo[] = [
 
 const loadedFonts = new Set<string>()
 const loadingFonts = new Map<string, Promise<void>>()
+const loadedLinks = new Map<string, HTMLLinkElement>()
+
+const SYSTEM_FONTS = new Set(['sans-serif', 'serif', 'monospace', 'cursive'])
 
 export function isFontLoaded(family: string): boolean {
   return loadedFonts.has(family)
@@ -65,7 +68,7 @@ export function getFontsByCategory(): Record<string, FontInfo[]> {
 export async function loadFont(family: string, weight: number = 400): Promise<void> {
   const key = `${family}:${weight}`
   if (loadedFonts.has(family)) return
-  if (family === 'sans-serif' || family === 'serif' || family === 'monospace' || family === 'cursive') {
+  if (SYSTEM_FONTS.has(family)) {
     loadedFonts.add(family)
     return
   }
@@ -84,6 +87,21 @@ export async function loadFont(family: string, weight: number = 400): Promise<vo
   }
 }
 
+/** Remove all injected font <link> elements from document.head */
+export function cleanupFonts(): void {
+  for (const [, link] of loadedLinks) {
+    link.remove()
+  }
+  loadedLinks.clear()
+  loadedFonts.clear()
+  loadingFonts.clear()
+}
+
+/** Get count of currently tracked font links (for monitoring) */
+export function getLoadedFontCount(): number {
+  return loadedLinks.size
+}
+
 async function doLoadFont(family: string, weight: number): Promise<void> {
   const encoded = family.replace(/ /g, '+')
   const linkId = `gfont-${encoded}-${weight}`
@@ -94,6 +112,7 @@ async function doLoadFont(family: string, weight: number): Promise<void> {
     link.rel = 'stylesheet'
     link.href = `https://fonts.googleapis.com/css2?family=${encoded}:wght@${weight}&display=swap`
     document.head.appendChild(link)
+    loadedLinks.set(linkId, link)
   }
 
   const fontSpec = `${weight} 16px "${family}"`

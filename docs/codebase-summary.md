@@ -275,14 +275,14 @@ creator-studio/
 
 ### `@creator-studio/canvas`
 **Path:** `packages/canvas`
-**Type:** Pro-grade design editor built on Tldraw 4.3.1
+**Type:** Pro-grade design editor with real-time collaboration built on Tldraw 4.3.1
 **Exports:**
 - `./editor` → Canvas editor component
 - `./shapes` → Custom shape utilities (5 shapes)
 - `./templates` → Design templates
-- `./lib` → Asset pipeline, auto-save, AI actions, typography
+- `./lib` → Asset pipeline, auto-save, AI actions, typography, collaboration, sync
 
-**Enhanced Capabilities (v0.20.0 - Canvas Pro Upgrade):**
+**Enhanced Capabilities (v0.21.0 - Canvas Advanced Upgrade):**
 - **5 Custom Shapes** → SocialCard (3 layouts), QuoteCard, CarouselSlide, TextOverlay, BrandKit
 - **18 Templates** → Pre-built canvas designs
 - **Image Pipeline** → R2 cloud storage + data URL fallback, drag-drop upload, asset panel
@@ -291,7 +291,13 @@ creator-studio/
 - **Smart Features** → Auto-save (30s debounce), version history (IndexedDB, 50 versions), batch export, watermark
 - **AI Integration** → Image generation, content fill, smart layout, smart resize
 - **Keyboard Shortcuts** → Cmd+S (save), Cmd+E (export), Cmd+Shift+L (layers), Cmd+Shift+I (inspector)
-- **40+ Tests** → Shape rendering, asset pipeline, UI panels, AI actions, persistence
+- **Real-Time Collaboration (NEW)** → WebSocket rooms, live cursors, presence tracking, snapshot persistence
+- **Connector Bindings (NEW)** → Sideeffects-based binding pattern, dynamic connections between shapes
+- **Crop Tool (NEW)** → Advanced shape cropping with aspect ratio locks
+- **Rich Text Editing (NEW)** → In-shape text editing with formatting options
+- **Performance Optimization (NEW)** → IndexedDB pool, virtualized layers, error boundaries
+- **Monitoring (NEW)** → Collaboration metrics, sync performance tracking
+- **93 Tests** → Collaboration, connectors, crop tool, rich text, persistence
 
 **Key Files:**
 - `src/components/canvas-editor.tsx` → Main editor wrapper with panels
@@ -304,6 +310,12 @@ creator-studio/
 - `src/lib/canvas-ai-actions.ts` → AI action wrappers
 - `src/lib/canvas-smart-layout.ts` → Geometry-based layout suggestions
 - `src/lib/canvas-smart-resize.ts` → Proportional content scaling
+- `src/lib/canvas-collaboration.ts` → WebSocket room management, presence tracking (NEW)
+- `src/lib/canvas-sync-handler.ts` → Snapshot persistence, sync orchestration (NEW)
+- `src/lib/canvas-connector-bindings.ts` → Sideeffects-based connector pattern (NEW)
+- `src/lib/canvas-crop-tool.ts` → Advanced cropping with aspect ratio (NEW)
+- `src/lib/canvas-rich-text.ts` → In-shape text editing (NEW)
+- `src/lib/canvas-performance-monitor.ts` → Sync & collaboration metrics (NEW)
 - `src/components/property-inspector-panel.tsx` → Shape props editor
 - `src/components/layers-panel.tsx` → Z-order management
 - `src/components/color-picker-widget.tsx` → Color picker (hex, swatches, gradient)
@@ -312,7 +324,8 @@ creator-studio/
 - `src/components/asset-panel.tsx` → Asset management UI
 - `src/components/version-history-panel.tsx` → Version restore UI
 - `src/components/ai-tools-panel.tsx` → AI tools UI
-- `src/*.test.ts` → 40+ comprehensive tests
+- `src/components/collaboration-panel.tsx` → Presence & cursors display (NEW)
+- `src/*.test.ts` → 93 comprehensive tests
 
 **Dependencies:**
 - `tldraw` → Vector drawing engine (pinned v4.3.1)
@@ -915,11 +928,11 @@ creator-studio/
 
 ## Testing Summary
 
-**Total Tests:** 566+ across 62+ test files
+**Total Tests:** 639+ across 62+ test files
 - DB: 34 tests
 - Auth: 17 tests
 - UI (base + composites): 41 tests (17 base + 24 composites)
-- Canvas: 20 tests
+- Canvas: 93 tests (v0.21.0 advanced upgrade with collaboration — 6 new test files)
 - Video: 23 tests
 - Crawler: 102 tests (57 core + 45 Facebook scraper)
 - Social: 70+ tests (expanded for 7 platforms + OAuth)

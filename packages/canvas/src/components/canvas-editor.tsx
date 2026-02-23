@@ -1,5 +1,5 @@
 /// <reference path="../tldraw-custom-shapes.d.ts" />
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react'
 import { Tldraw, type Editor } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { SocialCardShapeUtil } from '../shapes/social-card-shape'
@@ -7,6 +7,10 @@ import { QuoteCardShapeUtil } from '../shapes/quote-card-shape'
 import { CarouselSlideShapeUtil } from '../shapes/carousel-slide-shape'
 import { TextOverlayShapeUtil } from '../shapes/text-overlay-shape'
 import { BrandKitShapeUtil } from '../shapes/brand-kit-shape'
+import { ConnectorShapeUtil } from '../shapes/connector-shape'
+import { registerConnectorBindingHandlers } from '../shapes/connector-binding'
+import { ConnectorTool } from '../tools/connector-tool'
+import { CropTool } from '../tools/crop-tool'
 import { ExportPanel } from './export-panel'
 import { TemplatePanel } from './template-panel'
 import { ShapeInsertionToolbar } from './shape-insertion-toolbar'
@@ -16,19 +20,24 @@ import { LayersPanel } from './layers-panel'
 import { AlignmentToolbar } from './alignment-toolbar'
 import { VersionHistoryPanel } from './version-history-panel'
 import { ArtboardPresetsPanel } from './artboard-presets-panel'
-import { AiToolsPanel } from './ai-tools-panel'
+import { ErrorBoundaryPanel } from './error-boundary-panel'
+import { CanvasToolbar } from './canvas-toolbar'
 import { createCanvasAssetStore, createFallbackAssetStore } from '../lib/canvas-asset-store'
 import { registerCanvasShortcuts } from '../lib/canvas-keyboard-shortcuts'
 import { createAutoSave, type SaveStatus } from '../lib/canvas-auto-save'
 import { saveVersion } from '../lib/canvas-version-history'
+import { cleanupFonts } from '../lib/canvas-font-loader'
+import { useCanvasSync } from '../hooks/use-canvas-sync'
+import { PresenceCursorsOverlay } from './presence-cursors-overlay'
+import { UserListPanel } from './user-list-panel'
+
+const LazyAiToolsPanel = lazy(() => import('./ai-tools-panel').then(m => ({ default: m.AiToolsPanel })))
 
 const customShapeUtils = [
-  SocialCardShapeUtil,
-  QuoteCardShapeUtil,
-  CarouselSlideShapeUtil,
-  TextOverlayShapeUtil,
-  BrandKitShapeUtil,
+  SocialCardShapeUtil, QuoteCardShapeUtil, CarouselSlideShapeUtil,
+  TextOverlayShapeUtil, BrandKitShapeUtil, ConnectorShapeUtil,
 ]
+const customTools = [ConnectorTool, CropTool]
 
 interface CanvasEditorProps {
   persistenceKey?: string
@@ -37,18 +46,20 @@ interface CanvasEditorProps {
   aiGenerateEndpoint?: string
   aiFillEndpoint?: string
   projectId?: string
+  roomId?: string
+  wsUrl?: string
+  authToken?: string
+  userId?: string
+  userName?: string
   onSave?: (snapshot: any) => Promise<void>
   onExport?: () => void
 }
 
 export function CanvasEditor({
   persistenceKey = 'creator-studio-canvas',
-  uploadEndpoint,
-  assetsEndpoint,
-  aiGenerateEndpoint,
-  aiFillEndpoint,
-  projectId,
-  onSave,
+  uploadEndpoint, assetsEndpoint, aiGenerateEndpoint, aiFillEndpoint,
+  projectId, roomId, wsUrl, authToken,
+  userId = 'anonymous', userName = 'Anonymous', onSave,
 }: CanvasEditorProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -60,9 +71,17 @@ export function CanvasEditor({
   const [showArtboard, setShowArtboard] = useState(false)
   const [showAiTools, setShowAiTools] = useState(false)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [multiplayer, setMultiplayer] = useState(false)
+
+  const collabEnabled = !!(roomId && wsUrl && authToken && multiplayer)
+  const sync = useCanvasSync({
+    roomId: roomId ?? '', token: authToken ?? '', wsUrl: wsUrl ?? '',
+    userId, userName, enabled: collabEnabled,
+  })
 
   const handleMount = useCallback((editorInstance: Editor) => {
     setEditor(editorInstance)
+    return registerConnectorBindingHandlers(editorInstance)
   }, [])
 
   const assetStore = useMemo(() => {
@@ -70,150 +89,121 @@ export function CanvasEditor({
     return createFallbackAssetStore()
   }, [uploadEndpoint])
 
-  // Auto-save
+  useEffect(() => { return () => { cleanupFonts() } }, [])
+
   useEffect(() => {
     if (!editor || !onSave) return
     const pid = projectId ?? 'default'
     const { destroy } = createAutoSave(editor, {
-      onSave,
-      onStatusChange: setSaveStatus,
-      onVersionMilestone: (snapshot) => {
-        saveVersion(pid, snapshot).catch(() => {})
-      },
+      onSave, onStatusChange: setSaveStatus,
+      onVersionMilestone: (snapshot) => { saveVersion(pid, snapshot).catch(() => {}) },
     })
     return destroy
   }, [editor, onSave, projectId])
 
-  // Keyboard shortcuts
   useEffect(() => {
     if (!editor) return
     return registerCanvasShortcuts(editor, {
-      onSave: onSave ? () => {
-        const snapshot = editor.store.getStoreSnapshot()
-        onSave(snapshot)
-      } : undefined,
+      onSave: onSave ? () => { onSave(editor.store.getStoreSnapshot()) } : undefined,
       onExport: () => { closeDropdowns(); setShowExport((v: boolean) => !v) },
       onToggleLayers: () => setShowLayers((v: boolean) => !v),
       onToggleInspector: () => setShowInspector((v: boolean) => !v),
     })
   }, [editor, onSave])
 
+  useEffect(() => {
+    if (!editor || !collabEnabled) return
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      sync.sendPresence({ x: e.clientX - rect.left, y: e.clientY - rect.top }, [])
+    }
+    const el = editor.getContainer()
+    el.addEventListener('pointermove', onPointerMove)
+    return () => { el.removeEventListener('pointermove', onPointerMove) }
+  }, [editor, collabEnabled, sync.sendPresence])
+
   const closeDropdowns = () => {
-    setShowTemplates(false)
-    setShowExport(false)
-    setShowAssets(false)
-    setShowArtboard(false)
-    setShowAiTools(false)
+    setShowTemplates(false); setShowExport(false); setShowAssets(false)
+    setShowArtboard(false); setShowAiTools(false)
   }
 
-  const statusColors: Record<SaveStatus, string> = {
-    idle: '#ccc', unsaved: '#eab308', saving: '#3b82f6', saved: '#22c55e', error: '#ef4444',
-  }
-  const statusLabels: Record<SaveStatus, string> = {
-    idle: '', unsaved: 'Unsaved', saving: 'Saving...', saved: 'Saved', error: 'Save failed',
-  }
+  const panels = useMemo(() => [
+    { key: 'templates', label: 'Templates', active: showTemplates, toggle: () => { closeDropdowns(); setShowTemplates(v => !v) } },
+    { key: 'assets', label: 'Assets', active: showAssets, toggle: () => { closeDropdowns(); setShowAssets(v => !v) } },
+    { key: 'artboard', label: 'Artboard', active: showArtboard, toggle: () => { closeDropdowns(); setShowArtboard(v => !v) } },
+    { key: 'export', label: 'Export', active: showExport, toggle: () => { closeDropdowns(); setShowExport(v => !v) } },
+    { key: 'ai', label: 'AI', active: showAiTools, toggle: () => { closeDropdowns(); setShowAiTools(v => !v) }, condition: !!aiGenerateEndpoint },
+    { key: 'sep', label: '', active: false, toggle: () => {} },
+    { key: 'layers', label: 'Layers', active: showLayers, toggle: () => setShowLayers(v => !v) },
+    { key: 'history', label: 'History', active: showHistory, toggle: () => setShowHistory(v => !v) },
+    { key: 'inspector', label: 'Inspector', active: showInspector, toggle: () => setShowInspector(v => !v) },
+  ], [showTemplates, showAssets, showArtboard, showExport, showAiTools, showLayers, showHistory, showInspector, aiGenerateEndpoint])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Top toolbar */}
-      <div style={toolbarContainerStyle}>
-        <button onClick={() => { closeDropdowns(); setShowTemplates(!showTemplates) }} style={toolbarBtnStyle(showTemplates)}>
-          Templates
-        </button>
-        <button onClick={() => { closeDropdowns(); setShowAssets(!showAssets) }} style={toolbarBtnStyle(showAssets)}>
-          Assets
-        </button>
-        <button onClick={() => { closeDropdowns(); setShowArtboard(!showArtboard) }} style={toolbarBtnStyle(showArtboard)}>
-          Artboard
-        </button>
-        <button onClick={() => { closeDropdowns(); setShowExport(!showExport) }} style={toolbarBtnStyle(showExport)}>
-          Export
-        </button>
-        {aiGenerateEndpoint && (
-          <button onClick={() => { closeDropdowns(); setShowAiTools(!showAiTools) }} style={toolbarBtnStyle(showAiTools)}>
-            AI
-          </button>
-        )}
-        <div style={toolbarSeparator} />
-        <button onClick={() => setShowLayers(!showLayers)} style={toolbarBtnStyle(showLayers)}>
-          Layers
-        </button>
-        <button onClick={() => setShowHistory(!showHistory)} style={toolbarBtnStyle(showHistory)}>
-          History
-        </button>
-        <button onClick={() => setShowInspector(!showInspector)} style={toolbarBtnStyle(showInspector)}>
-          Inspector
-        </button>
+      <CanvasToolbar
+        panels={panels} saveStatus={saveStatus}
+        collabAvailable={!!(roomId && wsUrl)} collabEnabled={collabEnabled}
+        collabStatus={sync.status} collabLatencyMs={sync.latencyMs}
+        onMultiplayerChange={setMultiplayer}
+      />
 
-        {saveStatus !== 'idle' && (
-          <>
-            <div style={toolbarSeparator} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 4px' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColors[saveStatus] }} />
-              <span style={{ fontSize: 11, color: '#888' }}>{statusLabels[saveStatus]}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Dropdown panels */}
-      {showTemplates && editor && <TemplatePanel editor={editor} onClose={() => setShowTemplates(false)} />}
-      {showAssets && editor && assetsEndpoint && <AssetPanel editor={editor} onClose={() => setShowAssets(false)} assetsEndpoint={assetsEndpoint} />}
-      {showArtboard && editor && <ArtboardPresetsPanel editor={editor} onClose={() => setShowArtboard(false)} />}
-      {showExport && editor && <ExportPanel editor={editor} onClose={() => setShowExport(false)} />}
+      {showTemplates && editor && (
+        <ErrorBoundaryPanel panelName="Templates" onClose={() => setShowTemplates(false)}>
+          <TemplatePanel editor={editor} onClose={() => setShowTemplates(false)} />
+        </ErrorBoundaryPanel>
+      )}
+      {showAssets && editor && assetsEndpoint && (
+        <ErrorBoundaryPanel panelName="Assets" onClose={() => setShowAssets(false)}>
+          <AssetPanel editor={editor} onClose={() => setShowAssets(false)} assetsEndpoint={assetsEndpoint} />
+        </ErrorBoundaryPanel>
+      )}
+      {showArtboard && editor && (
+        <ErrorBoundaryPanel panelName="Artboard" onClose={() => setShowArtboard(false)}>
+          <ArtboardPresetsPanel editor={editor} onClose={() => setShowArtboard(false)} />
+        </ErrorBoundaryPanel>
+      )}
+      {showExport && editor && (
+        <ErrorBoundaryPanel panelName="Export" onClose={() => setShowExport(false)}>
+          <ExportPanel editor={editor} onClose={() => setShowExport(false)} />
+        </ErrorBoundaryPanel>
+      )}
       {showAiTools && editor && aiGenerateEndpoint && aiFillEndpoint && (
-        <AiToolsPanel editor={editor} onClose={() => setShowAiTools(false)} aiGenerateEndpoint={aiGenerateEndpoint} aiFillEndpoint={aiFillEndpoint} />
+        <ErrorBoundaryPanel panelName="AI Tools" onClose={() => setShowAiTools(false)}>
+          <Suspense fallback={<div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: '#999' }}>Loading...</div>}>
+            <LazyAiToolsPanel editor={editor} onClose={() => setShowAiTools(false)} aiGenerateEndpoint={aiGenerateEndpoint} aiFillEndpoint={aiFillEndpoint} />
+          </Suspense>
+        </ErrorBoundaryPanel>
+      )}
+      {showLayers && editor && (
+        <ErrorBoundaryPanel panelName="Layers" onClose={() => setShowLayers(false)}>
+          <LayersPanel editor={editor} onClose={() => setShowLayers(false)} />
+        </ErrorBoundaryPanel>
+      )}
+      {showHistory && editor && (
+        <ErrorBoundaryPanel panelName="History" onClose={() => setShowHistory(false)}>
+          <VersionHistoryPanel editor={editor} projectId={projectId ?? 'default'} onClose={() => setShowHistory(false)} />
+        </ErrorBoundaryPanel>
+      )}
+      {showInspector && editor && (
+        <ErrorBoundaryPanel panelName="Inspector" onClose={() => setShowInspector(false)}>
+          <PropertyInspectorPanel editor={editor} onClose={() => setShowInspector(false)} />
+        </ErrorBoundaryPanel>
       )}
 
-      {/* Side panels */}
-      {showLayers && editor && <LayersPanel editor={editor} onClose={() => setShowLayers(false)} />}
-      {showHistory && editor && <VersionHistoryPanel editor={editor} projectId={projectId ?? 'default'} onClose={() => setShowHistory(false)} />}
-      {showInspector && editor && <PropertyInspectorPanel editor={editor} onClose={() => setShowInspector(false)} />}
+      {collabEnabled && <PresenceCursorsOverlay users={sync.users} />}
+      {collabEnabled && <UserListPanel users={sync.users} currentUserId={userId} currentUserName={userName} />}
 
-      {/* Shape toolbar + alignment */}
       {editor && <ShapeInsertionToolbar editor={editor} />}
       {editor && <AlignmentToolbar editor={editor} />}
 
       <Tldraw
         persistenceKey={persistenceKey}
         shapeUtils={customShapeUtils}
+        tools={customTools}
         onMount={handleMount}
         assets={assetStore}
       />
     </div>
   )
-}
-
-const toolbarContainerStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 8,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  zIndex: 300,
-  display: 'flex',
-  gap: 4,
-  background: 'var(--color-background, #fff)',
-  borderRadius: 8,
-  padding: '4px 8px',
-  boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-  border: '1px solid var(--color-border, #e5e5e5)',
-}
-
-const toolbarSeparator: React.CSSProperties = {
-  width: 1,
-  background: '#e0e0e0',
-  margin: '2px 4px',
-}
-
-function toolbarBtnStyle(active: boolean): React.CSSProperties {
-  return {
-    padding: '6px 12px',
-    fontSize: 13,
-    fontWeight: 500,
-    borderRadius: 6,
-    border: 'none',
-    cursor: 'pointer',
-    background: active ? '#e8e8e8' : 'transparent',
-    color: '#333',
-  }
 }

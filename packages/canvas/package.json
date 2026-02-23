@@ -7,7 +7,8 @@
     "./components/*": "./src/components/*.tsx",
     "./shapes/*": "./src/shapes/*.tsx",
     "./templates/*": "./src/templates/*.ts",
-    "./lib/*": "./src/lib/*.ts"
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
     "lint": "echo 'no lint'",
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "@creator-studio/db": "workspace:*",
+    "@tanstack/react-virtual": "^3.13.18",
     "tldraw": "^4.3.1"
   },
   "peerDependencies": {

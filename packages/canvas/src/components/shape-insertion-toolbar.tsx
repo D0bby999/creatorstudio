@@ -123,6 +123,21 @@ export function ShapeInsertionToolbar({ editor }: ShapeInsertionToolbarProps) {
       >
         Brand Kit
       </button>
+      <div style={{ width: 1, background: '#e0e0e0', margin: '2px 4px' }} />
+      <button
+        onClick={() => editor.setCurrentTool('connector')}
+        style={btnStyle}
+        title="Draw connector between shapes (C)"
+      >
+        Connector
+      </button>
+      <button
+        onClick={() => editor.setCurrentTool('crop')}
+        style={btnStyle}
+        title="Crop selected image"
+      >
+        Crop
+      </button>
     </div>
   )
 }

@@ -66,5 +66,17 @@ declare module 'tldraw' {
       fontFamily: string
       logoPlaceholder: boolean
     }
+    'connector': {
+      w: number
+      h: number
+      startX: number
+      startY: number
+      endX: number
+      endY: number
+      style: string
+      stroke: string
+      strokeWidth: number
+      showArrow: boolean
+    }
   }
 }

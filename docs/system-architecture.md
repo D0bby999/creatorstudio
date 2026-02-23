@@ -463,35 +463,78 @@ requireSession(request, { returnTo: '/dashboard' })
 
 ## Canvas Editor Layer (packages/canvas)
 
-### Tldraw 4.3.1 Integration
+### Tldraw 4.3.1 Integration with Real-Time Collaboration
 
 ```
-┌─────────────────────────────────┐
-│   Canvas Editor Component        │
-│   (Tldraw wrapper)              │
-└────────────┬────────────────────┘
-             │
-             ├─── Custom Shapes
-             │    ├─ QuoteCard
-             │    ├─ CarouselSlide
-             │    └─ TextOverlay
-             │
-             ├─── Templates
-             │    ├─ Design templates (7 total)
-             │    └─ Template loader/switcher
-             │
-             └─── Persistence
-                  ├─ Save canvas state (JSON)
-                  ├─ Load saved projects
-                  └─ Local storage + database
+┌─────────────────────────────────────────────────────────┐
+│   Canvas Editor Component (Tldraw wrapper)              │
+│   • Real-time collaboration with live cursors           │
+│   • WebSocket room management & presence tracking       │
+├─────────────────────────────────────────────────────────┤
+│  Collaboration Infrastructure (apps/web/app/lib/canvas-sync/)
+│  ├─ WebSocket connection manager
+│  ├─ Room presence tracker (active users, cursors)
+│  ├─ Snapshot persistence (periodic + on-demand)
+│  ├─ Sync orchestrator (conflict resolution)
+│  └─ Change propagation (batched updates)
+├─────────────────────────────────────────────────────────┤
+│  Advanced Editing Features
+│  ├─ Connector Bindings (sideeffects pattern, tldraw 4.3.1)
+│  ├─ Crop Tool (advanced shape cropping)
+│  ├─ Rich Text Editing (in-shape text formatting)
+│  ├─ Custom Shapes (5 total)
+│  └─ Typography System (Google Fonts, 30 curated)
+├─────────────────────────────────────────────────────────┤
+│  Performance & Reliability
+│  ├─ IndexedDB pool for version history
+│  ├─ Virtualized layers (1000+ shapes @ 60fps)
+│  ├─ Error boundaries (graceful degradation)
+│  ├─ Collaboration metrics & monitoring
+│  └─ Auto-save with 30s debounce
+├─────────────────────────────────────────────────────────┤
+│  Persistence Layer
+│  ├─ Asset store (R2 + data URL fallback)
+│  ├─ Version history (IndexedDB, 50 versions max)
+│  ├─ Snapshot persistence (Redis + database)
+│  └─ State recovery on disconnect
+└─────────────────────────────────────────────────────────┘
+```
+
+**Canvas Collaboration Architecture (v0.21.0):**
+
+```
+User 1 (Editor) ──┐
+                  ├─ WebSocket → Collab Room
+User 2 (Editor) ──┤  (per project)
+                  ├─→ Presence Tracker
+User 3 (Viewer) ──┘  • Active cursors
+                     • User list
+                     • Last edit timestamps
+
+Room State:
+  ├─ Canvas snapshot (latest editor.store)
+  ├─ Pending changes (queue for batch sync)
+  ├─ Presence data (cursors, selections)
+  └─ Conflict history (for ordering)
+
+On Change:
+  1. Local editor state updates immediately (optimistic)
+  2. Change sent to WebSocket room
+  3. Server processes & broadcasts to other clients
+  4. Periodic snapshots saved to database (30s debounce)
+  5. On disconnect/reconnect: fetch latest snapshot + replay pending
 ```
 
 **Key Features:**
-- Custom shape utilities for branded designs
-- 7 pre-built design templates
-- Save/load canvas state to database
-- Enhanced toolbar for editing controls
-- 20 test coverage for all operations
+- Real-time multiplayer canvas editing (WebSocket rooms)
+- Live presence cursors and user list
+- Connector bindings for shape relationships
+- Non-destructive crop tool for images
+- Rich text editing in shapes
+- Automatic snapshot persistence
+- Graceful reconnection after network drops
+- Virtualized layers for performance (60fps with 1000+ shapes)
+- 93 test coverage including 50+ collaboration tests
 
 ## Video Editor Layer (packages/video)
 

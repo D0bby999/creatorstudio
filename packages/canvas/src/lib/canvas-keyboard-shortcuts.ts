@@ -52,6 +52,13 @@ export function registerCanvasShortcuts(
       if (ids.length > 0) editor.ungroupShapes(ids)
       return
     }
+    // Connector tool shortcut (no modifier)
+    if (!meta && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'c') {
+      const active = document.activeElement
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).contentEditable === 'true')) return
+      editor.setCurrentTool('connector')
+      return
+    }
   }
 
   window.addEventListener('keydown', handler)

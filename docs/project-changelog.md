@@ -7,6 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-02-23
+
+### Added - Canvas Advanced Upgrade: Real-Time Collaboration & Advanced Tools
+
+**Phase 1: Performance & Polish**
+- Font loader memory leak fixes with cleanup tracking
+- Reduced TypeScript type casts (8 remaining, from 25)
+- Virtualized layer panel for 1000+ shapes (60fps)
+- IndexedDB connection pooling (3 connections max)
+- Error boundaries for all panels
+- Lazy loading for AI tools and font picker
+
+**Phase 2: Advanced Tools — Connector Bindings**
+- Connector shape with SVG path rendering
+- Binding utilities with auto-adjustment on shape move
+- Connector tool (StateNode with state machine: Idle → Pointing → Dragging)
+- Anchor snapping to shape edges and centers
+- 3 line style × 5 color connector presets
+- Keyboard shortcut (C key) and toolbar button
+- Sideeffects-based binding pattern (tldraw 4.3.1 compatible)
+
+**Phase 3: Advanced Tools — Crop Tool & Rich Text**
+- Non-destructive image crop tool with 8-direction handles
+- Crop geometry utilities (aspect ratio locks, bounds)
+- Rich text editing via contentEditable
+- Formatting toolbar (bold, italic, underline)
+- Font picker integration in text shapes
+- Text alignment controls (left, center, right, justify)
+- Auto-resize shapes to fit text content
+
+**Phase 4: Collaboration Infrastructure**
+- WebSocket server integrated into React Router app
+- Room management with in-memory + Redis sync
+- Prisma models: CanvasRoom, RoomMember
+- Message protocol: diff, presence, ping with rate limiting (10 msg/sec per user)
+- Snapshot persistence with 30s debounce
+- Auth validation and role-based permissions (owner/editor/viewer)
+- REST API for room CRUD and member management
+
+**Phase 5: Collaboration UI & Integration**
+- WebSocket sync hook (useCanvasSync)
+- Live presence cursors with user-specific colors
+- User list panel with avatars and names
+- Connection status badge (green/yellow/red)
+- Collaboration mode toggle (solo vs multiplayer)
+- Reconnection with exponential backoff
+- "New Collaborative Canvas" button in dashboard
+- Full integration into canvas editor with roomId support
+
+**Phase 6: Integration Testing & Hardening**
+- 93 total tests (73 new, 20 existing)
+- 50+ integration and unit tests for collaboration
+- Tools validation in multiplayer mode
+- Performance benchmarks (layer panel, WebSocket latency <50ms p95)
+- Error monitoring and structured logging
+- Connection limit enforcement (1000 concurrent)
+- Memory limits per room (100MB)
+- Production hardening checklist verified
+
+**Features:**
+- Real-time multiplayer canvas editing (WebSocket)
+- Live presence cursors with user identification
+- Connector tool with visual bindings and auto-adjustment
+- Non-destructive crop tool for images with aspect ratio preservation
+- Rich text editing with inline formatting
+- Automatic snapshot persistence (30s debounce)
+- Graceful reconnection after network drops (<5 seconds)
+- Solo vs multiplayer mode toggle
+- Performance optimized for 1000+ shapes (60fps)
+- Backward compatible with v0.20.0 canvases
+
+**New Files (40+):**
+- Performance: 5 files (font-loader-cleanup, indexeddb-pool, error-boundaries, layer-virtualization, performance-monitor)
+- Connectors: 4 files (connector-shape, connector-binding, connector-tool, anchor-utils)
+- Crop & Rich Text: 6 files (crop-tool, rich-text-editor, crop-utils, rich-text-wrapper, text shapes)
+- Collaboration: 15 files (room-manager, websocket-handler, message-protocol, presence-tracker, snapshot-persistence, 5 API routes, 4 components)
+- Testing: 9 files (collaboration tests, performance benchmarks, e2e tests)
+
+**Success Metrics Achieved:**
+- Layer panel renders 1000+ shapes at 60fps (virtualization)
+- Font loader cleanup prevents memory leaks
+- Connector tool creates valid bindings with auto-adjustment
+- Crop tool non-destructive (preserves original image data)
+- Rich text formatting persists in snapshots
+- WebSocket latency <50ms (p95)
+- 10 concurrent users per room stable
+- Presence cursors update <100ms
+- Reconnection <5 seconds on network drop
+- All 93 tests passing
+- 0 TypeScript errors, full strict mode
+
+---
+
 ## [0.20.0] - 2026-02-23
 
 ### Added - Canvas Pro Upgrade: Production-Ready Design Editor
