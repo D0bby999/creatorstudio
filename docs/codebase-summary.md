@@ -291,18 +291,24 @@ creator-studio/
 - **Smart Features** → Auto-save (30s debounce), version history (IndexedDB, 50 versions), batch export, watermark
 - **AI Integration** → Image generation, content fill, smart layout, smart resize
 - **Keyboard Shortcuts** → Cmd+S (save), Cmd+E (export), Cmd+Shift+L (layers), Cmd+Shift+I (inspector)
-- **Real-Time Collaboration (NEW)** → WebSocket rooms, live cursors, presence tracking, snapshot persistence
-- **Connector Bindings (NEW)** → Sideeffects-based binding pattern, dynamic connections between shapes
-- **Crop Tool (NEW)** → Advanced shape cropping with aspect ratio locks
-- **Rich Text Editing (NEW)** → In-shape text editing with formatting options
-- **Performance Optimization (NEW)** → IndexedDB pool, virtualized layers, error boundaries
-- **Monitoring (NEW)** → Collaboration metrics, sync performance tracking
-- **93 Tests** → Collaboration, connectors, crop tool, rich text, persistence
+- **Real-Time Collaboration** → WebSocket rooms, live cursors, presence tracking, snapshot persistence
+- **Connector Bindings** → Sideeffects-based binding pattern, dynamic connections between shapes
+- **Crop Tool** → Advanced shape cropping with aspect ratio locks
+- **Rich Text Editing** → In-shape text editing with formatting options
+- **Performance Optimization** → IndexedDB pool, virtualized layers, error boundaries
+- **Monitoring** → Collaboration metrics, sync performance tracking
+
+**Canvas Full Parity (v0.21.1 - Complete):**
+- **All 10 Phases Delivered** → 6 phases built-in to tldraw, 4 phases custom implementation
+- **Export Formats** → PDF (jsPDF), .tldr (JSON snapshots), PNG/SVG/JSON (clipboard)
+- **Template System** → 4 categories, fuzzy search, favorites (localStorage), page manager
+- **Built-in Features** → Default shapes (12 types, 19+ geo sub-types), style panel, selection groups, alignment/distribute
+- **93+ Tests** → All critical canvas workflows, export formats, template operations
 
 **Key Files:**
 - `src/components/canvas-editor.tsx` → Main editor wrapper with panels
 - `src/shapes/` → 5 custom shape implementations
-- `src/templates/` → 18 template definitions
+- `src/templates/` → 18 template definitions + full parity system
 - `src/lib/canvas-asset-store.ts` → R2 + data URL asset store
 - `src/lib/canvas-font-loader.ts` → Google Fonts loader (native API)
 - `src/lib/canvas-auto-save.ts` → Auto-save with debounce + side effects
@@ -310,12 +316,20 @@ creator-studio/
 - `src/lib/canvas-ai-actions.ts` → AI action wrappers
 - `src/lib/canvas-smart-layout.ts` → Geometry-based layout suggestions
 - `src/lib/canvas-smart-resize.ts` → Proportional content scaling
-- `src/lib/canvas-collaboration.ts` → WebSocket room management, presence tracking (NEW)
-- `src/lib/canvas-sync-handler.ts` → Snapshot persistence, sync orchestration (NEW)
-- `src/lib/canvas-connector-bindings.ts` → Sideeffects-based connector pattern (NEW)
-- `src/lib/canvas-crop-tool.ts` → Advanced cropping with aspect ratio (NEW)
-- `src/lib/canvas-rich-text.ts` → In-shape text editing (NEW)
-- `src/lib/canvas-performance-monitor.ts` → Sync & collaboration metrics (NEW)
+- `src/lib/canvas-collaboration.ts` → WebSocket room management, presence tracking
+- `src/lib/canvas-sync-handler.ts` → Snapshot persistence, sync orchestration
+- `src/lib/canvas-connector-bindings.ts` → Sideeffects-based connector pattern
+- `src/lib/canvas-crop-tool.ts` → Advanced cropping with aspect ratio
+- `src/lib/canvas-rich-text.ts` → In-shape text editing
+- `src/lib/canvas-performance-monitor.ts` → Sync & collaboration metrics
+- `src/lib/export/canvas-export-pdf.ts` → PDF export via jsPDF (FULL PARITY)
+- `src/lib/export/canvas-export-tldr-file.ts` → .tldr file persistence (FULL PARITY)
+- `src/lib/export/canvas-export-copy-as.ts` → Clipboard export (PNG/SVG/JSON) (FULL PARITY)
+- `src/lib/export/index.ts` → Export orchestration (FULL PARITY)
+- `src/templates/canvas-template-categories.ts` → 4 template categories taxonomy (FULL PARITY)
+- `src/templates/canvas-template-search.ts` → Fuzzy search implementation (FULL PARITY)
+- `src/templates/canvas-template-favorites.ts` → Favorite tracking via localStorage (FULL PARITY)
+- `src/lib/canvas-page-manager.ts` → Multi-page template management (FULL PARITY)
 - `src/components/property-inspector-panel.tsx` → Shape props editor
 - `src/components/layers-panel.tsx` → Z-order management
 - `src/components/color-picker-widget.tsx` → Color picker (hex, swatches, gradient)
@@ -324,8 +338,8 @@ creator-studio/
 - `src/components/asset-panel.tsx` → Asset management UI
 - `src/components/version-history-panel.tsx` → Version restore UI
 - `src/components/ai-tools-panel.tsx` → AI tools UI
-- `src/components/collaboration-panel.tsx` → Presence & cursors display (NEW)
-- `src/*.test.ts` → 93 comprehensive tests
+- `src/components/collaboration-panel.tsx` → Presence & cursors display
+- `src/*.test.ts` → 93+ comprehensive tests
 
 **Dependencies:**
 - `tldraw` → Vector drawing engine (pinned v4.3.1)

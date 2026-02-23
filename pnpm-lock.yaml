@@ -308,6 +308,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.13.18
         version: 3.13.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tldraw/sync':
+        specifier: 4.3.1
+        version: 4.3.1(@floating-ui/dom@1.7.5)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       jspdf:
         specifier: ^4.2.0
         version: 4.2.0
@@ -4203,6 +4206,18 @@ packages:
     peerDependencies:
       react: ^18.2.0 || ^19.2.1
 
+  '@tldraw/sync-core@4.3.1':
+    resolution: {integrity: sha512-a/nXGt4qcA2dfXFMqOM2I33hVMDqS5SFAHAFfps61417SPWLY8GV61+3PlCosCw9z7TMJYkEzj+XsnQc5tsv1A==}
+    peerDependencies:
+      react: ^18.2.0 || ^19.2.1
+      react-dom: ^18.2.0 || ^19.2.1
+
+  '@tldraw/sync@4.3.1':
+    resolution: {integrity: sha512-rU1f03PBBbYtTFymaDuqy9gza9z8pDTKNafSnYyGzS9LD5bBnhl/+Y2U/OW/d5qlJmGzAOc6RieCFyNKcpoYIg==}
+    peerDependencies:
+      react: ^18.2.0 || ^19.2.1
+      react-dom: ^18.2.0 || ^19.2.1
+
   '@tldraw/tlschema@4.3.1':
     resolution: {integrity: sha512-+PDQsFkAdEd4BMyB5AGLZVECHQhXUyKLV08ihkZvMjsuTn2WfOrJvANHGkHhJ7XwGiyNj+ROhNaGmWnKPxOoXQ==}
     peerDependencies:
@@ -6617,6 +6632,10 @@ packages:
   mute-stream@2.0.0:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
+
+  nanoevents@7.0.1:
+    resolution: {integrity: sha512-o6lpKiCxLeijK4hgsqfR6CNToPyRU3keKyyI6uwuHRvpRTbZ0wXw51WRgyldVugZqoJfkGFrjrIenYH3bfEO3Q==}
+    engines: {node: ^14.0.0 || ^16.0.0 || >=18.0.0}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -13641,6 +13660,38 @@ snapshots:
       '@tldraw/utils': 4.3.1
       react: 18.3.1
 
+  '@tldraw/sync-core@4.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tldraw/state': 4.3.1
+      '@tldraw/store': 4.3.1(react@18.3.1)
+      '@tldraw/tlschema': 4.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tldraw/utils': 4.3.1
+      nanoevents: 7.0.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      ws: 8.19.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@tldraw/sync@4.3.1(@floating-ui/dom@1.7.5)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tldraw/state': 4.3.1
+      '@tldraw/state-react': 4.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tldraw/sync-core': 4.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tldraw/utils': 4.3.1
+      nanoevents: 7.0.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      tldraw: 4.3.1(@floating-ui/dom@1.7.5)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      ws: 8.19.0
+    transitivePeerDependencies:
+      - '@floating-ui/dom'
+      - '@types/react'
+      - '@types/react-dom'
+      - bufferutil
+      - utf-8-validate
+
   '@tldraw/tlschema@4.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@tldraw/state': 4.3.1
@@ -16373,6 +16424,8 @@ snapshots:
       - '@types/node'
 
   mute-stream@2.0.0: {}
+
+  nanoevents@7.0.1: {}
 
   nanoid@3.3.11: {}
 

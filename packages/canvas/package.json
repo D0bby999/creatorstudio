@@ -18,6 +18,7 @@
   "dependencies": {
     "@creator-studio/db": "workspace:*",
     "@tanstack/react-virtual": "^3.13.18",
+    "@tldraw/sync": "4.3.1",
     "jspdf": "^4.2.0",
     "tldraw": "^4.3.1"
   },

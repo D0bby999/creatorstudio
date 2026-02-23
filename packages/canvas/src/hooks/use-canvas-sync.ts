@@ -1,6 +1,8 @@
-/** WebSocket sync hook for real-time canvas collaboration */
+/** WebSocket sync hook for real-time canvas collaboration with offline support */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ConnectionStatus, PresenceData } from '../lib/canvas-presence-utils'
+import { ReconnectStrategy } from '../lib/sync/canvas-sync-reconnect'
+import { OfflineQueue } from '../lib/sync/canvas-sync-offline-queue'
 
 interface UseCanvasSyncOptions {
   roomId: string
@@ -15,6 +17,7 @@ interface CanvasSyncState {
   status: ConnectionStatus
   users: Map<string, PresenceData>
   latencyMs: number
+  queueSize: number
 }
 
 export function useCanvasSync({
@@ -24,12 +27,14 @@ export function useCanvasSync({
     status: 'disconnected',
     users: new Map(),
     latencyMs: 0,
+    queueSize: 0,
   })
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const reconnectAttempt = useRef(0)
   const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastPingTime = useRef(0)
+  const reconnectStrategy = useRef(new ReconnectStrategy({ maxAttempts: 5 }))
+  const offlineQueue = useRef(new OfflineQueue({ maxSize: 1000 }))
 
   const cleanup = useCallback(() => {
     if (pingTimer.current) clearInterval(pingTimer.current)
@@ -51,8 +56,20 @@ export function useCanvasSync({
     wsRef.current = ws
 
     ws.onopen = () => {
-      setState(s => ({ ...s, status: 'connected' }))
-      reconnectAttempt.current = 0
+      setState(s => ({ ...s, status: 'connected', queueSize: 0 }))
+      reconnectStrategy.current.reset()
+
+      // Replay queued operations from offline period
+      const queued = offlineQueue.current.flush()
+      if (queued.length > 0) {
+        console.log(`[CanvasSync] Replaying ${queued.length} queued operations`)
+        for (const op of queued) {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: op.type, data: op.data }))
+          }
+        }
+      }
+
       // Ping every 30s
       pingTimer.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -91,10 +108,14 @@ export function useCanvasSync({
   }, [enabled, wsUrl, roomId, token, userId, cleanup])
 
   const scheduleReconnect = useCallback(() => {
-    const attempt = reconnectAttempt.current
-    if (attempt >= 10) return // Give up after 10 attempts
-    const delay = Math.min(1000 * Math.pow(2, attempt), 30_000)
-    reconnectAttempt.current = attempt + 1
+    const delay = reconnectStrategy.current.getNextDelay()
+    if (delay === null) {
+      console.warn('[CanvasSync] Max reconnection attempts reached')
+      setState(s => ({ ...s, status: 'error' }))
+      return
+    }
+
+    console.log(`[CanvasSync] Reconnecting in ${delay}ms (attempt ${reconnectStrategy.current.getAttempt()})`)
     reconnectTimer.current = setTimeout(connect, delay)
   }, [connect])
 
@@ -106,6 +127,10 @@ export function useCanvasSync({
   const sendDiff = useCallback((diff: unknown) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'diff', data: diff }))
+    } else {
+      // Queue operation if offline
+      offlineQueue.current.enqueue('diff', diff)
+      setState(s => ({ ...s, queueSize: offlineQueue.current.size() }))
     }
   }, [])
 
@@ -116,12 +141,13 @@ export function useCanvasSync({
         data: { cursor, selectedShapeIds },
       }))
     }
+    // Presence data is ephemeral, don't queue if offline
   }, [])
 
   const disconnect = useCallback(() => {
-    reconnectAttempt.current = 999 // Prevent reconnect
     cleanup()
-    setState({ status: 'disconnected', users: new Map(), latencyMs: 0 })
+    offlineQueue.current.clear()
+    setState({ status: 'disconnected', users: new Map(), latencyMs: 0, queueSize: 0 })
   }, [cleanup])
 
   return {
