@@ -3,6 +3,7 @@ import type { Editor } from 'tldraw'
 import { ElementLibraryPhotosTab } from './element-library-photos-tab'
 import { ElementLibraryIconsTab } from './element-library-icons-tab'
 import { ElementLibraryShapesTab } from './element-library-shapes-tab'
+import { ElementLibraryIllustrationsTab } from './element-library-illustrations-tab'
 import { getRecentElements, clearRecent } from '../lib/element-library/recently-used-elements'
 import { sanitizeSvgContent } from '../lib/element-library/svg-sanitizer'
 
@@ -12,7 +13,7 @@ interface ElementLibraryPanelProps {
   unsplashEndpoint?: string
 }
 
-type TabType = 'photos' | 'icons' | 'shapes' | 'recent'
+type TabType = 'photos' | 'icons' | 'illustrations' | 'shapes' | 'recent'
 
 export function ElementLibraryPanel({ editor, onClose, unsplashEndpoint }: ElementLibraryPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('photos')
@@ -53,6 +54,7 @@ export function ElementLibraryPanel({ editor, onClose, unsplashEndpoint }: Eleme
   const tabs: { id: TabType; label: string; hidden?: boolean }[] = [
     { id: 'photos', label: 'Photos', hidden: !unsplashEndpoint },
     { id: 'icons', label: 'Icons' },
+    { id: 'illustrations', label: 'Illustr.' },
     { id: 'shapes', label: 'Shapes' },
     { id: 'recent', label: 'Recent' },
   ]
@@ -119,7 +121,7 @@ export function ElementLibraryPanel({ editor, onClose, unsplashEndpoint }: Eleme
       </div>
 
       {/* Search bar (photos & icons only) */}
-      {(activeTab === 'photos' || activeTab === 'icons') && (
+      {(activeTab === 'photos' || activeTab === 'icons' || activeTab === 'illustrations') && (
         <div style={{ padding: 8, borderBottom: '1px solid #e0e0e0' }}>
           <input
             type="text"
@@ -145,6 +147,9 @@ export function ElementLibraryPanel({ editor, onClose, unsplashEndpoint }: Eleme
         )}
         {activeTab === 'icons' && (
           <ElementLibraryIconsTab editor={editor} searchQuery={searchQuery} />
+        )}
+        {activeTab === 'illustrations' && (
+          <ElementLibraryIllustrationsTab editor={editor} searchQuery={searchQuery} />
         )}
         {activeTab === 'shapes' && (
           <ElementLibraryShapesTab editor={editor} />

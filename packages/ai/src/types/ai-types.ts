@@ -89,7 +89,7 @@ export type AiTask =
   | 'chat' | 'structured' | 'hashtags' | 'prediction' | 'image-prompt'
   | 'repurpose' | 'tone-adjust' | 'caption-variant' | 'translate'
   | 'moderation' | 'sentiment' | 'competitor-analysis'
-  | 'embedding' | 'video-script'
+  | 'embedding' | 'video-script' | 'design-layout'
 
 // Token tracking types
 export interface TokenUsageRecord {

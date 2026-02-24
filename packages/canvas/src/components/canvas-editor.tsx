@@ -64,6 +64,9 @@ interface CanvasEditorProps {
   assetsEndpoint?: string
   aiGenerateEndpoint?: string
   aiFillEndpoint?: string
+  aiVideoGenEndpoint?: string
+  aiVideoStatusEndpoint?: string
+  aiDesignGenEndpoint?: string
   unsplashEndpoint?: string
   projectId?: string
   roomId?: string
@@ -77,7 +80,9 @@ interface CanvasEditorProps {
 
 export function CanvasEditor({
   persistenceKey = 'creator-studio-canvas',
-  uploadEndpoint, assetsEndpoint, aiGenerateEndpoint, aiFillEndpoint, unsplashEndpoint,
+  uploadEndpoint, assetsEndpoint, aiGenerateEndpoint, aiFillEndpoint,
+  aiVideoGenEndpoint, aiVideoStatusEndpoint, aiDesignGenEndpoint,
+  unsplashEndpoint,
   projectId, roomId, wsUrl, authToken,
   userId = 'anonymous', userName = 'Anonymous', onSave,
 }: CanvasEditorProps) {
@@ -329,7 +334,7 @@ export function CanvasEditor({
       {showAiTools && editor && aiGenerateEndpoint && aiFillEndpoint && (
         <ErrorBoundaryPanel panelName="AI Tools" onClose={() => setShowAiTools(false)}>
           <Suspense fallback={<div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: '#999' }}>Loading...</div>}>
-            <LazyAiToolsPanel editor={editor} onClose={() => setShowAiTools(false)} aiGenerateEndpoint={aiGenerateEndpoint} aiFillEndpoint={aiFillEndpoint} />
+            <LazyAiToolsPanel editor={editor} onClose={() => setShowAiTools(false)} aiGenerateEndpoint={aiGenerateEndpoint} aiFillEndpoint={aiFillEndpoint} aiVideoGenEndpoint={aiVideoGenEndpoint} aiVideoStatusEndpoint={aiVideoStatusEndpoint} aiDesignGenEndpoint={aiDesignGenEndpoint} />
           </Suspense>
         </ErrorBoundaryPanel>
       )}

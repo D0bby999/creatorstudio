@@ -1,15 +1,25 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import type { Editor } from 'tldraw'
 import { generateAiImage, fillShapeContent, applyAutoLayout } from '../lib/canvas-ai-actions'
+
+const LazyVideoSection = lazy(() =>
+  import('./ai-tools-video-section').then(m => ({ default: m.AiToolsVideoSection }))
+)
+const LazyDesignGenPanel = lazy(() =>
+  import('./ai-design-generation-panel').then(m => ({ default: m.AiDesignGenerationPanel }))
+)
 
 interface AiToolsPanelProps {
   editor: Editor
   onClose: () => void
   aiGenerateEndpoint: string
   aiFillEndpoint: string
+  aiVideoGenEndpoint?: string
+  aiVideoStatusEndpoint?: string
+  aiDesignGenEndpoint?: string
 }
 
-export function AiToolsPanel({ editor, onClose, aiGenerateEndpoint, aiFillEndpoint }: AiToolsPanelProps) {
+export function AiToolsPanel({ editor, onClose, aiGenerateEndpoint, aiFillEndpoint, aiVideoGenEndpoint, aiVideoStatusEndpoint, aiDesignGenEndpoint }: AiToolsPanelProps) {
   const [prompt, setPrompt] = useState('')
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
@@ -105,6 +115,28 @@ export function AiToolsPanel({ editor, onClose, aiGenerateEndpoint, aiFillEndpoi
             Organize Shapes
           </button>
         </div>
+
+        {/* Generate Video */}
+        {aiVideoGenEndpoint && aiVideoStatusEndpoint && (
+          <Suspense fallback={null}>
+            <LazyVideoSection
+              editor={editor}
+              videoGenEndpoint={aiVideoGenEndpoint}
+              videoStatusEndpoint={aiVideoStatusEndpoint}
+            />
+          </Suspense>
+        )}
+
+        {/* AI Design Generation */}
+        {aiDesignGenEndpoint && (
+          <Suspense fallback={null}>
+            <LazyDesignGenPanel
+              editor={editor}
+              designGenEndpoint={aiDesignGenEndpoint}
+              onClose={onClose}
+            />
+          </Suspense>
+        )}
 
         {/* Status messages */}
         {error && <div style={{ fontSize: 11, color: '#ef4444', padding: '4px 0' }}>{error}</div>}

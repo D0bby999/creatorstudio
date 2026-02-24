@@ -4,6 +4,7 @@ import { crawlJobExecutor } from './functions/crawl-job-executor'
 import { videoExportTrigger } from './functions/video-export-trigger'
 import { tokenRefreshCron } from './functions/token-refresh-cron'
 import { hardDeleteUsersCron } from './functions/hard-delete-users-cron'
+import { canvasVideoGenJob } from './functions/canvas-video-gen-job'
 
 export {
   socialPostPublisher,
@@ -12,6 +13,7 @@ export {
   videoExportTrigger,
   tokenRefreshCron,
   hardDeleteUsersCron,
+  canvasVideoGenJob,
 }
 
 export const functions = [
@@ -21,4 +23,5 @@ export const functions = [
   videoExportTrigger,
   tokenRefreshCron,
   hardDeleteUsersCron,
+  canvasVideoGenJob,
 ]

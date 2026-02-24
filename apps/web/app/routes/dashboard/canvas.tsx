@@ -72,6 +72,9 @@ export default function Canvas() {
             assetsEndpoint="/api/canvas/assets"
             aiGenerateEndpoint="/api/canvas/ai-generate"
             aiFillEndpoint="/api/canvas/ai-fill"
+            aiVideoGenEndpoint="/api/canvas/ai-video-gen"
+            aiVideoStatusEndpoint="/api/canvas/ai-video-status"
+            aiDesignGenEndpoint="/api/canvas/ai-design-gen"
             roomId={roomId ?? undefined}
             wsUrl={wsUrl}
             authToken={sessionToken ?? undefined}

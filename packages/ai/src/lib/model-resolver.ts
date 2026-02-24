@@ -26,6 +26,7 @@ const TASK_ALIAS_MAP: Record<AiTask, ModelAlias> = {
   'competitor-analysis': 'smart',
   embedding: 'fast',
   'video-script': 'creative',
+  'design-layout': 'smart',
 }
 
 // Tasks that benefit from caching (deterministic structured output)
@@ -47,6 +48,7 @@ const TASK_ENV_KEYS: Record<AiTask, string> = {
   'competitor-analysis': 'AI_MODEL_COMPETITOR_ANALYSIS',
   embedding: 'AI_MODEL_EMBEDDING',
   'video-script': 'AI_MODEL_VIDEO_SCRIPT',
+  'design-layout': 'AI_MODEL_DESIGN_LAYOUT',
 }
 
 const loggingMiddleware = createLoggingMiddleware()
