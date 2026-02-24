@@ -639,6 +639,14 @@ Room auto-deleted if empty (memory cleanup)
 - **Backward Compatibility:** Fully maintained, no breaking changes
 - **Professional Grade:** Canva-level design capabilities for Creator Studio
 
+**Canvas AI Enhancements (v0.23.0 - 3 Phases):**
+- **Phase 1: Text-to-Video Generation** → Luma Ray 2 via @ai-sdk/replicate, monthly quota enforcement per user tier, Inngest async jobs (non-blocking), R2 cloud storage, aspect ratio selection (16:9/9:16/1:1), progress polling
+- **Phase 2: Illustration Library** → 48 curated SVG illustrations (6 categories: People, Technology, Business, Nature, Education, Abstract), <50KB optimized bundle, element library integration, client-side search/filter, SVG sanitization
+- **Phase 3: AI Design Generation** → Claude structured output with Zod schema validation, 4 template presets (social post 1080x1080, story 1080x1920, banner 1200x628, slide 1920x1080), multi-turn refinement (max 5 turns), Redis session storage for conversation history
+- **Architecture:** Canvas AI actions module, design layout schema/prompts/generator libraries, layout-to-shapes JSON mapper, video element insertion with download links
+- **Files:** 20 new files (2 API routes, 1 Inngest background job, 5 illustration data modules, 3 AI libraries, 4 UI components, 1 canvas mapper, 2 action modules)
+- **Test Coverage:** 665 total tests (189 canvas + 476 AI), 0 failures
+
 **Canvas Collaboration Architecture (v0.21.0+):**
 
 ```

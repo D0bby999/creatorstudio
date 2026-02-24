@@ -325,6 +325,12 @@ creator-studio/
 - **New Prisma Models** → BrandKit, BrandColor, BrandFont, BrandLogo, CanvasComment, CanvasShareLink
 - **~70 New Files** → ~5,000 LOC across all 8 phases
 - **Production-Ready** → Full Canva-grade design features with real-time sync
+- **AI Enhancements (v0.23.0 - 3 Phases - Complete):**
+  - Phase 1: Text-to-Video Gen (Luma Ray 2 via @ai-sdk/replicate, monthly quota 5 Pro/1 Free, Inngest async, R2 storage, aspect ratios)
+  - Phase 2: Illustration Library (48 curated SVGs in 6 categories, <50KB bundle, element library tab, client search)
+  - Phase 3: AI Design Gen (Claude structured output + Zod, 4 template presets, layout-to-shapes mapper, 5-turn refinement, Redis sessions)
+- **New Files** → 20 (2 routes, 1 Inngest job, 5 illustration modules, 3 AI libs, 4 UI components, 1 mapper, 2 actions)
+- **Test Coverage** → 665 total (189 canvas + 476 AI), 0 failures
 
 **Key Files:**
 - `src/components/canvas-editor.tsx` → Main editor wrapper with panels
