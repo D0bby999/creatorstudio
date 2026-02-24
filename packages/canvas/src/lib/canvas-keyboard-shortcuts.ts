@@ -5,7 +5,11 @@ export interface CanvasShortcutCallbacks {
   onExport?: () => void
   onToggleLayers?: () => void
   onToggleInspector?: () => void
+  onToggleRulers?: () => void
+  onToggleGuides?: () => void
   onToolChange?: (toolId: string) => void
+  onStyleCopy?: () => void
+  onStylePaste?: () => void
 }
 
 /**
@@ -72,6 +76,26 @@ export function registerCanvasShortcuts(
       e.preventDefault()
       const ids = editor.getSelectedShapeIds()
       if (ids.length > 0) editor.ungroupShapes(ids)
+      return
+    }
+    if (meta && e.altKey && e.key === 'c') {
+      e.preventDefault()
+      callbacks.onStyleCopy?.()
+      return
+    }
+    if (meta && e.altKey && e.key === 'v') {
+      e.preventDefault()
+      callbacks.onStylePaste?.()
+      return
+    }
+    if (meta && e.key === 'r') {
+      e.preventDefault()
+      callbacks.onToggleRulers?.()
+      return
+    }
+    if (meta && e.key === ';') {
+      e.preventDefault()
+      callbacks.onToggleGuides?.()
       return
     }
 

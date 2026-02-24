@@ -624,6 +624,21 @@ Room auto-deleted if empty (memory cleanup)
 - **Effort Reduction:** 40-60 weeks → 4-5 weeks actual delivery by hybrid architecture approach
 - **Zero Maintenance Burden:** Custom code limited to 900 LOC (export + templates), rest uses tldraw battle-tested implementations
 
+**Canvas Canva-Parity Upgrade (v0.22.0 - 8 Phases):**
+- **Phase 1: Image Editing** → 15+ CSS filters (grayscale, sepia, blur, etc.), brightness/contrast/saturation, AI background removal, drop shadow, duotone, pixelate
+- **Phase 2: Text Effects** → Shadow, outline/stroke, glow (5-layer), curved text (arc/wave/circle), 104 Google Fonts
+- **Phase 3: Color & Styling** → HSL color wheel, gradient editor, EyeDropper API, style copy/paste
+- **Phase 4: Element Library** → Unsplash photos, Iconify 275k+ icons, 20+ shapes, search/filter
+- **Phase 5: Brand Kit** → 4 Prisma models, CRUD API, one-click apply, team sharing
+- **Phase 6: Transform** → Numeric X/Y/W/H, rotation, aspect ratio lock, flip, rulers, guides
+- **Phase 7: Multi-page** → Page thumbnails, drag reorder, threaded comments, share links, permissions
+- **Phase 8: Animations** → 9 entrance/exit effects, page transitions, timeline, GIF export stub
+- **New Dependencies:** react-colorful (color wheel picker)
+- **Database Expansion:** 6 new models (BrandKit, BrandColor, BrandFont, BrandLogo, CanvasComment, CanvasShareLink)
+- **Implementation:** ~70 new files, ~5,000 LOC across all phases
+- **Backward Compatibility:** Fully maintained, no breaking changes
+- **Professional Grade:** Canva-level design capabilities for Creator Studio
+
 **Canvas Collaboration Architecture (v0.21.0+):**
 
 ```

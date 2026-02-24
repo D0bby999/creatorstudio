@@ -86,8 +86,8 @@ function ShapeProps({ shape, onChange, onChangeDebounced }: ShapePropsProps) {
           <TextField label="Title" value={props.title ?? ''} onChange={(v) => onChangeDebounced('title', v)} />
           <TextField label="Body" value={props.body ?? ''} onChange={(v) => onChangeDebounced('body', v)} multiline />
           <TextField label="CTA Text" value={props.ctaText ?? ''} onChange={(v) => onChangeDebounced('ctaText', v)} />
-          <ColorField label="Background" value={props.backgroundColor} onChange={(v) => onChange('backgroundColor', v)} />
-          <ColorField label="Accent" value={props.accentColor ?? '#3b82f6'} onChange={(v) => onChange('accentColor', v)} />
+          <ColorField label="Background" value={props.backgroundColor} onChange={(v) => onChange('backgroundColor', v)} showGradient />
+          <ColorField label="Accent" value={props.accentColor ?? '#3b82f6'} onChange={(v) => onChange('accentColor', v)} showGradient />
           <TextField label="Font" value={props.fontFamily ?? 'sans-serif'} onChange={(v) => onChange('fontFamily', v)} />
           <NumberField label="Width" value={props.w} onChange={(v) => onChange('w', v)} />
           <NumberField label="Height" value={props.h} onChange={(v) => onChange('h', v)} />
@@ -99,9 +99,9 @@ function ShapeProps({ shape, onChange, onChangeDebounced }: ShapePropsProps) {
           <SectionLabel>Quote Card</SectionLabel>
           <TextField label="Quote" value={props.quoteText} onChange={(v) => onChangeDebounced('quoteText', v)} multiline />
           <TextField label="Author" value={props.author} onChange={(v) => onChangeDebounced('author', v)} />
-          <ColorField label="Gradient From" value={props.bgGradientFrom} onChange={(v) => onChange('bgGradientFrom', v)} />
-          <ColorField label="Gradient To" value={props.bgGradientTo} onChange={(v) => onChange('bgGradientTo', v)} />
-          <ColorField label="Text Color" value={props.textColor} onChange={(v) => onChange('textColor', v)} />
+          <ColorField label="Gradient From" value={props.bgGradientFrom} onChange={(v) => onChange('bgGradientFrom', v)} showGradient />
+          <ColorField label="Gradient To" value={props.bgGradientTo} onChange={(v) => onChange('bgGradientTo', v)} showGradient />
+          <ColorField label="Text Color" value={props.textColor} onChange={(v) => onChange('textColor', v)} showGradient />
           <SectionLabel>Typography</SectionLabel>
           <TextField label="Font" value={props.fontFamily ?? 'sans-serif'} onChange={(v) => onChange('fontFamily', v)} />
           <NumberField label="Font Weight" value={props.fontWeight ?? 600} onChange={(v) => onChange('fontWeight', v)} step={100} min={100} max={900} />
@@ -117,7 +117,7 @@ function ShapeProps({ shape, onChange, onChangeDebounced }: ShapePropsProps) {
           <TextField label="Body" value={props.body} onChange={(v) => onChangeDebounced('body', v)} multiline />
           <NumberField label="Slide #" value={props.slideNumber} onChange={(v) => onChange('slideNumber', v)} />
           <NumberField label="Total" value={props.totalSlides} onChange={(v) => onChange('totalSlides', v)} />
-          <ColorField label="Background" value={props.bgColor} onChange={(v) => onChange('bgColor', v)} />
+          <ColorField label="Background" value={props.bgColor} onChange={(v) => onChange('bgColor', v)} showGradient />
           <SectionLabel>Typography</SectionLabel>
           <TextField label="Title Font" value={props.titleFontFamily ?? 'sans-serif'} onChange={(v) => onChange('titleFontFamily', v)} />
           <NumberField label="Title Weight" value={props.titleFontWeight ?? 700} onChange={(v) => onChange('titleFontWeight', v)} step={100} min={100} max={900} />
@@ -131,7 +131,7 @@ function ShapeProps({ shape, onChange, onChangeDebounced }: ShapePropsProps) {
           <SectionLabel>Text Overlay</SectionLabel>
           <TextField label="Text" value={props.text} onChange={(v) => onChangeDebounced('text', v)} multiline />
           <NumberField label="Font Size" value={props.fontSize} onChange={(v) => onChange('fontSize', v)} />
-          <ColorField label="Text Color" value={props.textColor} onChange={(v) => onChange('textColor', v)} />
+          <ColorField label="Text Color" value={props.textColor} onChange={(v) => onChange('textColor', v)} showGradient />
           <NumberField label="BG Opacity" value={props.bgOpacity} onChange={(v) => onChange('bgOpacity', v)} step={0.1} min={0} max={1} />
           <SelectField label="Position" value={props.position} options={['top', 'center', 'bottom']} onChange={(v) => onChange('position', v)} />
           <SectionLabel>Typography</SectionLabel>
@@ -148,9 +148,78 @@ function ShapeProps({ shape, onChange, onChangeDebounced }: ShapePropsProps) {
           <SectionLabel>Brand Kit</SectionLabel>
           <TextField label="Brand Name" value={props.brandName} onChange={(v) => onChangeDebounced('brandName', v)} />
           <TextField label="Tagline" value={props.tagline} onChange={(v) => onChangeDebounced('tagline', v)} />
-          <ColorField label="Primary" value={props.primaryColor} onChange={(v) => onChange('primaryColor', v)} />
-          <ColorField label="Secondary" value={props.secondaryColor} onChange={(v) => onChange('secondaryColor', v)} />
+          <ColorField label="Primary" value={props.primaryColor} onChange={(v) => onChange('primaryColor', v)} showGradient />
+          <ColorField label="Secondary" value={props.secondaryColor} onChange={(v) => onChange('secondaryColor', v)} showGradient />
           <TextField label="Font" value={props.fontFamily ?? 'sans-serif'} onChange={(v) => onChange('fontFamily', v)} />
+        </>
+      )
+    case 'enhanced-image':
+      return (
+        <>
+          <SectionLabel>Enhanced Image</SectionLabel>
+          <NumberField label="Width" value={props.w} onChange={(v) => onChange('w', v)} />
+          <NumberField label="Height" value={props.h} onChange={(v) => onChange('h', v)} />
+          <TextField label="Source URL" value={props.src ?? ''} onChange={(v) => onChangeDebounced('src', v)} />
+          <button
+            type="button"
+            onClick={() => {
+              // This will be handled by the parent canvas-editor through a prop
+              const event = new CustomEvent('open-image-editor', { detail: { shapeId: shape.id } })
+              window.dispatchEvent(event)
+            }}
+            style={{
+              width: '100%',
+              padding: '8px',
+              marginTop: '8px',
+              background: '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+            }}
+          >
+            Edit Filters & Effects
+          </button>
+        </>
+      )
+    case 'enhanced-text':
+      return (
+        <>
+          <SectionLabel>Enhanced Text</SectionLabel>
+          <TextField label="Text" value={props.text} onChange={(v) => onChangeDebounced('text', v)} multiline />
+          <NumberField label="Font Size" value={props.fontSize} onChange={(v) => onChange('fontSize', v)} />
+          <ColorField label="Text Color" value={props.textColor} onChange={(v) => onChange('textColor', v)} showGradient />
+          <NumberField label="BG Opacity" value={props.bgOpacity} onChange={(v) => onChange('bgOpacity', v)} step={0.1} min={0} max={1} />
+          <SelectField label="Position" value={props.position} options={['top', 'center', 'bottom']} onChange={(v) => onChange('position', v)} />
+          <SectionLabel>Typography</SectionLabel>
+          <TextField label="Font" value={props.fontFamily ?? 'sans-serif'} onChange={(v) => onChange('fontFamily', v)} />
+          <NumberField label="Font Weight" value={props.fontWeight ?? 700} onChange={(v) => onChange('fontWeight', v)} step={100} min={100} max={900} />
+          <SelectField label="Text Align" value={props.textAlign ?? 'center'} options={['left', 'center', 'right']} onChange={(v) => onChange('textAlign', v)} />
+          <NumberField label="Letter Spacing" value={props.letterSpacing ?? 0} onChange={(v) => onChange('letterSpacing', v)} step={0.5} />
+          <NumberField label="Line Height" value={props.lineHeight ?? 1.2} onChange={(v) => onChange('lineHeight', v)} step={0.1} min={0.8} max={3} />
+          <button
+            type="button"
+            onClick={() => {
+              const event = new CustomEvent('open-text-effects', { detail: { shapeId: shape.id } })
+              window.dispatchEvent(event)
+            }}
+            style={{
+              width: '100%',
+              padding: '8px',
+              marginTop: '8px',
+              background: '#8b5cf6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+            }}
+          >
+            Text Effects
+          </button>
         </>
       )
     default:
@@ -199,7 +268,7 @@ function NumberField({ label, value, onChange, step = 1, min, max }: { label: st
   )
 }
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorField({ label, value, onChange, showGradient = false }: { label: string; value: string; onChange: (v: string) => void; showGradient?: boolean }) {
   return (
     <div style={fieldStyle}>
       <label style={labelStyle}>{label}</label>
@@ -216,6 +285,22 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
           onChange={(e) => onChange(e.target.value)}
           style={{ ...inputStyle, flex: 1 }}
         />
+        {showGradient && (
+          <button
+            type="button"
+            title="Gradient (coming soon)"
+            style={{
+              width: 28,
+              height: 28,
+              border: '1px solid #ddd',
+              borderRadius: 4,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              cursor: 'not-allowed',
+              opacity: 0.5,
+              padding: 0,
+            }}
+          />
+        )}
       </div>
     </div>
   )

@@ -78,5 +78,25 @@ declare module 'tldraw' {
       strokeWidth: number
       showArrow: boolean
     }
+    'enhanced-image': {
+      w: number
+      h: number
+      src: string
+      assetId: string
+    }
+    'enhanced-text': {
+      w: number
+      h: number
+      text: string
+      fontSize: number
+      textColor: string
+      bgOpacity: number
+      position: string
+      fontFamily: string
+      fontWeight: number
+      textAlign: string
+      letterSpacing: number
+      lineHeight: number
+    }
   }
 }

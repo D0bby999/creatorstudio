@@ -6,18 +6,20 @@ import { exportWithWatermark } from '../lib/canvas-watermark'
 import { exportToPdf } from '../lib/export/canvas-export-pdf'
 import { downloadTldrFile, loadTldrFile } from '../lib/export/canvas-export-tldr-file'
 import { copyAs, type CopyFormat } from '../lib/export/canvas-export-copy-as'
+import { exportToGif } from '../lib/animation/gif-export-client'
 
 interface ExportPanelProps {
   editor: Editor
   onClose: () => void
 }
 
-const formats: { value: ExportFormat | 'pdf'; label: string }[] = [
+const formats: { value: ExportFormat | 'pdf' | 'gif'; label: string }[] = [
   { value: 'png', label: 'PNG' },
   { value: 'svg', label: 'SVG' },
   { value: 'webp', label: 'WebP' },
   { value: 'jpeg', label: 'JPEG' },
   { value: 'pdf', label: 'PDF' },
+  { value: 'gif', label: 'GIF' },
 ]
 
 const scales = [
@@ -27,7 +29,7 @@ const scales = [
 ]
 
 export function ExportPanel({ editor, onClose }: ExportPanelProps) {
-  const [format, setFormat] = useState<ExportFormat | 'pdf'>('png')
+  const [format, setFormat] = useState<ExportFormat | 'pdf' | 'gif'>('png')
   const [scale, setScale] = useState(2)
   const [background, setBackground] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -35,6 +37,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
   const [watermarkText, setWatermarkText] = useState('@username')
   const [batchProgress, setBatchProgress] = useState<string | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [gifProgress, setGifProgress] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedCount = editor.getSelectedShapeIds().length
@@ -42,6 +45,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
 
   const handleExport = async () => {
     setExporting(true)
+    setGifProgress(null)
     try {
       const timestamp = new Date().toISOString().slice(0, 10)
       const filename = `creator-studio-${timestamp}.${format}`
@@ -49,6 +53,19 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
       if (format === 'pdf') {
         const blob = await exportToPdf(editor, { scale, background })
         downloadBlob(blob, filename)
+      } else if (format === 'gif') {
+        try {
+          const blob = await exportToGif(editor, {
+            fps: 24,
+            width: 720,
+            duration: 5,
+            quality: 10,
+            onProgress: (progress) => setGifProgress(Math.round(progress * 100)),
+          })
+          downloadBlob(blob, filename)
+        } catch (err: any) {
+          alert(err.message || 'GIF export failed. Please install gifenc: pnpm add gifenc')
+        }
       } else if (watermarkEnabled && watermarkText) {
         const blob = await exportWithWatermark(
           editor,
@@ -63,6 +80,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
       console.error('Export failed:', err)
     } finally {
       setExporting(false)
+      setGifProgress(null)
     }
   }
 
@@ -145,7 +163,7 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
           </div>
         </div>
 
-        {format !== 'svg' && format !== 'pdf' && (
+        {format !== 'svg' && format !== 'pdf' && format !== 'gif' && (
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Scale</label>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -192,8 +210,16 @@ export function ExportPanel({ editor, onClose }: ExportPanelProps) {
         </div>
 
         <button onClick={handleExport} disabled={exporting} style={exportBtnStyle}>
-          {exporting ? 'Exporting...' : `Download .${format}`}
+          {exporting
+            ? (gifProgress !== null ? `Exporting... ${gifProgress}%` : 'Exporting...')
+            : `Download .${format}`}
         </button>
+
+        {format === 'gif' && (
+          <div style={{ fontSize: 11, color: '#999', marginTop: 8, textAlign: 'center' }}>
+            Client-side GIF export (5s @ 720p, 24fps)
+          </div>
+        )}
 
         {artboardCount > 1 && format !== 'pdf' && (
           <button onClick={handleBatchExport} disabled={exporting} style={{ ...exportBtnStyle, background: '#555', marginTop: 8 }}>

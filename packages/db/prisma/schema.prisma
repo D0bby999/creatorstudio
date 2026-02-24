@@ -42,7 +42,10 @@ model User {
   auditLogsAsActor    AuditLog[]    @relation("AuditActor")
   auditLogsAsTarget   AuditLog[]    @relation("AuditTarget")
   canvasRooms         CanvasRoom[]  @relation("CanvasRoomOwner")
-  roomMemberships     RoomMember[]  @relation("RoomMembership")
+  roomMemberships     RoomMember[]       @relation("RoomMembership")
+  brandKits           BrandKit[]         @relation("UserBrandKits")
+  canvasComments      CanvasComment[]    @relation("UserComments")
+  canvasShareLinks    CanvasShareLink[]  @relation("UserShareLinks")
 
   @@unique([email])
   @@map("user")
@@ -463,15 +466,17 @@ model AuditLog {
 // ─── Canvas Collaboration tables ───
 
 model CanvasRoom {
-  id          String       @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   ownerId     String
   snapshot    Json?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  owner       User         @relation("CanvasRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner       User              @relation("CanvasRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members     RoomMember[]
+  comments    CanvasComment[]   @relation("RoomComments")
+  shareLinks  CanvasShareLink[] @relation("RoomShareLinks")
 
   @@index([ownerId])
   @@map("canvas_room")
@@ -491,4 +496,92 @@ model RoomMember {
   @@index([roomId])
   @@index([userId])
   @@map("room_member")
+}
+
+// ─── Brand Kit tables ───
+
+model BrandKit {
+  id        String       @id @default(cuid())
+  name      String
+  userId    String
+  isDefault Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  colors    BrandColor[]
+  fonts     BrandFont[]
+  logos     BrandLogo[]
+  user      User         @relation("UserBrandKits", fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("brand_kit")
+}
+
+model BrandColor {
+  id        String   @id @default(cuid())
+  kitId     String
+  label     String
+  hex       String
+  role      String   @default("accent")
+  sortOrder Int      @default(0)
+  kit       BrandKit @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  @@index([kitId])
+  @@map("brand_color")
+}
+
+model BrandFont {
+  id     String   @id @default(cuid())
+  kitId  String
+  role   String
+  family String
+  weight Int      @default(400)
+  kit    BrandKit @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  @@unique([kitId, role])
+  @@map("brand_font")
+}
+
+model BrandLogo {
+  id      String   @id @default(cuid())
+  kitId   String
+  name    String
+  url     String
+  variant String   @default("primary")
+  kit     BrandKit @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  @@index([kitId])
+  @@map("brand_logo")
+}
+
+// ─── Canvas Comments & Sharing tables ───
+
+model CanvasComment {
+  id        String          @id @default(cuid())
+  roomId    String
+  pageId    String
+  x         Float
+  y         Float
+  content   String
+  authorId  String
+  parentId  String?
+  resolved  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  room      CanvasRoom      @relation("RoomComments", fields: [roomId], references: [id], onDelete: Cascade)
+  author    User            @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
+  parent    CanvasComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   CanvasComment[] @relation("CommentReplies")
+  @@index([roomId, pageId])
+  @@index([parentId])
+  @@map("canvas_comment")
+}
+
+model CanvasShareLink {
+  id          String     @id @default(cuid())
+  roomId      String
+  token       String     @unique
+  permission  String     @default("view")
+  createdById String
+  expiresAt   DateTime?
+  createdAt   DateTime   @default(now())
+  room        CanvasRoom @relation("RoomShareLinks", fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy   User       @relation("UserShareLinks", fields: [createdById], references: [id], onDelete: Cascade)
+  @@index([token])
+  @@map("canvas_share_link")
 }
